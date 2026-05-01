@@ -1,0 +1,44 @@
+@startuml
+autonumber
+actor "Prosumer" as P
+box "Orchestration Layer" #LightCyan
+participant "Camunda Engine" as Camunda
+participant "Kong Gateway" as Kong
+end box
+box "Microservice Layer" #LightYellow
+participant "AssetLink MS" as ALMS
+participant "Telemetry MS" as TMS
+end box
+box "Infrastructure Layer" #LightGreen
+database "AWS RDS\n(AssetLink DB)" as ALDB
+database "AWS RDS\n(Telemetry DB)" as TDB
+queue "Kafka Cluster" as Kafka
+end box
+
+== Asset Link Provisioning / Decommissioning ==
+
+note over P, Kafka: For Decommissioning, the same steps are executed in reverse order: Telemetry Consumer is deactivated \nfirst, then the Kafka Topic is deleted, and finally the AssetLink status is updated in RDS.
+
+P -> Camunda: Trigger AssetLink\nManagement Process\n(Onboard/Offboard)
+Camunda -> Kong: POST /assetlinks\n{prosumerId, assetId, utilityOperatorId, ZoneId}
+Kong -> ALMS: Forward Request
+ALMS -> ALDB: JDBC INSERT asset_link(id, prosumer_id, asset_id,\nutility_operator_id, ZoneId, status=ACTIVE)
+note left: Decommissioning sets status=INACTIVE\nto prevent Zombie Assets.
+ALDB --> ALMS: 200 OK
+ALMS --> Kong: 200 OK 
+Kong --> Camunda: 200 OK 
+
+Camunda -> Kafka: Create Topic\n'{assetId}-{ZoneId}'
+Kafka --> Camunda: Ack
+
+Camunda -> Kong: POST /telemetry/consumers\n{topic: '{assetId}-{ZoneId}'}
+Kong -> TMS: Forward Request
+TMS -> Kafka: Subscribe to Topic\n'{assetId}-{ZoneId}'
+note left: If Decommissioning, consumer is DEACTIVATED\ninstantly to prevent 'Zombie Assets' from\ndispatching phantom data.
+Kafka --> TMS: Ack
+TMS -> TDB: JDBC INSERT consumer\n(id, topic, status=ACTIVE)
+TDB --> TMS: 200 OK
+TMS --> Kong: 200 OK
+Kong --> Camunda: Consumer State Updated
+Camunda --> P: Asset Link\nProvisioned/Decommissioned
+@enduml
