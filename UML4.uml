@@ -1,0 +1,44 @@
+@startuml
+autonumber
+box "Orchestration Layer" #LightCyan
+participant "Camunda Engine" as Camunda
+participant "Kong Gateway" as Kong
+end box
+box "Microservice Layer" #LightYellow
+participant "Flexibility Emission MS" as FlexMS
+participant "Telemetry MS" as TMS
+participant "Prosumer MS" as PMS
+end box
+box "Messaging Layer" #Thistle
+queue "Kafka Topic:\nFlexibility-Offers" as KafkaFlex
+end box
+box "Persistence Layer" #LightGreen
+database "AWS RDS\n(Flexibility DB)" as FlexDB
+end box
+== Flexibility Emission ==
+
+Camunda -> Kong: Trigger FlexibilityEmission
+Kong -> FlexMS: Forward request
+
+FlexMS -> Kong: GET /assetlinks/active/{assetId}
+Kong -> TMS: Forward GET /telemetry/active/{assetId}
+TMS --> Kong: 200 OK {activeAssetLinks[]}
+Kong --> FlexMS: 200 OK {activeAssetLinks[]}
+
+FlexMS -> FlexMS: Apply Flexibility Rules
+note right: If BESS SoC > 90% AND market price HIGH -> Trigger Sell Event\nIf BESS SoC < 20% -> Mark asset Unavailable
+FlexMS -> FlexDB: JDBC INSERT flexibility_event\n(id, assetId, prosumerId, eventType, soc_percent, timestamp)
+FlexDB --> FlexMS: 200 OK
+FlexMS -> KafkaFlex: Publish FlexibilityEvent\n{eventId, assetId, prosumerId, eventType, timestamp}
+KafkaFlex --> FlexMS: Ack
+FlexMS --> Kong: 201 Created {eventId}
+Kong --> Camunda: Flexibility Event Created
+
+
+Loop
+   PMS -> KafkaFlex: Consumes from\n Flexibility-Offers
+   KafkaFlex -> PMS: JSON Payload
+
+END
+
+@enduml
