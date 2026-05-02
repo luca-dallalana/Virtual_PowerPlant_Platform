@@ -1,0 +1,45 @@
+@startuml
+autonumber
+box "Orchestration Layer" #LightCyan
+participant "Camunda Engine" as Camunda
+participant "Kong Gateway" as Kong
+end box
+box "Microservice Layer" #LightYellow
+participant "Grid Balancing MS" as GBMS
+participant "Telemetry MS" as TMS
+participant "UtilityOperator MS" as UOMS
+end box
+box "Messaging Layer" #Thistle
+queue "Kafka Topic:\nGridBalancingRecommendation" as Kafka
+end box
+box "Persistence Layer" #LightGreen
+database "AWS RDS\n(GridBalancing DB)" as DB
+end box
+
+== Grid Balancing Recommendation ==
+
+Camunda -> Kong: Trigger Grid Balancing Evaluation
+Kong -> GBMS: POST /evaluate
+GBMS -> Kong: GET /telemetry/zone/{zoneId}/aggregated
+Kong -> TMS: Forward GET /telemetry/zone/{zoneId}/aggregated
+TMS --> Kong: 200 OK {totalLoad_kw, avgSoC_percent}
+Kong --> GBMS: 200 OK {totalLoad_kw, avgSoC_percent}
+GBMS -> GBMS: Compare totalLoad_kw\nagainst zone maxLoad_kw
+note right: If totalLoad_kw > maxLoad_kw\n-> Zone exceeds safety threshold\n-> Scan neighbouring zones for surplus
+GBMS -> Kong: GET /telemetry/zone/{neighbourZoneId}/aggregated
+Kong -> TMS: Forward GET /telemetry/zone/{neighbourZoneId}/aggregated
+TMS --> Kong: 200 OK {totalLoad_kw, avgSoC_percent}
+Kong --> GBMS: 200 OK {totalLoad_kw, avgSoC_percent}
+GBMS -> GBMS: Identify surplus zone\nand recommended action
+GBMS -> DB: JDBC INSERT grid_balancing_recommendation\n(id, stressedZoneId, surplusZoneId,\nrecommendedAction, timestamp)
+DB --> GBMS: 200 OK
+GBMS -> Kafka: Publish GridBalancingRecommendation\n{recommendationId, stressedZoneId,\nsurplusZoneId, recommendedAction, timestamp}
+Kafka --> GBMS: Ack
+GBMS --> Kong: 200 OK {recommendationId}
+Kong --> Camunda: Evaluation Complete
+
+loop continuous polling
+    UOMS -> Kafka: consume from \nGridBalancingRecommendation
+    Kafka --> UOMS: JSON Payload
+end
+@enduml
