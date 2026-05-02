@@ -1,0 +1,46 @@
+@startuml
+autonumber
+box "Orchestration Layer" #LightCyan
+participant "Camunda Engine" as Camunda
+participant "Kong Gateway" as Kong
+end box
+box "Microservice Layer" #LightYellow
+participant "Flexibility Forecasting MS" as ForecastMS
+participant "Flexibility Event MS" as FlexMS
+end box
+box "AI Layer" #LightBlue
+participant "Ollama Server\n(EC2 - LLM)" as Ollama
+end box
+box "Persistence Layer" #LightGreen
+database "AWS RDS\n(Flexibility DB)" as FlexDB
+database "AWS RDS\n(Forecasting DB)" as ForecastDB
+end box
+
+== Flexibility Forecasting (AI) ==
+
+Camunda -> Kong: Trigger Flexibility Forecasting
+Kong -> ForecastMS: POST /forecast/analyze
+
+ForecastMS -> Kong: GET /flexibility-events/logs
+Kong -> FlexMS: Forward GET /flexibility-events/logs
+FlexMS -> FlexDB: JDBC SELECT flexibility_event logs
+FlexDB --> FlexMS: 200 OK {unstructured text logs}
+FlexMS --> Kong: 200 OK {unstructured text logs}
+Kong --> ForecastMS: 200 OK {unstructured text logs}
+
+ForecastMS -> Kong: REST POST /api/generate\n{logs}
+Kong -> Ollama: Forward REST POST /api/generate
+note right: Prompt: Analyze log text to determine\nsentiment and if the command\nresulted in a 'Grid Stable' state.
+Ollama -> Ollama: Compute Sentiment \n& Success Rate
+Ollama --> Kong: 200 OK {sentiment, successProbability}
+Kong --> ForecastMS: 200 OK {sentiment, successProbability}
+
+ForecastMS -> ForecastDB: JDBC INSERT ai_insights\n(id, sentiment, successProbability, timestamp)
+ForecastDB --> ForecastMS: 200 OK
+
+ForecastMS -> Kong: Sentiment Generated\n{sentiment, successProbability}
+Kong -> FlexMS: Sentiment Generated\n{sentiment, successProbability}
+
+ForecastMS --> Kong: 201 Created {forecastId}
+Kong --> Camunda: Forecasting Complete
+@enduml
