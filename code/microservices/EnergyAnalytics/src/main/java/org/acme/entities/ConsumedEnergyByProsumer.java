@@ -1,0 +1,69 @@
+package org.acme.entities;
+
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.mysqlclient.MySQLPool;
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowSet;
+import io.vertx.mutiny.sqlclient.Tuple;
+import java.time.LocalDateTime;
+
+public class ConsumedEnergyByProsumer {
+
+    public Long id;
+    public Long prosumerId;
+    public Double totalEnergyConsumedKw;
+    public Integer evChargerCount;
+    public LocalDateTime timestamp;
+    public String aggregationPeriod;
+
+    public ConsumedEnergyByProsumer() {
+    }
+
+    public ConsumedEnergyByProsumer(Long id, Long prosumerId, Double totalEnergyConsumedKw,
+                                   Integer evChargerCount, LocalDateTime timestamp, String aggregationPeriod) {
+        this.id = id;
+        this.prosumerId = prosumerId;
+        this.totalEnergyConsumedKw = totalEnergyConsumedKw;
+        this.evChargerCount = evChargerCount;
+        this.timestamp = timestamp;
+        this.aggregationPeriod = aggregationPeriod;
+    }
+
+    private static ConsumedEnergyByProsumer from(Row row) {
+        return new ConsumedEnergyByProsumer(
+            row.getLong("id"),
+            row.getLong("prosumerId"),
+            row.getDouble("totalEnergyConsumedKw"),
+            row.getInteger("evChargerCount"),
+            row.getLocalDateTime("timestamp"),
+            row.getString("aggregationPeriod")
+        );
+    }
+
+    public static Multi<ConsumedEnergyByProsumer> findAll(MySQLPool client) {
+        return client.query("SELECT id, prosumerId, totalEnergyConsumedKw, evChargerCount, timestamp, aggregationPeriod FROM ConsumedEnergyByProsumer ORDER BY timestamp DESC").execute()
+                .onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
+                .onItem().transform(ConsumedEnergyByProsumer::from);
+    }
+
+    public static Multi<ConsumedEnergyByProsumer> findByProsumerId(MySQLPool client, Long prosumerId) {
+        return client.preparedQuery("SELECT id, prosumerId, totalEnergyConsumedKw, evChargerCount, timestamp, aggregationPeriod FROM ConsumedEnergyByProsumer WHERE prosumerId = ? ORDER BY timestamp DESC")
+                .execute(Tuple.of(prosumerId))
+                .onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
+                .onItem().transform(ConsumedEnergyByProsumer::from);
+    }
+
+    public static Multi<ConsumedEnergyByProsumer> findByPeriod(MySQLPool client, String aggregationPeriod) {
+        return client.preparedQuery("SELECT id, prosumerId, totalEnergyConsumedKw, evChargerCount, timestamp, aggregationPeriod FROM ConsumedEnergyByProsumer WHERE aggregationPeriod = ? ORDER BY timestamp DESC")
+                .execute(Tuple.of(aggregationPeriod))
+                .onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
+                .onItem().transform(ConsumedEnergyByProsumer::from);
+    }
+
+    public Uni<Long> save(MySQLPool client) {
+        return client.preparedQuery("INSERT INTO ConsumedEnergyByProsumer(prosumerId, totalEnergyConsumedKw, evChargerCount, timestamp, aggregationPeriod) VALUES (?,?,?,?,?)")
+                .execute(Tuple.of(prosumerId, totalEnergyConsumedKw, evChargerCount, timestamp, aggregationPeriod))
+                .onItem().transform(pgRowSet -> pgRowSet.property(io.vertx.mysqlclient.MySQLClient.LAST_INSERTED_ID));
+    }
+}
