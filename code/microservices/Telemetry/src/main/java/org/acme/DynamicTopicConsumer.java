@@ -95,31 +95,30 @@ public class DynamicTopicConsumer extends Thread  {
                             ev_soc_percent = obj.getJSONObject("payload").getFloat("ev_soc_percent");
                         }
                         
-                        
-                        String query = 
-                        "INSERT INTO Telemetry (timeStamp , asset_id , asset_type , grid_cell_id , State_of_Charge , Available_Energy , Current_Output , Max_Capacity , State_of_Health , " 
-                        + " Status , Current_Generation , Daily_Total , Grid_Voltage , Frequency , Plug_Status , Charging_Rate , Session_Energy , EV_SoC) VALUES (" 
-                        + "'" + timeStamp + "',"
-                        + "'" + asset_id + "',"
-                        + "'" + asset_type + "',"
-                        + "'" + grid_cell_id + "',"
-                        + "'" + soc_percent + "',"
-                        + "'" + energy_available_kwh + "',"
-                        + "'" + active_power_kw + "',"
-                        + "'" + max_discharge_power_kw + "',"
-                        + "'" + soh_percent + "',"
-                        + "'" + connection_status  + "',"       
-                        + "'" + generation_kw + "',"
-                        + "'" + daily_yield_kwh + "',"
-                        + "'" + ac_voltage_v + "',"
-                        + "'" + grid_frequency_hz + "',"
-                        + "'" + connector_status + "',"
-                        + "'" + charging_power_kw + "',"
-                        + "'" + session_energy_kwh + "',"
-                        + "'" + ev_soc_percent + "'"        
-                        + ")";
 
-                        client.query(query).execute().await().indefinitely();
+                        String query = "INSERT INTO Telemetry (timeStamp, asset_id, asset_type, grid_cell_id, State_of_Charge, Available_Energy, Current_Output, Max_Capacity, State_of_Health, "
+                        + "Status, Current_Generation, Daily_Total, Grid_Voltage, Frequency, Plug_Status, Charging_Rate, Session_Energy, EV_SoC) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+                        client.preparedQuery(query).execute(io.vertx.mutiny.sqlclient.Tuple.of(
+                            timeStamp,
+                            asset_id,
+                            asset_type,
+                            grid_cell_id,
+                            soc_percent,
+                            energy_available_kwh,
+                            active_power_kw,
+                            max_discharge_power_kw,
+                            soh_percent,
+                            connection_status,
+                            generation_kw,
+                            daily_yield_kwh,
+                            ac_voltage_v,
+                            grid_frequency_hz,
+                            connector_status,
+                            charging_power_kw,
+                            session_energy_kwh,
+                            ev_soc_percent
+                        )).await().indefinitely();
                     }
                 }
             }    
