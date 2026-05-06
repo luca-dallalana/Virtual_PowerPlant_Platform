@@ -1,0 +1,46 @@
+{
+  "components": [
+    {
+      "label": "Name",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_0h3ywbi",
+        "columns": null
+      },
+      "id": "Field_0sppgut",
+      "key": "name",
+      "description": "Prosumer name"
+    },
+    {
+      "label": "Fiscal Number",
+      "type": "number",
+      "layout": {
+        "row": "Row_196yxvu",
+        "columns": null
+      },
+      "id": "Field_1wc2119",
+      "key": "fiscalnumber",
+      "description": "Prosumer Fiscal Number"
+    },
+    {
+      "label": "Location",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_0hds74y",
+        "columns": null
+      },
+      "id": "Field_1ykgxfy",
+      "key": "location",
+      "description": "Prosumer Location"
+    }
+  ],
+  "type": "default",
+  "id": "Form_Request_ProsumerMng",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.44.0"
+  },
+  "schemaVersion": 19
+}

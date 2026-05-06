@@ -1,0 +1,23 @@
+{
+  "components": [
+    {
+      "label": "Would like to reject the arguments?",
+      "type": "checkbox",
+      "layout": {
+        "row": "Row_1pdcxdt",
+        "columns": null
+      },
+      "id": "Field_1g5g62l",
+      "key": "reject"
+    }
+  ],
+  "type": "default",
+  "id": "Form_Reject_ProsumerMng",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.44.0"
+  },
+  "schemaVersion": 19
+}
