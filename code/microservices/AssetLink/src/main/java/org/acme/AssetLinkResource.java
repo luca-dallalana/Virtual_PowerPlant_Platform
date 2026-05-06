@@ -29,13 +29,12 @@ public class AssetLinkResource {
     }
     
     private void initdb() {
-        // In a production environment this configuration SHOULD NOT be used
         client.query("DROP TABLE IF EXISTS AssetLink").execute()
-        .flatMap(r -> client.query("CREATE TABLE AssetLink (id SERIAL PRIMARY KEY, idProsumer BIGINT UNSIGNED, idUtilityOperator BIGINT UNSIGNED, CONSTRAINT UC_Loyal UNIQUE (idProsumer,idUtilityOperator))").execute())
-        .flatMap(r -> client.query(" INSERT INTO AssetLink (idProsumer,idUtilityOperator) VALUES (1,1)").execute())
-        .flatMap(r -> client.query(" INSERT INTO AssetLink (idProsumer,idUtilityOperator) VALUES (2,1)").execute())
-        .flatMap(r -> client.query(" INSERT INTO AssetLink (idProsumer,idUtilityOperator) VALUES (1,3)").execute())
-        .flatMap(r -> client.query(" INSERT INTO AssetLink (idProsumer,idUtilityOperator) VALUES (4,2)").execute())
+        .flatMap(r -> client.query("CREATE TABLE AssetLink (assetLinkId SERIAL PRIMARY KEY, assetId BIGINT UNSIGNED NOT NULL, prosumerId BIGINT UNSIGNED NOT NULL, utilityOperatorId BIGINT UNSIGNED NOT NULL, gridCellId VARCHAR(100) NOT NULL, status VARCHAR(50) NOT NULL, CONSTRAINT UC_Asset_Utility UNIQUE (assetId, utilityOperatorId))").execute())
+        .flatMap(r -> client.query("INSERT INTO AssetLink (assetId, prosumerId, utilityOperatorId, gridCellId, status) VALUES (1, 1, 1, 'LISBON-DT', 'ACTIVE')").execute())
+        .flatMap(r -> client.query("INSERT INTO AssetLink (assetId, prosumerId, utilityOperatorId, gridCellId, status) VALUES (2, 1, 1, 'LISBON-DT', 'ACTIVE')").execute())
+        .flatMap(r -> client.query("INSERT INTO AssetLink (assetId, prosumerId, utilityOperatorId, gridCellId, status) VALUES (3, 2, 1, 'PORTO-IN', 'ACTIVE')").execute())
+        .flatMap(r -> client.query("INSERT INTO AssetLink (assetId, prosumerId, utilityOperatorId, gridCellId, status) VALUES (4, 3, 2, 'COIMBRA-DT', 'ACTIVE')").execute())
         .await().indefinitely();
     }
     
@@ -43,44 +42,62 @@ public class AssetLinkResource {
     public Multi<AssetLink> get() {
         return AssetLink.findAll(client);
     }
-    
+
     @GET
-    @Path("{id}")
-    public Uni<Response> getSingle(Long id) {
-        return AssetLink.findById(client, id)
-                .onItem().transform(assetlink -> assetlink != null ? Response.ok(assetlink) : Response.status(Response.Status.NOT_FOUND)) 
-                .onItem().transform(ResponseBuilder::build); 
+    @Path("{assetLinkId}")
+    public Uni<Response> getSingle(Long assetLinkId) {
+        return AssetLink.findById(client, assetLinkId)
+                .onItem().transform(assetlink -> assetlink != null ? Response.ok(assetlink) : Response.status(Response.Status.NOT_FOUND))
+                .onItem().transform(ResponseBuilder::build);
     }
-     
+
     @GET
-    @Path("{idProsumer}/{idUtilityOperator}")
-    public Uni<Response> getDual(Long idProsumer, Long idUtilityOperator) {
-        return AssetLink.findById2(client, idProsumer, idUtilityOperator)
-                .onItem().transform(assetlink -> assetlink != null ? Response.ok(assetlink) : Response.status(Response.Status.NOT_FOUND)) 
-                .onItem().transform(ResponseBuilder::build); 
+    @Path("asset/{assetId}")
+    public Multi<AssetLink> getByAssetId(Long assetId) {
+        return AssetLink.findByAssetId(client, assetId);
+    }
+
+    @GET
+    @Path("gridcell/{gridCellId}")
+    public Multi<AssetLink> getByGridCellId(String gridCellId) {
+        return AssetLink.findByGridCellId(client, gridCellId);
+    }
+
+    @GET
+    @Path("status/{status}")
+    public Multi<AssetLink> getByStatus(String status) {
+        return AssetLink.findByStatus(client, status);
     }
 
     @POST
     public Uni<Response> create(AssetLink assetlink) {
-        return assetlink.save(client , assetlink.idProsumer , assetlink.idUtilityOperator)
-                .onItem().transform(id -> URI.create("/AssetLink/" + id))
+        return assetlink.save(client, assetlink.assetId, assetlink.prosumerId, assetlink.utilityOperatorId, assetlink.gridCellId, assetlink.status)
+                .onItem().transform(id -> URI.create("/AssetLink/" + assetlink.assetLinkId))
                 .onItem().transform(uri -> Response.created(uri).build());
     }
-    
+
     @DELETE
-    @Path("{id}")
-    public Uni<Response> delete(Long id) {
-        return AssetLink.delete(client, id)
+    @Path("{assetLinkId}")
+    public Uni<Response> delete(Long assetLinkId) {
+        return AssetLink.delete(client, assetLinkId)
                 .onItem().transform(deleted -> deleted ? Response.Status.NO_CONTENT : Response.Status.NOT_FOUND)
                 .onItem().transform(status -> Response.status(status).build());
     }
 
     @PUT
-    @Path("/{id}/{idProsumer}/{idUtilityOperator}")
-    public Uni<Response> update(Long id , Long idProsumer , Long idUtilityOperator ) {
-        return AssetLink.update(client, id, idProsumer , idUtilityOperator )
+    @Path("{assetLinkId}")
+    public Uni<Response> update(Long assetLinkId, AssetLink assetlink) {
+        return AssetLink.update(client, assetLinkId, assetlink.assetId, assetlink.prosumerId, assetlink.utilityOperatorId, assetlink.gridCellId, assetlink.status)
                 .onItem().transform(updated -> updated ? Response.Status.NO_CONTENT : Response.Status.NOT_FOUND)
                 .onItem().transform(status -> Response.status(status).build());
+    }
+
+    @PUT
+    @Path("{assetLinkId}/status/{status}")
+    public Uni<Response> updateStatus(Long assetLinkId, String status) {
+        return AssetLink.updateStatus(client, assetLinkId, status)
+                .onItem().transform(updated -> updated ? Response.Status.NO_CONTENT : Response.Status.NOT_FOUND)
+                .onItem().transform(status2 -> Response.status(status2).build());
     }
     
 }
