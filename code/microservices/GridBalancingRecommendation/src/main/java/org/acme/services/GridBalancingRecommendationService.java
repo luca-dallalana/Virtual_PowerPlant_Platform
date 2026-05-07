@@ -5,8 +5,6 @@ import io.smallrye.reactive.messaging.kafka.api.OutgoingKafkaRecordMetadata;
 import io.vertx.mutiny.mysqlclient.MySQLPool;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.acme.clients.TelemetryService;
-import org.acme.clients.UtilityOperatorService;
 import org.acme.dto.GridCellDTO;
 import org.acme.dto.TelemetryDTO;
 import org.acme.entities.BalancingRecommendation;
@@ -14,7 +12,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -31,28 +28,16 @@ public class GridBalancingRecommendationService {
     MySQLPool client;
 
     @Inject
-    @RestClient
-    TelemetryService telemetryService;
-
-    @Inject
-    @RestClient
-    UtilityOperatorService utilityOperatorService;
-
     @Channel("grid-balancing-recommendation")
     Emitter<String> recommendationEmitter;
 
     @ConfigProperty(name = "gridbalancing.threshold.percent", defaultValue = "0.9")
     double thresholdPercent;
 
-    public Uni<List<BalancingRecommendation>> calculateRecommendations() {
+    public Uni<List<BalancingRecommendation>> calculateRecommendationsFromEvents(List<TelemetryDTO> telemetryList, List<GridCellDTO> gridCells) {
         LocalDateTime now = LocalDateTime.now();
-
-        return Uni.combine().all().unis(
-                telemetryService.getAllTelemetry().collect().asList(),
-                utilityOperatorService.getAllGridCells().collect().asList()
-        ).combinedWith((telemetryList, gridCells) ->
-                buildRecommendations(telemetryList, gridCells, now, thresholdPercent)
-        ).flatMap(recommendations -> persistAll(recommendations));
+        List<BalancingRecommendation> recommendations = buildRecommendations(telemetryList, gridCells, now, thresholdPercent);
+        return persistAll(recommendations);
     }
 
     private List<BalancingRecommendation> buildRecommendations(List<TelemetryDTO> telemetryList,
