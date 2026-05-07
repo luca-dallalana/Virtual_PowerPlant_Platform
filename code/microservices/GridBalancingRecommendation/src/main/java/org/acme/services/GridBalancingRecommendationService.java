@@ -82,7 +82,12 @@ public class GridBalancingRecommendationService {
             } else if ("SOLAR".equals(type)) {
                 metrics.supplyKw += valueOrZero(telemetry.Current_Generation);
             } else if ("BATTERY".equals(type)) {
-                metrics.supplyKw += positiveOrZero(telemetry.Current_Output);
+                double output = valueOrZero(telemetry.Current_Output);
+                if (output > 0) {
+                    metrics.supplyKw += output;
+                } else {
+                    metrics.demandKw += Math.abs(output);
+                }
             }
         }
 
@@ -178,14 +183,6 @@ public class GridBalancingRecommendationService {
         return value == null ? 0.0 : value.doubleValue();
     }
 
-    private double positiveOrZero(Float value) {
-        if (value == null) {
-            return 0.0;
-        }
-        double v = value.doubleValue();
-        return v > 0 ? v : 0.0;
-    }
-
     private static class ZoneMetrics {
         final String gridCellId;
         final double maxCapacityKw;
@@ -202,7 +199,7 @@ public class GridBalancingRecommendationService {
 
         void compute(double threshold) {
             thresholdLimitKw = maxCapacityKw * threshold;
-            netLoadKw = demandKw - supplyKw;
+            netLoadKw = Math.max(0, demandKw - supplyKw);
             headroomKw = thresholdLimitKw - netLoadKw;
         }
     }
