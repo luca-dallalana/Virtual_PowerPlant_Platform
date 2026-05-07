@@ -3,6 +3,7 @@ package org.acme;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.mysqlclient.MySQLPool;
+import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -71,9 +72,9 @@ public class AssetLink {
 	                .onItem().transform(AssetLink::from);
 	    }
 
-	    public Uni<Boolean> save(MySQLPool client, Long assetId, Long prosumerId, Long utilityOperatorId, String gridCellId, String status) {
+	    public Uni<Long> save(MySQLPool client, Long assetId, Long prosumerId, Long utilityOperatorId, String gridCellId, String status) {
 	        return client.preparedQuery("INSERT INTO AssetLink(assetId, prosumerId, utilityOperatorId, gridCellId, status) VALUES (?,?,?,?,?)").execute(Tuple.of(assetId, prosumerId, utilityOperatorId, gridCellId, status))
-	        		.onItem().transform(pgRowSet -> pgRowSet.rowCount() == 1);
+	        		.onItem().transform(pgRowSet -> pgRowSet.property(MySQLClient.LAST_INSERTED_ID));
 	    }
 
 	    public static Uni<Boolean> delete(MySQLPool client, Long assetLinkId) {

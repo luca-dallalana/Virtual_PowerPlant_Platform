@@ -11,16 +11,25 @@ import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
 import jakarta.ws.rs.core.MediaType;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.eclipse.microprofile.reactive.messaging.Message;
+import io.smallrye.reactive.messaging.kafka.api.OutgoingKafkaRecordMetadata;
+import org.acme.dto.AssetLinkRegistrationResponse;
 
 @Path("AssetLink")
 public class AssetLinkResource {
 
     @Inject
     io.vertx.mutiny.mysqlclient.MySQLPool client;
-    
+
     @Inject
-    @ConfigProperty(name = "myapp.schema.create", defaultValue = "true") 
-    boolean schemaCreate ;
+    @ConfigProperty(name = "myapp.schema.create", defaultValue = "true")
+    boolean schemaCreate;
+
+    @Inject
+    @Channel("assetlink-events")
+    Emitter<String> assetLinkEventsEmitter;
 
     void config(@Observes StartupEvent ev) {
         if (schemaCreate) {
@@ -71,15 +80,43 @@ public class AssetLinkResource {
 
     @POST
     public Uni<Response> create(AssetLink assetlink) {
-        return assetlink.save(client, assetlink.assetId, assetlink.prosumerId, assetlink.utilityOperatorId, assetlink.gridCellId, assetlink.status)
-                .onItem().transform(id -> URI.create("/AssetLink/" + assetlink.assetLinkId))
-                .onItem().transform(uri -> Response.created(uri).build());
+        return assetlink.save(client, assetlink.assetId, assetlink.prosumerId,
+                             assetlink.utilityOperatorId, assetlink.gridCellId, assetlink.status)
+                .onItem().invoke(generatedId -> {
+                    assetlink.assetLinkId = generatedId;
+                    publishAssetLinkEvent(assetlink, "CREATED");
+                })
+                .onItem().transform(generatedId -> {
+                    AssetLinkRegistrationResponse response = new AssetLinkRegistrationResponse(
+                        generatedId,
+                        assetlink.assetId,
+                        assetlink.prosumerId,
+                        assetlink.utilityOperatorId,
+                        assetlink.gridCellId,
+                        assetlink.status,
+                        "Asset-" + assetlink.gridCellId
+                    );
+                    return Response.status(Response.Status.CREATED)
+                        .entity(response)
+                        .build();
+                });
     }
 
     @DELETE
     @Path("{assetLinkId}")
     public Uni<Response> delete(Long assetLinkId) {
-        return AssetLink.delete(client, assetLinkId)
+        return AssetLink.findById(client, assetLinkId)
+                .flatMap(assetLink -> {
+                    if (assetLink == null) {
+                        return Uni.createFrom().item(false);
+                    }
+                    return AssetLink.delete(client, assetLinkId)
+                            .onItem().invoke(deleted -> {
+                                if (deleted) {
+                                    publishAssetLinkEvent(assetLink, "DELETED");
+                                }
+                            });
+                })
                 .onItem().transform(deleted -> deleted ? Response.Status.NO_CONTENT : Response.Status.NOT_FOUND)
                 .onItem().transform(status -> Response.status(status).build());
     }
@@ -87,7 +124,9 @@ public class AssetLinkResource {
     @PUT
     @Path("{assetLinkId}")
     public Uni<Response> update(Long assetLinkId, AssetLink assetlink) {
+        assetlink.assetLinkId = assetLinkId;
         return AssetLink.update(client, assetLinkId, assetlink.assetId, assetlink.prosumerId, assetlink.utilityOperatorId, assetlink.gridCellId, assetlink.status)
+                .onItem().invoke(updated -> { if (updated) publishAssetLinkEvent(assetlink, "UPDATED"); })
                 .onItem().transform(updated -> updated ? Response.Status.NO_CONTENT : Response.Status.NOT_FOUND)
                 .onItem().transform(status -> Response.status(status).build());
     }
@@ -96,8 +135,42 @@ public class AssetLinkResource {
     @Path("{assetLinkId}/status/{status}")
     public Uni<Response> updateStatus(Long assetLinkId, String status) {
         return AssetLink.updateStatus(client, assetLinkId, status)
+                .flatMap(updated -> {
+                    if (updated) {
+                        return AssetLink.findById(client, assetLinkId)
+                            .onItem().invoke(assetLink -> publishAssetLinkEvent(assetLink, "UPDATED"))
+                            .replaceWith(updated);
+                    }
+                    return Uni.createFrom().item(updated);
+                })
                 .onItem().transform(updated -> updated ? Response.Status.NO_CONTENT : Response.Status.NOT_FOUND)
                 .onItem().transform(status2 -> Response.status(status2).build());
     }
-    
+
+    private void publishAssetLinkEvent(AssetLink assetLink, String eventType) {
+        String json;
+        String key;
+
+        if ("DELETED".equals(eventType)) {
+            json = String.format(
+                "{\"assetLinkId\":%d,\"eventType\":\"%s\"}",
+                assetLink.assetLinkId, eventType
+            );
+            key = assetLink.assetLinkId.toString();
+        } else {
+            json = String.format(
+                "{\"assetLinkId\":%d,\"assetId\":%d,\"prosumerId\":%d,\"utilityOperatorId\":%d,\"gridCellId\":\"%s\",\"status\":\"%s\",\"eventType\":\"%s\"}",
+                assetLink.assetLinkId, assetLink.assetId, assetLink.prosumerId,
+                assetLink.utilityOperatorId, assetLink.gridCellId, assetLink.status, eventType
+            );
+            key = assetLink.assetId.toString();
+        }
+
+        assetLinkEventsEmitter.send(Message.of(json)
+            .addMetadata(OutgoingKafkaRecordMetadata.builder().withKey(key).build()));
+
+        System.out.printf("Published AssetLink-%s event: assetLinkId=%d\n",
+            eventType, assetLink.assetLinkId);
+    }
+
 }
