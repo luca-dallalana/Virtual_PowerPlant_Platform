@@ -5,8 +5,6 @@ import io.smallrye.reactive.messaging.kafka.api.OutgoingKafkaRecordMetadata;
 import io.vertx.mutiny.mysqlclient.MySQLPool;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.acme.clients.AssetLinkService;
-import org.acme.clients.TelemetryService;
 import org.acme.dto.AnalyticsResult;
 import org.acme.dto.AssetLinkDTO;
 import org.acme.dto.TelemetryDTO;
@@ -17,7 +15,6 @@ import org.acme.entities.GeneratedEnergyByProsumer;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -30,13 +27,6 @@ public class AnalyticsCalculationService {
     MySQLPool client;
 
     @Inject
-    @RestClient
-    TelemetryService telemetryService;
-
-    @Inject
-    @RestClient
-    AssetLinkService assetLinkService;
-
     @Channel("energy-discharged-zone")
     Emitter<String> dischargedZoneEmitter;
 
@@ -46,22 +36,18 @@ public class AnalyticsCalculationService {
     @Channel("energy-consumed-prosumer")
     Emitter<String> consumedProsumerEmitter;
 
+    @Inject
     @Channel("average-soc")
     Emitter<String> averageSocEmitter;
 
-    public Uni<AnalyticsResult> calculateAllMetrics() {
+    public Uni<AnalyticsResult> calculateMetricsFromEvents(List<TelemetryDTO> telemetryList, List<AssetLinkDTO> assetLinkList) {
         LocalDateTime timestamp = LocalDateTime.now();
         String aggregationPeriod = "CURRENT";
 
-        return Uni.combine().all().unis(
-            telemetryService.getAllTelemetry().collect().asList(),
-            assetLinkService.get().collect().asList()
-        ).combinedWith((telemetryList, assetLinkList) -> {
-            Map<Long, AssetLinkDTO> assetLinkMap = assetLinkList.stream()
-                .collect(Collectors.toMap(link -> link.assetId, link -> link, (a, b) -> a));
+        Map<Long, AssetLinkDTO> assetLinkMap = assetLinkList.stream()
+            .collect(Collectors.toMap(link -> link.assetId, link -> link, (a, b) -> a));
 
-            return calculateAndSave(telemetryList, assetLinkMap, timestamp, aggregationPeriod);
-        }).flatMap(uni -> uni);
+        return calculateAndSave(telemetryList, assetLinkMap, timestamp, aggregationPeriod);
     }
 
     private Uni<AnalyticsResult> calculateAndSave(List<TelemetryDTO> telemetryList,
