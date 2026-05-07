@@ -5,7 +5,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Properties;
 import org.json.*;
 
@@ -30,17 +30,17 @@ public class GridCellEventProcessor extends Thread {
             properties.put("group.id", "grid-balancing-gridcell-group");
 
             try (Consumer<String, String> consumer = new KafkaConsumer<>(properties)) {
-                consumer.subscribe(Arrays.asList("GridCell-Created", "GridCell-Updated", "GridCell-Deleted"));
+                consumer.subscribe(Collections.singletonList("GridCell-Events"));
 
-                System.out.println("GridCellEventProcessor: Subscribed to GridCell events");
+                System.out.println("GridCellEventProcessor: Subscribed to GridCell-Events");
 
                 while (true) {
                     ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
                     for (ConsumerRecord<String, String> record : records) {
-                        System.out.printf("GridBalancing - Received GridCell event: topic = %s, key = %s\n",
-                            record.topic(), record.key());
+                        System.out.printf("GridBalancing - Received GridCell event: key = %s\n",
+                            record.key());
 
-                        processGridCellEvent(record.topic(), record.value());
+                        processGridCellEvent(record.value());
                     }
                 }
             }
@@ -50,17 +50,18 @@ public class GridCellEventProcessor extends Thread {
         }
     }
 
-    private void processGridCellEvent(String topic, String jsonString) {
+    private void processGridCellEvent(String jsonString) {
         JSONObject obj = new JSONObject(jsonString);
         String gridCellId = obj.getString("gridCellId");
+        String eventType = obj.getString("eventType");
 
         try {
-            if (topic.equals("GridCell-Deleted")) {
+            if ("DELETED".equals(eventType)) {
                 client.preparedQuery("DELETE FROM GridCell WHERE gridCellId = ?")
                     .execute(Tuple.of(gridCellId))
                     .await().indefinitely();
                 System.out.printf("GridCell deleted from local DB: %s\n", gridCellId);
-            } else if (topic.equals("GridCell-Created")) {
+            } else if ("CREATED".equals(eventType)) {
                 Long utilityOperatorId = obj.getLong("utilityOperatorId");
                 Double maxCapacity = obj.getDouble("maxCapacity");
                 String geographicBoundaries = obj.getString("geographicBoundaries");
@@ -69,7 +70,7 @@ public class GridCellEventProcessor extends Thread {
                     .execute(Tuple.of(gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries, utilityOperatorId, maxCapacity, geographicBoundaries))
                     .await().indefinitely();
                 System.out.printf("GridCell created in local DB: %s (capacity: %.2f)\n", gridCellId, maxCapacity);
-            } else if (topic.equals("GridCell-Updated")) {
+            } else if ("UPDATED".equals(eventType)) {
                 Long utilityOperatorId = obj.getLong("utilityOperatorId");
                 Double maxCapacity = obj.getDouble("maxCapacity");
                 String geographicBoundaries = obj.getString("geographicBoundaries");

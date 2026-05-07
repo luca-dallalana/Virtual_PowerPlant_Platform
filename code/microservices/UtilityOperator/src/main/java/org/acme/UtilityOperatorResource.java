@@ -11,16 +11,24 @@ import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
 import jakarta.ws.rs.core.MediaType;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.eclipse.microprofile.reactive.messaging.Message;
+import io.smallrye.reactive.messaging.kafka.api.OutgoingKafkaRecordMetadata;
 
 @Path("UtilityOperator")
 public class UtilityOperatorResource {
 
     @Inject
     io.vertx.mutiny.mysqlclient.MySQLPool client;
-    
+
     @Inject
-    @ConfigProperty(name = "myapp.schema.create", defaultValue = "true") 
-    boolean schemaCreate ;
+    @ConfigProperty(name = "myapp.schema.create", defaultValue = "true")
+    boolean schemaCreate;
+
+    @Inject
+    @Channel("gridcell-events")
+    Emitter<String> gridCellEventsEmitter;
 
     void config(@Observes StartupEvent ev) {
         if (schemaCreate) {
@@ -104,6 +112,7 @@ public class UtilityOperatorResource {
     @Path("gridcell")
     public Uni<Response> createGridCell(GridCell gridCell) {
         return gridCell.save(client, gridCell.gridCellId, gridCell.utilityOperatorId, gridCell.maxCapacity, gridCell.geographicBoundaries)
+                .onItem().invoke(() -> publishGridCellEvent(gridCell, "CREATED"))
                 .onItem().transform(id -> URI.create("/UtilityOperator/gridcell/" + gridCell.gridCellId))
                 .onItem().transform(uri -> Response.created(uri).build());
     }
@@ -111,7 +120,18 @@ public class UtilityOperatorResource {
     @DELETE
     @Path("gridcell/{gridCellId}")
     public Uni<Response> deleteGridCell(String gridCellId) {
-        return GridCell.delete(client, gridCellId)
+        return GridCell.findByGridCellId(client, gridCellId)
+                .flatMap(gridCell -> {
+                    if (gridCell == null) {
+                        return Uni.createFrom().item(false);
+                    }
+                    return GridCell.delete(client, gridCellId)
+                            .onItem().invoke(deleted -> {
+                                if (deleted) {
+                                    publishGridCellEvent(gridCell, "DELETED");
+                                }
+                            });
+                })
                 .onItem().transform(deleted -> deleted ? Response.Status.NO_CONTENT : Response.Status.NOT_FOUND)
                 .onItem().transform(status -> Response.status(status).build());
     }
@@ -119,7 +139,9 @@ public class UtilityOperatorResource {
     @PUT
     @Path("gridcell/{gridCellId}")
     public Uni<Response> updateGridCell(String gridCellId, GridCell gridCell) {
+        gridCell.gridCellId = gridCellId;
         return GridCell.update(client, gridCellId, gridCell.utilityOperatorId, gridCell.maxCapacity, gridCell.geographicBoundaries)
+                .onItem().invoke(updated -> { if (updated) publishGridCellEvent(gridCell, "UPDATED"); })
                 .onItem().transform(updated -> updated ? Response.Status.NO_CONTENT : Response.Status.NOT_FOUND)
                 .onItem().transform(status -> Response.status(status).build());
     }
@@ -128,8 +150,38 @@ public class UtilityOperatorResource {
     @Path("gridcell/{gridCellId}/capacity/{maxCapacity}")
     public Uni<Response> updateGridCellCapacity(String gridCellId, Double maxCapacity) {
         return GridCell.updateMaxCapacity(client, gridCellId, maxCapacity)
+                .flatMap(updated -> {
+                    if (updated) {
+                        return GridCell.findByGridCellId(client, gridCellId)
+                            .onItem().invoke(gridCell -> publishGridCellEvent(gridCell, "UPDATED"))
+                            .replaceWith(updated);
+                    }
+                    return Uni.createFrom().item(updated);
+                })
                 .onItem().transform(updated -> updated ? Response.Status.NO_CONTENT : Response.Status.NOT_FOUND)
                 .onItem().transform(status -> Response.status(status).build());
+    }
+
+    private void publishGridCellEvent(GridCell gridCell, String eventType) {
+        String json;
+
+        if ("DELETED".equals(eventType)) {
+            json = String.format(
+                "{\"gridCellId\":\"%s\",\"eventType\":\"%s\"}",
+                gridCell.gridCellId, eventType
+            );
+        } else {
+            json = String.format(
+                "{\"gridCellId\":\"%s\",\"utilityOperatorId\":%d,\"maxCapacity\":%.2f,\"geographicBoundaries\":\"%s\",\"eventType\":\"%s\"}",
+                gridCell.gridCellId, gridCell.utilityOperatorId, gridCell.maxCapacity,
+                gridCell.geographicBoundaries, eventType
+            );
+        }
+
+        gridCellEventsEmitter.send(Message.of(json)
+            .addMetadata(OutgoingKafkaRecordMetadata.builder().withKey(gridCell.gridCellId).build()));
+
+        System.out.printf("Published GridCell-%s event: %s\n", eventType, gridCell.gridCellId);
     }
 
 }
