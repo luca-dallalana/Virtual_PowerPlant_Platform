@@ -112,26 +112,27 @@ public class DynamicTopicConsumer extends Thread  {
                         String query = "INSERT INTO Telemetry (timeStamp, asset_id, asset_type, grid_cell_id, State_of_Charge, Available_Energy, Current_Output, Max_Capacity, State_of_Health, "
                         + "Status, Current_Generation, Daily_Total, Grid_Voltage, Frequency, Plug_Status, Charging_Rate, Session_Energy, EV_SoC) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-                        client.preparedQuery(query).execute(io.vertx.mutiny.sqlclient.Tuple.of(
-                            timeStamp,
-                            asset_id,
-                            asset_type,
-                            grid_cell_id,
-                            soc_percent,
-                            energy_available_kwh,
-                            active_power_kw,
-                            max_discharge_power_kw,
-                            soh_percent,
-                            connection_status,
-                            generation_kw,
-                            daily_yield_kwh,
-                            ac_voltage_v,
-                            grid_frequency_hz,
-                            connector_status,
-                            charging_power_kw,
-                            session_energy_kwh,
-                            ev_soc_percent
-                        )).await().indefinitely();
+                        java.util.List<Object> paramsList = new java.util.ArrayList<>();
+                        paramsList.add(timeStamp);
+                        paramsList.add(asset_id);
+                        paramsList.add(asset_type);
+                        paramsList.add(grid_cell_id);
+                        paramsList.add(soc_percent);
+                        paramsList.add(energy_available_kwh);
+                        paramsList.add(active_power_kw);
+                        paramsList.add(max_discharge_power_kw);
+                        paramsList.add(soh_percent);
+                        paramsList.add(connection_status);
+                        paramsList.add(generation_kw);
+                        paramsList.add(daily_yield_kwh);
+                        paramsList.add(ac_voltage_v);
+                        paramsList.add(grid_frequency_hz);
+                        paramsList.add(connector_status);
+                        paramsList.add(charging_power_kw);
+                        paramsList.add(session_energy_kwh);
+                        paramsList.add(ev_soc_percent);
+
+                        client.preparedQuery(query).execute(io.vertx.mutiny.sqlclient.Tuple.wrap(paramsList)).await().indefinitely();
 
                         publishTelemetryEvent(jsonString, asset_id, asset_type);
                     }

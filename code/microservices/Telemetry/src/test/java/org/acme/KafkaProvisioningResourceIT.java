@@ -10,8 +10,6 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -21,8 +19,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.hasSize;
+
+import io.restassured.http.ContentType;
 
 @QuarkusTest
 class KafkaProvisioningResourceIT {
@@ -30,25 +31,9 @@ class KafkaProvisioningResourceIT {
     @InjectMock
     MySQLPool client;
 
-    @InjectMock
-    @Channel("telemetry-data")
-    Emitter<String> telemetryEmitter;
-
-    @InjectMock
-    @Channel("telemetry-batteries")
-    Emitter<String> batteryEmitter;
-
-    @InjectMock
-    @Channel("telemetry-solar")
-    Emitter<String> solarEmitter;
-
-    @InjectMock
-    @Channel("telemetry-chargers")
-    Emitter<String> chargerEmitter;
-
     @BeforeEach
     void setup() {
-        Mockito.reset(client, telemetryEmitter, batteryEmitter, solarEmitter, chargerEmitter);
+        Mockito.reset(client);
     }
 
     @Test
@@ -91,6 +76,29 @@ class KafkaProvisioningResourceIT {
             .get("/Telemetry/999")
             .then()
             .statusCode(404);
+    }
+
+    @Test
+    void postConsumeEndpoint_returnsSuccessMessage() {
+        given()
+            .contentType(ContentType.JSON)
+            .body("{\"TopicName\":\"test-topic\"}")
+            .when()
+            .post("/Telemetry/Consume")
+            .then()
+            .statusCode(200)
+            .body(is("New worker started"));
+    }
+
+    @Test
+    void postConsumeEndpoint_withMalformedJson_returns4xx() {
+        given()
+            .contentType(ContentType.JSON)
+            .body("{invalid json syntax")
+            .when()
+            .post("/Telemetry/Consume")
+            .then()
+            .statusCode(anyOf(is(400), is(500)));
     }
 
     private void stubQuery(String sql, RowSet<Row> rowSet) {
