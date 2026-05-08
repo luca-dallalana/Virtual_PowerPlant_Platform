@@ -98,9 +98,9 @@ public class FlexibilityForecast {
         return client.preparedQuery("INSERT INTO FlexibilityForecast("
                 + "analysisType, question, aiResponse, sentiment, confidenceScore, eventsAnalyzed, "
                 + "correlatedOutcomes, successRate, analysisTimestamp, insightsJson) VALUES (?,?,?,?,?,?,?,?,?,?)")
-                .execute(Tuple.of(analysisType, question, aiResponse, sentiment, confidenceScore,
-                        eventsAnalyzed, correlatedOutcomes, successRate, analysisTimestamp, insightsJson))
-                .onItem().transform(pgRowSet -> pgRowSet.property(io.vertx.mysqlclient.MySQLClient.LAST_INSERTED_ID));
+                .execute(Tuple.from(java.util.Arrays.asList(analysisType, question, aiResponse, sentiment, confidenceScore,
+                        eventsAnalyzed, correlatedOutcomes, successRate, analysisTimestamp, insightsJson)))
+                .onItem().transform(pgRowSet -> (Long) pgRowSet.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID));
     }
 
     public static Uni<Boolean> delete(MySQLPool client, Long id) {

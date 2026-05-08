@@ -98,9 +98,9 @@ public class BalancingRecommendation {
         return client.preparedQuery("INSERT INTO BalancingRecommendation("
                 + "sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw, overloadKw, "
                 + "transferableKw, thresholdPercent, status, rationale, createdAt) VALUES (?,?,?,?,?,?,?,?,?,?)")
-                .execute(Tuple.of(sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw,
-                        overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt))
-                .onItem().transform(pgRowSet -> pgRowSet.property(io.vertx.mysqlclient.MySQLClient.LAST_INSERTED_ID));
+                .execute(Tuple.from(java.util.Arrays.asList(sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw,
+                        overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt)))
+                .onItem().transform(pgRowSet -> (Long) pgRowSet.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID));
     }
 
     public static Uni<Boolean> delete(MySQLPool client, Long id) {
@@ -116,8 +116,8 @@ public class BalancingRecommendation {
         return client.preparedQuery("UPDATE BalancingRecommendation SET sourceGridCellId = ?, targetGridCellId = ?, "
                 + "sourceNetLoadKw = ?, targetHeadroomKw = ?, overloadKw = ?, transferableKw = ?, thresholdPercent = ?, "
                 + "status = ?, rationale = ?, createdAt = ? WHERE id = ?")
-                .execute(Tuple.of(sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw,
-                        overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt, id))
+                .execute(Tuple.from(java.util.Arrays.asList(sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw,
+                        overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt, id)))
                 .onItem().transform(pgRowSet -> pgRowSet.rowCount() == 1);
     }
 }
