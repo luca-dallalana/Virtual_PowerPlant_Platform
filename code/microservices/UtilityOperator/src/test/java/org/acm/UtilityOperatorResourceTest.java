@@ -1,6 +1,5 @@
 package org.acm;
 
-import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.mysqlclient.MySQLPool;
 import io.vertx.mutiny.sqlclient.PreparedQuery;
@@ -9,14 +8,16 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
 import org.acme.GridCell;
 import org.acme.UtilityOperator;
 import org.acme.UtilityOperatorResource;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
@@ -29,18 +30,21 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 
-@QuarkusTest
-class UtilityOperatorResourceTest {
+class UtilityOperatorResourceUnitTest {
 
-    @Inject
     UtilityOperatorResource resource;
 
     private MySQLPool client;
+    private Emitter<String> gridCellEventsEmitter;
 
     @BeforeEach
     void setup() {
+        resource = new UtilityOperatorResource();
         client = Mockito.mock(MySQLPool.class);
+        gridCellEventsEmitter = Mockito.mock(Emitter.class);
         injectClient(resource, client);
+        injectGridCellEmitter(resource, gridCellEventsEmitter);
+        injectSchemaCreate(resource, false);
     }
 
     @Test
@@ -173,22 +177,31 @@ class UtilityOperatorResourceTest {
         MatcherAssert.assertThat(response.getStatus(), is(201));
         MatcherAssert.assertThat(response.getLocation(), notNullValue());
         MatcherAssert.assertThat(response.getLocation().getPath(), is("/UtilityOperator/gridcell/LISBON-DT"));
+
+        assertGridCellEventPayload("CREATED", "LISBON-DT", 1L, 50.0, "Lisbon Downtown Area");
     }
 
     @Test
     void deleteGridCell_returnsNoContent() {
+        Row row = gridCellRow("LISBON-DT", 1L, 50.0, "Lisbon Downtown Area");
+        stubPreparedQuery("SELECT gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries FROM GridCell WHERE gridCellId = ?", rowSetWithRows(row));
         stubPreparedQuery("DELETE FROM GridCell WHERE gridCellId = ?", rowSetWithRowCount(1));
 
         Response response = resource.deleteGridCell("LISBON-DT").await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(204));
+
+        assertGridCellEventPayload("DELETED", "LISBON-DT", null, null, null);
     }
 
     @Test
     void deleteGridCell_returnsNotFound() {
+        stubPreparedQuery("SELECT gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries FROM GridCell WHERE gridCellId = ?", rowSetWithRows());
         stubPreparedQuery("DELETE FROM GridCell WHERE gridCellId = ?", rowSetWithRowCount(0));
 
         Response response = resource.deleteGridCell("UNKNOWN").await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(404));
+
+        Mockito.verifyNoInteractions(gridCellEventsEmitter);
     }
 
     @Test
@@ -198,6 +211,8 @@ class UtilityOperatorResourceTest {
 
         Response response = resource.updateGridCell("LISBON-DT", updated).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(204));
+
+        assertGridCellEventPayload("UPDATED", "LISBON-DT", 1L, 60.0, "Updated");
     }
 
     @Test
@@ -207,14 +222,20 @@ class UtilityOperatorResourceTest {
 
         Response response = resource.updateGridCell("UNKNOWN", updated).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(404));
+
+        Mockito.verifyNoInteractions(gridCellEventsEmitter);
     }
 
     @Test
     void updateGridCellCapacity_returnsNoContent() {
+        Row row = gridCellRow("LISBON-DT", 1L, 50.0, "Lisbon Downtown Area");
         stubPreparedQuery("UPDATE GridCell SET maxCapacity = ? WHERE gridCellId = ?", rowSetWithRowCount(1));
+        stubPreparedQuery("SELECT gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries FROM GridCell WHERE gridCellId = ?", rowSetWithRows(row));
 
         Response response = resource.updateGridCellCapacity("LISBON-DT", 55.0).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(204));
+
+        assertGridCellEventPayload("UPDATED", "LISBON-DT", 1L, 50.0, "Lisbon Downtown Area");
     }
 
     @Test
@@ -223,6 +244,32 @@ class UtilityOperatorResourceTest {
 
         Response response = resource.updateGridCellCapacity("UNKNOWN", 55.0).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(404));
+
+        Mockito.verifyNoInteractions(gridCellEventsEmitter);
+    }
+
+    private void assertGridCellEventPayload(String eventType, String gridCellId, Long utilityOperatorId,
+                                            Double maxCapacity, String geographicBoundaries) {
+        ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
+        Mockito.verify(gridCellEventsEmitter).send(captor.capture());
+
+        Message message = captor.getValue();
+        Object payload = message.getPayload();
+        MatcherAssert.assertThat(payload, notNullValue());
+
+        String json = payload.toString();
+        MatcherAssert.assertThat(json, org.hamcrest.Matchers.containsString("\"gridCellId\":\"" + gridCellId + "\""));
+        MatcherAssert.assertThat(json, org.hamcrest.Matchers.containsString("\"eventType\":\"" + eventType + "\""));
+
+        if (utilityOperatorId != null) {
+            MatcherAssert.assertThat(json, org.hamcrest.Matchers.containsString("\"utilityOperatorId\":" + utilityOperatorId));
+        }
+        if (maxCapacity != null) {
+            MatcherAssert.assertThat(json, org.hamcrest.Matchers.containsString("\"maxCapacity\":" + String.format("%.2f", maxCapacity)));
+        }
+        if (geographicBoundaries != null) {
+            MatcherAssert.assertThat(json, org.hamcrest.Matchers.containsString("\"geographicBoundaries\":\"" + geographicBoundaries + "\""));
+        }
     }
 
     private void injectClient(UtilityOperatorResource target, MySQLPool pool) {
@@ -232,6 +279,26 @@ class UtilityOperatorResourceTest {
             field.set(target, pool);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IllegalStateException("Failed to inject MySQLPool", e);
+        }
+    }
+
+    private void injectGridCellEmitter(UtilityOperatorResource target, Emitter<String> emitter) {
+        try {
+            Field field = UtilityOperatorResource.class.getDeclaredField("gridCellEventsEmitter");
+            field.setAccessible(true);
+            field.set(target, emitter);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new IllegalStateException("Failed to inject gridCellEventsEmitter", e);
+        }
+    }
+
+    private void injectSchemaCreate(UtilityOperatorResource target, boolean value) {
+        try {
+            Field field = UtilityOperatorResource.class.getDeclaredField("schemaCreate");
+            field.setAccessible(true);
+            field.set(target, value);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new IllegalStateException("Failed to inject schemaCreate", e);
         }
     }
 

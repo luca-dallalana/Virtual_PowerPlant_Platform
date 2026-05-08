@@ -1,5 +1,8 @@
 package org.acm;
 
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.InjectMock;
+import io.restassured.http.ContentType;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.mysqlclient.MySQLPool;
 import io.vertx.mutiny.sqlclient.PreparedQuery;
@@ -8,37 +11,30 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
-import jakarta.ws.rs.core.Response;
-import org.acme.Asset;
-import org.acme.Prosumer;
-import org.acme.ProsumerResource;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 
-class ProsumerResourceUnitTest {
+@QuarkusTest
+class ProsumerResourceIT {
 
-    ProsumerResource resource;
-
-    private MySQLPool client;
+    @InjectMock
+    MySQLPool client;
 
     @BeforeEach
     void setup() {
-        resource = new ProsumerResource();
-        client = Mockito.mock(MySQLPool.class);
-        injectClient(resource, client);
-        injectSchemaCreate(resource, false);
+        Mockito.reset(client);
     }
 
     @Test
@@ -47,12 +43,16 @@ class ProsumerResourceUnitTest {
         Row row2 = prosumerRow(2L, "client2", 987654L, "Setubal");
         stubQuery("SELECT id, name, FiscalNumber , location FROM Prosumer ORDER BY id ASC", rowSetWithRows(row1, row2));
 
-        List<Prosumer> result = resource.get().collect().asList().await().indefinitely();
-        MatcherAssert.assertThat(result, hasSize(2));
-        MatcherAssert.assertThat(result.get(0).id, is(1L));
-        MatcherAssert.assertThat(result.get(0).name, is("client1"));
-        MatcherAssert.assertThat(result.get(0).location, is("Lisbon"));
-        MatcherAssert.assertThat(result.get(0).FiscalNumber, is(123456L));
+        given()
+            .when()
+            .get("/Prosumer")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(2))
+            .body("[0].id", is(1))
+            .body("[0].name", is("client1"))
+            .body("[0].location", is("Lisbon"))
+            .body("[0].FiscalNumber", is(123456));
     }
 
     @Test
@@ -60,67 +60,89 @@ class ProsumerResourceUnitTest {
         Row row = prosumerRow(1L, "client1", 123456L, "Lisbon");
         stubPreparedQuery("SELECT id, name, FiscalNumber , location FROM Prosumer WHERE id = ?", rowSetWithRows(row));
 
-        Response response = resource.getSingle(1L).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        Prosumer entity = (Prosumer) response.getEntity();
-        MatcherAssert.assertThat(entity, notNullValue());
-        MatcherAssert.assertThat(entity.id, is(1L));
-        MatcherAssert.assertThat(entity.name, is("client1"));
-        MatcherAssert.assertThat(entity.FiscalNumber, is(123456L));
+        given()
+            .when()
+            .get("/Prosumer/1")
+            .then()
+            .statusCode(200)
+            .body("id", is(1))
+            .body("name", is("client1"))
+            .body("location", is("Lisbon"))
+            .body("FiscalNumber", is(123456));
     }
 
     @Test
     void getProsumerById_returnsNotFound() {
         stubPreparedQuery("SELECT id, name, FiscalNumber , location FROM Prosumer WHERE id = ?", rowSetWithRows());
 
-        Response response = resource.getSingle(99L).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(404));
+        given()
+            .when()
+            .get("/Prosumer/99")
+            .then()
+            .statusCode(404);
     }
 
     @Test
     void createProsumer_returnsCreated() {
-        Prosumer prosumer = new Prosumer();
-        prosumer.name = "NewProsumer";
-        prosumer.FiscalNumber = 112233L;
-        prosumer.location = "Faro";
         stubPreparedQuery("INSERT INTO Prosumer(name,FiscalNumber,location) VALUES (?,?,?)", rowSetWithRowCount(1));
 
-        Response response = resource.create(prosumer).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(201));
-        MatcherAssert.assertThat(response.getLocation(), notNullValue());
-        MatcherAssert.assertThat(response.getLocation().getPath(), startsWith("/Prosumer/"));
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", "NewProsumer");
+        body.put("FiscalNumber", 112233L);
+        body.put("location", "Faro");
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(body)
+            .when()
+            .post("/Prosumer")
+            .then()
+            .statusCode(201)
+            .header("Location", startsWith("/Prosumer/"));
     }
 
     @Test
     void deleteProsumer_returnsNoContent() {
         stubPreparedQuery("DELETE FROM Prosumer WHERE id = ?", rowSetWithRowCount(1));
 
-        Response response = resource.delete(1L).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(204));
+        given()
+            .when()
+            .delete("/Prosumer/1")
+            .then()
+            .statusCode(204);
     }
 
     @Test
     void deleteProsumer_returnsNotFound() {
         stubPreparedQuery("DELETE FROM Prosumer WHERE id = ?", rowSetWithRowCount(0));
 
-        Response response = resource.delete(99L).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(404));
+        given()
+            .when()
+            .delete("/Prosumer/99")
+            .then()
+            .statusCode(404);
     }
 
     @Test
     void updateProsumer_returnsNoContent() {
         stubPreparedQuery("UPDATE Prosumer SET name = ?, FiscalNumber = ? , location = ? WHERE id = ?", rowSetWithRowCount(1));
 
-        Response response = resource.update(1L, "Updated", 778899L, "Lisbon").await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(204));
+        given()
+            .when()
+            .put("/Prosumer/1/Updated/778899/Lisbon")
+            .then()
+            .statusCode(204);
     }
 
     @Test
     void updateProsumer_returnsNotFound() {
         stubPreparedQuery("UPDATE Prosumer SET name = ?, FiscalNumber = ? , location = ? WHERE id = ?", rowSetWithRowCount(0));
 
-        Response response = resource.update(99L, "Missing", 778899L, "Porto").await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(404));
+        given()
+            .when()
+            .put("/Prosumer/99/Missing/778899/Porto")
+            .then()
+            .statusCode(404);
     }
 
     @Test
@@ -129,82 +151,91 @@ class ProsumerResourceUnitTest {
         Row row2 = assetRow(1002L, 1L, "SOLAR", "SolarEdge SE7600H", "ACTIVE");
         stubPreparedQuery("SELECT assetId, prosumerId, assetType, model, status FROM Asset WHERE prosumerId = ?", rowSetWithRows(row1, row2));
 
-        List<Asset> result = resource.getAssets(1L).collect().asList().await().indefinitely();
-        MatcherAssert.assertThat(result, hasSize(2));
-        MatcherAssert.assertThat(result.get(0).assetId, is(1001L));
-        MatcherAssert.assertThat(result.get(0).prosumerId, is(1L));
-        MatcherAssert.assertThat(result.get(0).assetType, is("BATTERY"));
+        given()
+            .when()
+            .get("/Prosumer/1/assets")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(2))
+            .body("[0].assetId", is(1001))
+            .body("[0].prosumerId", is(1))
+            .body("[0].assetType", is("BATTERY"));
     }
 
     @Test
     void getAssets_returnsEmptyList() {
         stubPreparedQuery("SELECT assetId, prosumerId, assetType, model, status FROM Asset WHERE prosumerId = ?", rowSetWithRows());
 
-        List<Asset> result = resource.getAssets(1L).collect().asList().await().indefinitely();
-        MatcherAssert.assertThat(result, hasSize(0));
+        given()
+            .when()
+            .get("/Prosumer/1/assets")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(0));
     }
 
     @Test
     void createAsset_returnsCreated() {
-        Asset asset = new Asset(1001L, 1L, "BATTERY", "Tesla Powerwall 2", "ACTIVE");
         stubPreparedQuery("INSERT INTO Asset(assetId, prosumerId, assetType, model, status) VALUES (?,?,?,?,?)", rowSetWithRowCount(1));
 
-        Response response = resource.createAsset(1L, asset).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(201));
-        MatcherAssert.assertThat(response.getLocation(), notNullValue());
-        MatcherAssert.assertThat(response.getLocation().getPath(), is("/Prosumer/1/assets/1001"));
+        Map<String, Object> body = new HashMap<>();
+        body.put("assetId", 1001L);
+        body.put("assetType", "BATTERY");
+        body.put("model", "Tesla Powerwall 2");
+        body.put("status", "ACTIVE");
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(body)
+            .when()
+            .post("/Prosumer/1/assets")
+            .then()
+            .statusCode(201)
+            .header("Location", is("/Prosumer/1/assets/1001"));
     }
 
     @Test
     void deleteAsset_returnsNoContent() {
         stubPreparedQuery("DELETE FROM Asset WHERE assetId = ?", rowSetWithRowCount(1));
 
-        Response response = resource.deleteAsset(1L, 1001L).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(204));
+        given()
+            .when()
+            .delete("/Prosumer/1/assets/1001")
+            .then()
+            .statusCode(204);
     }
 
     @Test
     void deleteAsset_returnsNotFound() {
         stubPreparedQuery("DELETE FROM Asset WHERE assetId = ?", rowSetWithRowCount(0));
 
-        Response response = resource.deleteAsset(1L, 1001L).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(404));
+        given()
+            .when()
+            .delete("/Prosumer/1/assets/1001")
+            .then()
+            .statusCode(404);
     }
 
     @Test
     void updateAssetStatus_returnsNoContent() {
         stubPreparedQuery("UPDATE Asset SET status = ? WHERE assetId = ?", rowSetWithRowCount(1));
 
-        Response response = resource.updateAssetStatus(1L, 1001L, "MAINTENANCE").await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(204));
+        given()
+            .when()
+            .put("/Prosumer/1/assets/1001/status/MAINTENANCE")
+            .then()
+            .statusCode(204);
     }
 
     @Test
     void updateAssetStatus_returnsNotFound() {
         stubPreparedQuery("UPDATE Asset SET status = ? WHERE assetId = ?", rowSetWithRowCount(0));
 
-        Response response = resource.updateAssetStatus(1L, 1001L, "MAINTENANCE").await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(404));
-    }
-
-    private void injectClient(ProsumerResource target, MySQLPool pool) {
-        try {
-            Field field = ProsumerResource.class.getDeclaredField("client");
-            field.setAccessible(true);
-            field.set(target, pool);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IllegalStateException("Failed to inject MySQLPool", e);
-        }
-    }
-
-    private void injectSchemaCreate(ProsumerResource target, boolean value) {
-        try {
-            Field field = ProsumerResource.class.getDeclaredField("schemaCreate");
-            field.setAccessible(true);
-            field.set(target, value);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IllegalStateException("Failed to inject schemaCreate", e);
-        }
+        given()
+            .when()
+            .put("/Prosumer/1/assets/1001/status/MAINTENANCE")
+            .then()
+            .statusCode(404);
     }
 
     private void stubQuery(String sql, RowSet<Row> rowSet) {
