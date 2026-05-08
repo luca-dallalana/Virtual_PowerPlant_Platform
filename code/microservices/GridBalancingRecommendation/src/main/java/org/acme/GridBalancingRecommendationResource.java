@@ -12,9 +12,8 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
 import org.acme.entities.BalancingRecommendation;
 import org.acme.services.GridBalancingRecommendationService;
-import org.acme.consumers.GridCellEventProcessor;
-import org.acme.consumers.TelemetryEventProcessor;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.acme.dto.GridBalancingRequest;
 
 import java.net.URI;
 import java.time.LocalDateTime;
@@ -44,25 +43,10 @@ public class GridBalancingRecommendationResource {
         if (schemaCreate) {
             initdb();
         }
-
-        Thread gridCellProcessor = new GridCellEventProcessor(kafka_servers, client);
-        gridCellProcessor.start();
-        System.out.println("GridCellEventProcessor started for GridBalancingRecommendation");
-
-        Thread telemetryProcessor = new TelemetryEventProcessor(kafka_servers, recommendationService, client);
-        telemetryProcessor.start();
-        System.out.println("TelemetryEventProcessor started for GridBalancingRecommendation");
     }
 
     private void initdb() {
         client.query("DROP TABLE IF EXISTS BalancingRecommendation").execute()
-                .flatMap(r -> client.query("DROP TABLE IF EXISTS GridCell").execute())
-                .flatMap(r -> client.query("CREATE TABLE GridCell ("
-                        + "gridCellId VARCHAR(100) PRIMARY KEY, "
-                        + "utilityOperatorId BIGINT UNSIGNED NOT NULL, "
-                        + "maxCapacity DOUBLE NOT NULL, "
-                        + "geographicBoundaries TEXT NOT NULL"
-                        + ")").execute())
                 .flatMap(r -> client.query("CREATE TABLE BalancingRecommendation ("
                         + "id SERIAL PRIMARY KEY, "
                         + "sourceGridCellId VARCHAR(100) NOT NULL, "
@@ -80,11 +64,12 @@ public class GridBalancingRecommendationResource {
     }
 
     @POST
-    @Path("/calculate")
-    public Uni<Response> calculate() {
-        return Uni.createFrom().item(
-            Response.ok("{\"message\":\"Recommendations are now calculated automatically from telemetry events. Check GET /GridBalancingRecommendation to see results.\"}").build()
-        );
+    @Path("/evaluate")
+    public Uni<Response> evaluate(GridBalancingRequest request) {
+        return recommendationService.calculateRecommendationsFromEvents(
+            request.telemetryData,
+            request.gridCells
+        ).onItem().transform(recommendations -> Response.ok(recommendations).build());
     }
 
     @GET
