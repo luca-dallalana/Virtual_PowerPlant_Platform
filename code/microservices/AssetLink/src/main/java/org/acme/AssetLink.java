@@ -72,9 +72,9 @@ public class AssetLink {
 	                .onItem().transform(AssetLink::from);
 	    }
 
-	    public Uni<Long> save(MySQLPool client, Long assetId, Long prosumerId, Long utilityOperatorId, String gridCellId, String status) {
+	    public Uni<Boolean> save(MySQLPool client, Long assetId, Long prosumerId, Long utilityOperatorId, String gridCellId, String status) {
 	        return client.preparedQuery("INSERT INTO AssetLink(assetId, prosumerId, utilityOperatorId, gridCellId, status) VALUES (?,?,?,?,?)").execute(Tuple.of(assetId, prosumerId, utilityOperatorId, gridCellId, status))
-	        		.onItem().transform(pgRowSet -> pgRowSet.property(MySQLClient.LAST_INSERTED_ID));
+	        		.onItem().transform(pgRowSet -> pgRowSet.rowCount() == 1);
 	    }
 
 	    public static Uni<Boolean> delete(MySQLPool client, Long assetLinkId) {

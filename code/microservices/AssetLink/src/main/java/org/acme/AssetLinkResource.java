@@ -82,22 +82,12 @@ public class AssetLinkResource {
     public Uni<Response> create(AssetLink assetlink) {
         return assetlink.save(client, assetlink.assetId, assetlink.prosumerId,
                              assetlink.utilityOperatorId, assetlink.gridCellId, assetlink.status)
-                .onItem().invoke(generatedId -> {
-                    assetlink.assetLinkId = generatedId;
+                .onItem().invoke(success -> {
                     publishAssetLinkEvent(assetlink, "CREATED");
                 })
-                .onItem().transform(generatedId -> {
-                    AssetLinkRegistrationResponse response = new AssetLinkRegistrationResponse(
-                        generatedId,
-                        assetlink.assetId,
-                        assetlink.prosumerId,
-                        assetlink.utilityOperatorId,
-                        assetlink.gridCellId,
-                        assetlink.status,
-                        "Asset-" + assetlink.gridCellId
-                    );
+                .onItem().transform(success -> {
                     return Response.status(Response.Status.CREATED)
-                        .entity(response)
+                        .entity(assetlink)
                         .build();
                 });
     }

@@ -37,7 +37,7 @@ public class ProsumerResource {
         .flatMap(r -> client.query("INSERT INTO Prosumer (name,FiscalNumber,location) VALUES ('client2','987654','Setúbal')").execute())
         .flatMap(r -> client.query("INSERT INTO Prosumer (name,FiscalNumber,location) VALUES ('client3','123987','OPorto')").execute())
         .flatMap(r -> client.query("INSERT INTO Prosumer (name,FiscalNumber,location) VALUES ('client4','987123','Faro')").execute())
-        .flatMap(r -> client.query("CREATE TABLE Asset (assetId BIGINT PRIMARY KEY, prosumerId BIGINT NOT NULL, assetType TEXT NOT NULL, model TEXT NOT NULL, status TEXT NOT NULL, FOREIGN KEY (prosumerId) REFERENCES Prosumer(id) ON DELETE CASCADE)").execute())
+        .flatMap(r -> client.query("CREATE TABLE Asset (assetId BIGINT PRIMARY KEY, prosumerId BIGINT UNSIGNED NOT NULL, assetType TEXT NOT NULL, model TEXT NOT NULL, status TEXT NOT NULL, FOREIGN KEY (prosumerId) REFERENCES Prosumer(id) ON DELETE CASCADE)").execute())
         .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1001, 1, 'BATTERY', 'Tesla Powerwall 2', 'ACTIVE')").execute())
         .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1002, 1, 'SOLAR', 'SolarEdge SE7600H', 'ACTIVE')").execute())
         .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1003, 2, 'EV_CHARGER', 'ChargePoint Home Flex', 'ACTIVE')").execute())
