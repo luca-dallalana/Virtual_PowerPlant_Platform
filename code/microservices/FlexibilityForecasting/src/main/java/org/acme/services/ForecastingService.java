@@ -2,8 +2,6 @@ package org.acme.services;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.mysqlclient.MySQLPool;
-import io.vertx.mutiny.sqlclient.Tuple;
-import io.quarkus.agroal.DataSource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.clients.OllamaService;
@@ -24,14 +22,6 @@ public class ForecastingService {
 
     @Inject
     MySQLPool client;
-
-    @Inject
-    @DataSource("flexibilityevent")
-    MySQLPool flexibilityEventClient;
-
-    @Inject
-    @DataSource("gridbalancing")
-    MySQLPool gridBalancingClient;
 
     @Inject
     @RestClient
@@ -61,91 +51,23 @@ public class ForecastingService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public Uni<ForecastResult> performAnalysis(ForecastRequest request) {
-        return fetchFlexibilityEvents(request)
-                .onItem().transformToUni(events -> {
-                    if (events.isEmpty()) {
-                        return Uni.createFrom().item(createEmptyResult(request));
-                    }
+        List<FlexibilityEventDTO> events = request.events != null ? request.events : Collections.emptyList();
+        List<BalancingRecommendationDTO> recommendations = request.recommendations != null ? request.recommendations : Collections.emptyList();
 
-                    return fetchGridBalancingRecommendations()
-                            .onItem().transformToUni(recommendations -> {
-                                Map<FlexibilityEventDTO, List<BalancingRecommendationDTO>> correlations =
-                                        correlationService.correlateEventsWithOutcomes(events, recommendations, correlationWindowMinutes);
-
-                                String prompt = promptBuilder.buildPrompt(request, events, correlations);
-
-                                return callOllama(prompt)
-                                        .onItem().transformToUni(ollamaResponse ->
-                                                buildAndPersistResult(request, ollamaResponse, events, correlations))
-                                        .onFailure().recoverWithItem(throwable ->
-                                                createErrorResult(request, events, correlations, throwable.getMessage()));
-                            });
-                })
-                .onFailure().recoverWithItem(throwable ->
-                        createErrorResult(request, Collections.emptyList(), Collections.emptyMap(), throwable.getMessage()));
-    }
-
-    private Uni<List<FlexibilityEventDTO>> fetchFlexibilityEvents(ForecastRequest request) {
-        String query;
-        Tuple params = null;
-
-        if (request.assetId != null) {
-            query = "SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp FROM FlexibilityEvent WHERE assetId = ? ORDER BY timestamp DESC LIMIT " + maxEvents;
-            params = Tuple.of(request.assetId);
-        } else if (request.eventType != null) {
-            query = "SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp FROM FlexibilityEvent WHERE eventType = ? ORDER BY timestamp DESC LIMIT " + maxEvents;
-            params = Tuple.of(request.eventType);
-        } else {
-            query = "SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp FROM FlexibilityEvent ORDER BY timestamp DESC LIMIT " + maxEvents;
+        if (events.isEmpty()) {
+            return Uni.createFrom().item(createEmptyResult(request));
         }
 
-        Uni<List<FlexibilityEventDTO>> queryUni = params != null
-            ? flexibilityEventClient.preparedQuery(query).execute(params)
-            : flexibilityEventClient.query(query).execute();
+        Map<FlexibilityEventDTO, List<BalancingRecommendationDTO>> correlations =
+                correlationService.correlateEventsWithOutcomes(events, recommendations, correlationWindowMinutes);
 
-        return queryUni.map(rows -> {
-            List<FlexibilityEventDTO> events = new ArrayList<>();
-            rows.forEach(row -> {
-                FlexibilityEventDTO event = new FlexibilityEventDTO();
-                event.id = row.getLong("id");
-                event.assetId = row.getLong("assetId");
-                event.prosumerId = row.getLong("prosumerId");
-                event.eventType = row.getString("eventType");
-                event.soc_percent = row.getFloat("soc_percent");
-                event.recommendedAction = row.getString("recommendedAction");
-                event.marketPrice = row.getFloat("marketPrice");
-                event.incentiveAmount = row.getFloat("incentiveAmount");
-                event.gridCellId = row.getString("gridCellId");
-                event.timestamp = row.getLocalDateTime("timestamp");
-                events.add(event);
-            });
-            return events;
-        });
-    }
+        String prompt = promptBuilder.buildPrompt(request, events, correlations);
 
-    private Uni<List<BalancingRecommendationDTO>> fetchGridBalancingRecommendations() {
-        String query = "SELECT id, sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw, overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt FROM BalancingRecommendation ORDER BY createdAt DESC LIMIT 500";
-
-        return gridBalancingClient.query(query).execute()
-            .map(rows -> {
-                List<BalancingRecommendationDTO> recommendations = new ArrayList<>();
-                rows.forEach(row -> {
-                    BalancingRecommendationDTO rec = new BalancingRecommendationDTO();
-                    rec.id = row.getLong("id");
-                    rec.sourceGridCellId = row.getString("sourceGridCellId");
-                    rec.targetGridCellId = row.getString("targetGridCellId");
-                    rec.sourceNetLoadKw = row.getDouble("sourceNetLoadKw");
-                    rec.targetHeadroomKw = row.getDouble("targetHeadroomKw");
-                    rec.overloadKw = row.getDouble("overloadKw");
-                    rec.transferableKw = row.getDouble("transferableKw");
-                    rec.thresholdPercent = row.getDouble("thresholdPercent");
-                    rec.status = row.getString("status");
-                    rec.rationale = row.getString("rationale");
-                    rec.createdAt = row.getLocalDateTime("createdAt");
-                    recommendations.add(rec);
-                });
-                return recommendations;
-            });
+        return callOllama(prompt)
+                .onItem().transformToUni(ollamaResponse ->
+                        buildAndPersistResult(request, ollamaResponse, events, correlations))
+                .onFailure().recoverWithItem(throwable ->
+                        createErrorResult(request, events, correlations, throwable.getMessage()));
     }
 
     private Uni<OllamaResponse> callOllama(String prompt) {
