@@ -129,7 +129,7 @@ class FlexibilityEventResourceTest {
         Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(123L);
         stubPreparedQuery("INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)", insertResult);
 
-        Response response = resource.evaluateTelemetry(telemetry).await().indefinitely();
+        Response response = resource.evaluateTelemetry(telemetry, 1L).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
         FlexibilityEvent event = (FlexibilityEvent) response.getEntity();
         MatcherAssert.assertThat(event, notNullValue());
@@ -149,7 +149,7 @@ class FlexibilityEventResourceTest {
         Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(124L);
         stubPreparedQuery("INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)", insertResult);
 
-        Response response = resource.evaluateTelemetry(telemetry).await().indefinitely();
+        Response response = resource.evaluateTelemetry(telemetry, 1L).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
         FlexibilityEvent event = (FlexibilityEvent) response.getEntity();
         MatcherAssert.assertThat(event, notNullValue());
@@ -166,7 +166,7 @@ class FlexibilityEventResourceTest {
     void evaluateTelemetry_normalSoC_returnsNoContent() {
         TelemetryDTO telemetry = createTelemetryDTO(1L, 50.0f, "GRID_A");
 
-        Response response = resource.evaluateTelemetry(telemetry).await().indefinitely();
+        Response response = resource.evaluateTelemetry(telemetry, 1L).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(204));
 
         Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
@@ -176,7 +176,7 @@ class FlexibilityEventResourceTest {
     void evaluateTelemetry_nullSoC_returnsNoContent() {
         TelemetryDTO telemetry = createTelemetryDTO(1L, null, "GRID_A");
 
-        Response response = resource.evaluateTelemetry(telemetry).await().indefinitely();
+        Response response = resource.evaluateTelemetry(telemetry, 1L).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(204));
 
         Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
@@ -189,7 +189,7 @@ class FlexibilityEventResourceTest {
         Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(123L);
         stubPreparedQuery("INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)", insertResult);
 
-        resource.evaluateTelemetry(telemetry).await().indefinitely();
+        resource.evaluateTelemetry(telemetry, 1L).await().indefinitely();
 
         ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
         Mockito.verify(flexibilityEmitter).send(messageCaptor.capture());

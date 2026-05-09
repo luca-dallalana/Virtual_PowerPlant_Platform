@@ -80,14 +80,14 @@ public class FlexibilityEventResource {
     }
 
     @POST
-    @Path("evaluate")
-    public Uni<Response> evaluateTelemetry(TelemetryDTO telemetry) {
+    @Path("evaluate/{prosumerId}")
+    public Uni<Response> evaluateTelemetry(TelemetryDTO telemetry, Long prosumerId) {
         FlexibilityEvent event = null;
 
         if (telemetry.State_of_Charge != null && telemetry.State_of_Charge > 90.0) {
             event = new FlexibilityEvent();
             event.assetId = telemetry.asset_id;
-            event.prosumerId = 1L;
+            event.prosumerId = prosumerId;
             event.eventType = "ARBITRAGE_SELL";
             event.soc_percent = telemetry.State_of_Charge;
             event.recommendedAction = "DISCHARGE";
@@ -98,7 +98,7 @@ public class FlexibilityEventResource {
         } else if (telemetry.State_of_Charge != null && telemetry.State_of_Charge < 20.0) {
             event = new FlexibilityEvent();
             event.assetId = telemetry.asset_id;
-            event.prosumerId = 1L;
+            event.prosumerId = prosumerId;
             event.eventType = "BALANCING_UNAVAILABLE";
             event.soc_percent = telemetry.State_of_Charge;
             event.recommendedAction = "UNAVAILABLE";

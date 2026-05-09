@@ -149,13 +149,14 @@ class FlexibilityEventResourceIT {
             .contentType(ContentType.JSON)
             .body(body)
             .when()
-            .post("/FlexibilityEvent/evaluate")
+            .post("/FlexibilityEvent/evaluate/732")
             .then()
             .statusCode(200)
             .body("eventType", is("ARBITRAGE_SELL"))
             .body("recommendedAction", is("DISCHARGE"))
             .body("marketPrice", is(150.0f))
             .body("incentiveAmount", is(10.0f))
+            .body("prosumerId", is(732))
             .body("id", is(123));
     }
 
@@ -176,11 +177,12 @@ class FlexibilityEventResourceIT {
             .contentType(ContentType.JSON)
             .body(body)
             .when()
-            .post("/FlexibilityEvent/evaluate")
+            .post("/FlexibilityEvent/evaluate/732")
             .then()
             .statusCode(200)
             .body("eventType", is("BALANCING_UNAVAILABLE"))
             .body("recommendedAction", is("UNAVAILABLE"))
+            .body("prosumerId", is(732))
             .body("id", is(124));
     }
 
@@ -197,7 +199,7 @@ class FlexibilityEventResourceIT {
             .contentType(ContentType.JSON)
             .body(body)
             .when()
-            .post("/FlexibilityEvent/evaluate")
+            .post("/FlexibilityEvent/evaluate/732")
             .then()
             .statusCode(204);
     }
