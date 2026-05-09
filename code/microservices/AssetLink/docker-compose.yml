@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: assetlink
+      MYSQL_USER: teste
+      MYSQL_PASSWORD: testeteste
+    ports:
+      - "3308:3306"
+    volumes:
+      - assetlink-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - assetlink-network
+
+  assetlink:
+    build:
+      context: .
+      dockerfile: src/main/docker/Dockerfile.jvm
+    ports:
+      - "8082:8082"
+    environment:
+      QUARKUS_DATASOURCE_REACTIVE_URL: mysql://mysql:3306/assetlink
+      QUARKUS_DATASOURCE_USERNAME: teste
+      QUARKUS_DATASOURCE_PASSWORD: testeteste
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - assetlink-network
+      - vpp-network
+
+volumes:
+  assetlink-db:
+
+networks:
+  assetlink-network:
+    driver: bridge
+  vpp-network:
+    external: true

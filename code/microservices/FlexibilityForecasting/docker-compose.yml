@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: flexibilityforecasting
+      MYSQL_USER: teste
+      MYSQL_PASSWORD: testeteste
+    ports:
+      - "3312:3306"
+    volumes:
+      - flexibilityforecasting-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flexibilityforecasting-network
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - flexibilityforecasting-network
+
+  ollama-init:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ollama-models:/root/.ollama
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        ollama pull llama3.2:latest
+    networks:
+      - flexibilityforecasting-network
+
+  flexibilityforecasting:
+    build:
+      context: .
+      dockerfile: src/main/docker/Dockerfile.jvm
+    ports:
+      - "8086:8086"
+    environment:
+      QUARKUS_DATASOURCE_REACTIVE_URL: mysql://mysql:3306/flexibilityforecasting
+      QUARKUS_DATASOURCE_USERNAME: teste
+      QUARKUS_DATASOURCE_PASSWORD: testeteste
+      QUARKUS_REST_CLIENT_OLLAMA_API_URL: http://ollama:11434
+      OLLAMA_MODEL: llama3.2:latest
+      OLLAMA_TEMPERATURE: "0.7"
+      OLLAMA_MAX_TOKENS: "1000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
+    networks:
+      - flexibilityforecasting-network
+
+volumes:
+  flexibilityforecasting-db:
+  ollama-models:
+
+networks:
+  flexibilityforecasting-network:
+    driver: bridge

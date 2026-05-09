@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: telemetry
+      MYSQL_USER: teste
+      MYSQL_PASSWORD: testeteste
+    ports:
+      - "3309:3306"
+    volumes:
+      - telemetry-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - telemetry-network
+
+  telemetry:
+    build:
+      context: .
+      dockerfile: src/main/docker/Dockerfile.jvm
+    ports:
+      - "8083:8083"
+    environment:
+      QUARKUS_DATASOURCE_REACTIVE_URL: mysql://mysql:3306/telemetry
+      QUARKUS_DATASOURCE_USERNAME: teste
+      QUARKUS_DATASOURCE_PASSWORD: testeteste
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - telemetry-network
+      - vpp-network
+
+volumes:
+  telemetry-db:
+
+networks:
+  telemetry-network:
+    driver: bridge
+  vpp-network:
+    external: true

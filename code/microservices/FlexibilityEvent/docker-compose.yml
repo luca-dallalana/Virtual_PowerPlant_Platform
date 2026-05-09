@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: flexibilityevent
+      MYSQL_USER: teste
+      MYSQL_PASSWORD: testeteste
+    ports:
+      - "3311:3306"
+    volumes:
+      - flexibilityevent-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flexibilityevent-network
+
+  flexibilityevent:
+    build:
+      context: .
+      dockerfile: src/main/docker/Dockerfile.jvm
+    ports:
+      - "8085:8085"
+    environment:
+      QUARKUS_DATASOURCE_REACTIVE_URL: mysql://mysql:3306/flexibilityevent
+      QUARKUS_DATASOURCE_USERNAME: teste
+      QUARKUS_DATASOURCE_PASSWORD: testeteste
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - flexibilityevent-network
+      - vpp-network
+
+volumes:
+  flexibilityevent-db:
+
+networks:
+  flexibilityevent-network:
+    driver: bridge
+  vpp-network:
+    external: true
