@@ -12,8 +12,6 @@ import jakarta.ws.rs.core.Response.ResponseBuilder;
 
 import org.acme.model.Topic;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
 import java.net.URI;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Multi;
@@ -29,25 +27,9 @@ public class KafkaProvisioningResource {
     @ConfigProperty(name = "myapp.schema.create", defaultValue = "true") 
     boolean schemaCreate ;
 
-    @ConfigProperty(name = "kafka.bootstrap.servers")
+    @ConfigProperty(name = "kafka.bootstrap.servers") 
     String kafka_servers;
-
-    @Inject
-    @Channel("telemetry-data")
-    Emitter<String> telemetryEmitter;
-
-    @Inject
-    @Channel("telemetry-batteries")
-    Emitter<String> batteryEmitter;
-
-    @Inject
-    @Channel("telemetry-solar")
-    Emitter<String> solarEmitter;
-
-    @Inject
-    @Channel("telemetry-chargers")
-    Emitter<String> chargerEmitter;
-
+    
     void config(@Observes StartupEvent ev) {
         if (schemaCreate) {
             initdb();
@@ -82,8 +64,7 @@ public class KafkaProvisioningResource {
     @POST
     @Path("Consume")
     public String ProvisioningConsumer(Topic topic) {
-        Thread worker = new DynamicTopicConsumer(topic.TopicName, kafka_servers, client,
-                                                batteryEmitter, solarEmitter, chargerEmitter);
+        Thread worker = new DynamicTopicConsumer(topic.TopicName , kafka_servers , client);
         worker.start();
         return "New worker started";
     }
@@ -102,5 +83,3 @@ public class KafkaProvisioningResource {
     }
 
 }
-
-

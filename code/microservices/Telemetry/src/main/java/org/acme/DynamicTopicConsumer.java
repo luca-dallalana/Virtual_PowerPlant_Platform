@@ -10,9 +10,6 @@ import java.util.Properties;
 import org.json.*;
 
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.eclipse.microprofile.reactive.messaging.Message;
-import io.smallrye.reactive.messaging.kafka.api.OutgoingKafkaRecordMetadata;
 
 
 public class DynamicTopicConsumer extends Thread  {
@@ -21,23 +18,13 @@ public class DynamicTopicConsumer extends Thread  {
 
      @Inject
     io.vertx.mutiny.mysqlclient.MySQLPool client;
+    
 
-    private Emitter<String> batteryEmitter;
-    private Emitter<String> solarEmitter;
-    private Emitter<String> chargerEmitter;
-
-    public DynamicTopicConsumer(String topic_received, String kafka_servers_received,
-                               io.vertx.mutiny.mysqlclient.MySQLPool client_received,
-                               Emitter<String> batteryEmitter_received,
-                               Emitter<String> solarEmitter_received,
-                               Emitter<String> chargerEmitter_received)
+    public DynamicTopicConsumer(String topic_received , String kafka_servers_received , io.vertx.mutiny.mysqlclient.MySQLPool client_received)  
     {
         topic = topic_received;
         kafka_servers = kafka_servers_received;
         client = client_received;
-        batteryEmitter = batteryEmitter_received;
-        solarEmitter = solarEmitter_received;
-        chargerEmitter = chargerEmitter_received;
     }
 
     public void run() 
@@ -133,32 +120,11 @@ public class DynamicTopicConsumer extends Thread  {
                         paramsList.add(ev_soc_percent);
 
                         client.preparedQuery(query).execute(io.vertx.mutiny.sqlclient.Tuple.wrap(paramsList)).await().indefinitely();
-
-                        publishTelemetryEvent(jsonString, asset_id, asset_type);
                     }
                 }
             }    
         }
-        catch (Exception e)
+        catch (Exception e) 
 		{  System.out.println("Exception is caught:" + e);  }
-    }
-
-    private void publishTelemetryEvent(String telemetryData, String assetId, String assetType) {
-        Message<String> message = Message.of(telemetryData)
-            .addMetadata(OutgoingKafkaRecordMetadata.builder().withKey(assetId).build());
-
-        switch (assetType) {
-            case "BATTERY":
-                batteryEmitter.send(message);
-                break;
-            case "SOLAR":
-                solarEmitter.send(message);
-                break;
-            case "EV_CHARGER":
-                chargerEmitter.send(message);
-                break;
-            default:
-                System.err.println("Unknown asset_type: " + assetType);
-        }
     }
 }
