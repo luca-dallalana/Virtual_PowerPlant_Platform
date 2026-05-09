@@ -1,7 +1,7 @@
 package org.acme;
 
-import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.InjectMock;
+import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.mysqlclient.MySQLPool;
@@ -17,9 +17,7 @@ import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -37,10 +35,10 @@ class AssetLinkResourceIT {
     }
 
     @Test
-    void getAssetLinks_returnsList() {
-        Row row1 = assetLinkRow(1L, 1L, 1L, 1L, "LISBON-DT", "ACTIVE");
-        Row row2 = assetLinkRow(2L, 2L, 1L, 1L, "LISBON-DT", "ACTIVE");
-        stubQuery("SELECT assetLinkId, assetId, prosumerId, utilityOperatorId, gridCellId, status FROM AssetLink ORDER BY assetLinkId ASC", rowSetWithRows(row1, row2));
+    void get_returnsList() {
+        Row row1 = assetLinkRow(1L, 2L, 3L);
+        Row row2 = assetLinkRow(2L, 4L, 5L);
+        stubQuery(client, "SELECT id, idProsumer, idUtilityOperator  FROM AssetLink ORDER BY id ASC", rowSetWithRows(row1, row2));
 
         given()
             .when()
@@ -48,35 +46,32 @@ class AssetLinkResourceIT {
             .then()
             .statusCode(200)
             .body("", hasSize(2))
-            .body("[0].assetLinkId", is(1))
-            .body("[0].assetId", is(1))
-            .body("[0].prosumerId", is(1))
-            .body("[0].utilityOperatorId", is(1))
-            .body("[0].gridCellId", is("LISBON-DT"))
-            .body("[0].status", is("ACTIVE"));
+            .body("[0].id", is(1))
+            .body("[0].idProsumer", is(2))
+            .body("[0].idUtilityOperator", is(3))
+            .body("[1].id", is(2))
+            .body("[1].idProsumer", is(4))
+            .body("[1].idUtilityOperator", is(5));
     }
 
     @Test
-    void getAssetLinkById_returnsEntity() {
-        Row row = assetLinkRow(1L, 5L, 2L, 1L, "FARO-DT", "ACTIVE");
-        stubPreparedQuery("SELECT assetLinkId, assetId, prosumerId, utilityOperatorId, gridCellId, status FROM AssetLink WHERE assetLinkId = ?", rowSetWithRows(row));
+    void getSingle_returnsEntity() {
+        Row row = assetLinkRow(1L, 2L, 3L);
+        stubPreparedQuery(client, "SELECT id, idProsumer, idUtilityOperator  FROM AssetLink WHERE id = ?", rowSetWithRows(row));
 
         given()
             .when()
             .get("/AssetLink/1")
             .then()
             .statusCode(200)
-            .body("assetLinkId", is(1))
-            .body("assetId", is(5))
-            .body("prosumerId", is(2))
-            .body("utilityOperatorId", is(1))
-            .body("gridCellId", is("FARO-DT"))
-            .body("status", is("ACTIVE"));
+            .body("id", is(1))
+            .body("idProsumer", is(2))
+            .body("idUtilityOperator", is(3));
     }
 
     @Test
-    void getAssetLinkById_returnsNotFound() {
-        stubPreparedQuery("SELECT assetLinkId, assetId, prosumerId, utilityOperatorId, gridCellId, status FROM AssetLink WHERE assetLinkId = ?", rowSetWithRows());
+    void getSingle_returnsNotFound() {
+        stubPreparedQuery(client, "SELECT id, idProsumer, idUtilityOperator  FROM AssetLink WHERE id = ?", rowSetWithRows());
 
         given()
             .when()
@@ -86,75 +81,36 @@ class AssetLinkResourceIT {
     }
 
     @Test
-    void getAssetLinksByAssetId_returnsList() {
-        Row row1 = assetLinkRow(1L, 5L, 1L, 1L, "LISBON-DT", "ACTIVE");
-        Row row2 = assetLinkRow(2L, 5L, 2L, 2L, "PORTO-IN", "ACTIVE");
-        stubPreparedQuery("SELECT assetLinkId, assetId, prosumerId, utilityOperatorId, gridCellId, status FROM AssetLink WHERE assetId = ?", rowSetWithRows(row1, row2));
+    void getDual_returnsEntity() {
+        Row row = assetLinkRow(1L, 2L, 3L);
+        stubPreparedQuery(client, "SELECT id, idProsumer, idUtilityOperator FROM AssetLink WHERE idProsumer = ? AND idUtilityOperator = ?", rowSetWithRows(row));
 
         given()
             .when()
-            .get("/AssetLink/asset/5")
+            .get("/AssetLink/2/3")
             .then()
             .statusCode(200)
-            .body("", hasSize(2))
-            .body("[0].assetId", is(5))
-            .body("[1].assetId", is(5));
+            .body("id", is(1))
+            .body("idProsumer", is(2))
+            .body("idUtilityOperator", is(3));
     }
 
     @Test
-    void getAssetLinksByGridCellId_returnsList() {
-        Row row1 = assetLinkRow(1L, 1L, 1L, 1L, "LISBON-DT", "ACTIVE");
-        Row row2 = assetLinkRow(2L, 2L, 1L, 1L, "LISBON-DT", "ACTIVE");
-        stubPreparedQuery("SELECT assetLinkId, assetId, prosumerId, utilityOperatorId, gridCellId, status FROM AssetLink WHERE gridCellId = ?", rowSetWithRows(row1, row2));
+    void getDual_returnsNotFound() {
+        stubPreparedQuery(client, "SELECT id, idProsumer, idUtilityOperator FROM AssetLink WHERE idProsumer = ? AND idUtilityOperator = ?", rowSetWithRows());
 
         given()
             .when()
-            .get("/AssetLink/gridcell/LISBON-DT")
+            .get("/AssetLink/8/9")
             .then()
-            .statusCode(200)
-            .body("", hasSize(2))
-            .body("[0].gridCellId", is("LISBON-DT"))
-            .body("[1].gridCellId", is("LISBON-DT"));
+            .statusCode(404);
     }
 
     @Test
-    void getAssetLinksByStatus_returnsActiveOnly() {
-        Row row1 = assetLinkRow(1L, 1L, 1L, 1L, "LISBON-DT", "ACTIVE");
-        Row row2 = assetLinkRow(2L, 2L, 1L, 1L, "PORTO-IN", "ACTIVE");
-        stubPreparedQuery("SELECT assetLinkId, assetId, prosumerId, utilityOperatorId, gridCellId, status FROM AssetLink WHERE status = ?", rowSetWithRows(row1, row2));
+    void create_returnsCreated() {
+        stubPreparedQuery(client, "INSERT INTO AssetLink(idProsumer,idUtilityOperator) VALUES (?,?)", rowSetWithRowCount(1));
 
-        given()
-            .when()
-            .get("/AssetLink/status/ACTIVE")
-            .then()
-            .statusCode(200)
-            .body("", hasSize(2))
-            .body("[0].status", is("ACTIVE"))
-            .body("[1].status", is("ACTIVE"));
-    }
-
-    @Test
-    void getAssetLinksByStatus_returnsEmptyList() {
-        stubPreparedQuery("SELECT assetLinkId, assetId, prosumerId, utilityOperatorId, gridCellId, status FROM AssetLink WHERE status = ?", rowSetWithRows());
-
-        given()
-            .when()
-            .get("/AssetLink/status/INACTIVE")
-            .then()
-            .statusCode(200)
-            .body("", hasSize(0));
-    }
-
-    @Test
-    void createAssetLink_returnsCreated() {
-        stubPreparedQuery("INSERT INTO AssetLink(assetId, prosumerId, utilityOperatorId, gridCellId, status) VALUES (?,?,?,?,?)", rowSetWithRowCount(1));
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("assetId", 5);
-        body.put("prosumerId", 2);
-        body.put("utilityOperatorId", 1);
-        body.put("gridCellId", "FARO-DT");
-        body.put("status", "ACTIVE");
+        AssetLink body = new AssetLink(null, 2L, 3L);
 
         given()
             .contentType(ContentType.JSON)
@@ -166,74 +122,8 @@ class AssetLinkResourceIT {
     }
 
     @Test
-    void updateAssetLink_returnsNoContent() {
-        stubPreparedQuery("UPDATE AssetLink SET assetId = ?, prosumerId = ?, utilityOperatorId = ?, gridCellId = ?, status = ? WHERE assetLinkId = ?", rowSetWithRowCount(1));
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("assetId", 5);
-        body.put("prosumerId", 2);
-        body.put("utilityOperatorId", 1);
-        body.put("gridCellId", "FARO-DT");
-        body.put("status", "ACTIVE");
-
-        given()
-            .contentType(ContentType.JSON)
-            .body(body)
-            .when()
-            .put("/AssetLink/1")
-            .then()
-            .statusCode(204);
-    }
-
-    @Test
-    void updateAssetLink_returnsNotFound() {
-        stubPreparedQuery("UPDATE AssetLink SET assetId = ?, prosumerId = ?, utilityOperatorId = ?, gridCellId = ?, status = ? WHERE assetLinkId = ?", rowSetWithRowCount(0));
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("assetId", 5);
-        body.put("prosumerId", 2);
-        body.put("utilityOperatorId", 1);
-        body.put("gridCellId", "FARO-DT");
-        body.put("status", "ACTIVE");
-
-        given()
-            .contentType(ContentType.JSON)
-            .body(body)
-            .when()
-            .put("/AssetLink/99")
-            .then()
-            .statusCode(404);
-    }
-
-    @Test
-    void updateAssetLinkStatus_returnsNoContent() {
-        stubPreparedQuery("UPDATE AssetLink SET status = ? WHERE assetLinkId = ?", rowSetWithRowCount(1));
-        Row row = assetLinkRow(1L, 5L, 2L, 1L, "FARO-DT", "INACTIVE");
-        stubPreparedQuery("SELECT assetLinkId, assetId, prosumerId, utilityOperatorId, gridCellId, status FROM AssetLink WHERE assetLinkId = ?", rowSetWithRows(row));
-
-        given()
-            .when()
-            .put("/AssetLink/1/status/INACTIVE")
-            .then()
-            .statusCode(204);
-    }
-
-    @Test
-    void updateAssetLinkStatus_returnsNotFound() {
-        stubPreparedQuery("UPDATE AssetLink SET status = ? WHERE assetLinkId = ?", rowSetWithRowCount(0));
-
-        given()
-            .when()
-            .put("/AssetLink/99/status/INACTIVE")
-            .then()
-            .statusCode(404);
-    }
-
-    @Test
-    void deleteAssetLink_returnsNoContent() {
-        Row row = assetLinkRow(1L, 5L, 2L, 1L, "FARO-DT", "ACTIVE");
-        stubPreparedQuery("SELECT assetLinkId, assetId, prosumerId, utilityOperatorId, gridCellId, status FROM AssetLink WHERE assetLinkId = ?", rowSetWithRows(row));
-        stubPreparedQuery("DELETE FROM AssetLink WHERE assetLinkId = ?", rowSetWithRowCount(1));
+    void delete_returnsNoContent() {
+        stubPreparedQuery(client, "DELETE FROM AssetLink WHERE id = ?", rowSetWithRowCount(1));
 
         given()
             .when()
@@ -243,8 +133,8 @@ class AssetLinkResourceIT {
     }
 
     @Test
-    void deleteAssetLink_returnsNotFound() {
-        stubPreparedQuery("SELECT assetLinkId, assetId, prosumerId, utilityOperatorId, gridCellId, status FROM AssetLink WHERE assetLinkId = ?", rowSetWithRows());
+    void delete_returnsNotFound() {
+        stubPreparedQuery(client, "DELETE FROM AssetLink WHERE id = ?", rowSetWithRowCount(0));
 
         given()
             .when()
@@ -254,25 +144,34 @@ class AssetLinkResourceIT {
     }
 
     @Test
-    void deleteAssetLink_notFoundAfterFind() {
-        Row row = assetLinkRow(1L, 5L, 2L, 1L, "FARO-DT", "ACTIVE");
-        stubPreparedQuery("SELECT assetLinkId, assetId, prosumerId, utilityOperatorId, gridCellId, status FROM AssetLink WHERE assetLinkId = ?", rowSetWithRows(row));
-        stubPreparedQuery("DELETE FROM AssetLink WHERE assetLinkId = ?", rowSetWithRowCount(0));
+    void update_returnsNoContent() {
+        stubPreparedQuery(client, "UPDATE AssetLink SET idProsumer = ? , idUtilityOperator = ? WHERE id = ?", rowSetWithRowCount(1));
 
         given()
             .when()
-            .delete("/AssetLink/1")
+            .put("/AssetLink/1/2/3")
+            .then()
+            .statusCode(204);
+    }
+
+    @Test
+    void update_returnsNotFound() {
+        stubPreparedQuery(client, "UPDATE AssetLink SET idProsumer = ? , idUtilityOperator = ? WHERE id = ?", rowSetWithRowCount(0));
+
+        given()
+            .when()
+            .put("/AssetLink/99/2/3")
             .then()
             .statusCode(404);
     }
 
-    private void stubQuery(String sql, RowSet<Row> rowSet) {
+    private void stubQuery(MySQLPool client, String sql, RowSet<Row> rowSet) {
         Query<RowSet<Row>> query = Mockito.mock(Query.class);
         Mockito.when(query.execute()).thenReturn(Uni.createFrom().item(rowSet));
         Mockito.when(client.query(sql)).thenReturn(query);
     }
 
-    private void stubPreparedQuery(String sql, RowSet<Row> rowSet) {
+    private void stubPreparedQuery(MySQLPool client, String sql, RowSet<Row> rowSet) {
         PreparedQuery<RowSet<Row>> preparedQuery = Mockito.mock(PreparedQuery.class);
         Mockito.when(preparedQuery.execute(Mockito.any(Tuple.class))).thenReturn(Uni.createFrom().item(rowSet));
         Mockito.when(client.preparedQuery(sql)).thenReturn(preparedQuery);
@@ -295,14 +194,11 @@ class AssetLinkResourceIT {
         return rowSet;
     }
 
-    private Row assetLinkRow(Long assetLinkId, Long assetId, Long prosumerId, Long utilityOperatorId, String gridCellId, String status) {
+    private Row assetLinkRow(Long id, Long idProsumer, Long idUtilityOperator) {
         Row row = Mockito.mock(Row.class);
-        Mockito.when(row.getLong("assetLinkId")).thenReturn(assetLinkId);
-        Mockito.when(row.getLong("assetId")).thenReturn(assetId);
-        Mockito.when(row.getLong("prosumerId")).thenReturn(prosumerId);
-        Mockito.when(row.getLong("utilityOperatorId")).thenReturn(utilityOperatorId);
-        Mockito.when(row.getString("gridCellId")).thenReturn(gridCellId);
-        Mockito.when(row.getString("status")).thenReturn(status);
+        Mockito.when(row.getLong("id")).thenReturn(id);
+        Mockito.when(row.getLong("idProsumer")).thenReturn(idProsumer);
+        Mockito.when(row.getLong("idUtilityOperator")).thenReturn(idUtilityOperator);
         return row;
     }
 
