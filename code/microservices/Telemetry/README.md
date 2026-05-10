@@ -146,7 +146,6 @@ Defined in `src/main/resources/application.properties`:
 - `quarkus.swagger-ui.always-include=true`
 - `quarkus.container-image.build=true`
 - `quarkus.container-image.push=true`
-- `kafka.bootstrap.servers=localhost:9092`
 
 ### 7.2 Test Parameters
 

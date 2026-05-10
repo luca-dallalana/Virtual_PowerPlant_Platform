@@ -19,7 +19,7 @@ AssetLink endpoints:
 - `PUT /AssetLink/{id}/{idProsumer}/{idUtilityOperator}` - Update an asset link
 
 Swagger UI available at:
-- `http://localhost:8080/q/swagger-ui`
+- `http://localhost:8082/q/swagger-ui`
 
 ## 3. Source Code Organization
 
@@ -100,7 +100,7 @@ Then in another terminal:
 ./mvnw compile quarkus:dev
 ```
 
-Changes are reflected immediately. Access at `http://localhost:8080/q/swagger-ui`
+Changes are reflected immediately. Access at `http://localhost:8082/q/swagger-ui`
 
 ### 5.3 Run with Docker Compose — For Testing
 
@@ -142,7 +142,7 @@ The module:
 
 Defined in `src/main/resources/application.properties`:
 
-- `quarkus.http.port=8080`
+- `quarkus.http.port=8082`
 - `quarkus.datasource.db-kind=mysql`
 - `quarkus.datasource.username=teste`
 - `quarkus.datasource.password=testeteste`
