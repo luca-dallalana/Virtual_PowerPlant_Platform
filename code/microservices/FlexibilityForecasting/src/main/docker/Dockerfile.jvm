@@ -11,16 +11,16 @@
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8086:8086 quarkus/flexibilityforecasting-jvm
+# docker run -i --rm -p 8087:8087 quarkus/flexibilityforecasting-jvm
 #
 # If you want to include the debug port into your docker image
-# you will have to expose the debug port (default 5005 being the default) like this :  EXPOSE 8086 5005.
+# you will have to expose the debug port (default 5005 being the default) like this :  EXPOSE 8087 5005.
 # Additionally you will have to set -e JAVA_DEBUG=true and -e JAVA_DEBUG_PORT=*:5005
 # when running the container
 #
 # Then run the container using :
 #
-# docker run -i --rm -p 8086:8086 quarkus/flexibilityforecasting-jvm
+# docker run -i --rm -p 8087:8087 quarkus/flexibilityforecasting-jvm
 #
 # This image uses the `run-java.sh` script to run the application.
 # This scripts computes the command line to execute your Java application, and
@@ -88,7 +88,7 @@ COPY --chown=185 target/quarkus-app/*.jar /deployments/
 COPY --chown=185 target/quarkus-app/app/ /deployments/app/
 COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
 
-EXPOSE 8086
+EXPOSE 8087
 USER 185
 ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
 ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"

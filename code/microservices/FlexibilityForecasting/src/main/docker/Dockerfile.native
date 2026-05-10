@@ -11,7 +11,7 @@
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8086:8086 quarkus/flexibilityforecasting
+# docker run -i --rm -p 8087:8087 quarkus/flexibilityforecasting
 #
 ###
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.9
@@ -21,7 +21,7 @@ RUN chown 1001 /work \
     && chown 1001:root /work
 COPY --chown=1001:root target/*-runner /work/application
 
-EXPOSE 8086
+EXPOSE 8087
 USER 1001
 
 ENTRYPOINT ["./application", "-Dquarkus.http.host=0.0.0.0"]

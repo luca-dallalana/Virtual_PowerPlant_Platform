@@ -22,7 +22,7 @@ echo "Deploying FlexibilityForecasting microservice..."
 sudo docker login -u "slguerreiro" -p "dfjfkd8Flnciw7"
 sudo docker pull slguerreiro/flexibilityforecasting:1.0.0-SNAPSHOT
 sudo docker run -d --name flexibilityforecasting \
-  -p 8086:8086 \
+  -p 8087:8087 \
   --link ollama:ollama \
   -e QUARKUS_REST_CLIENT_OLLAMA_API_URL=http://ollama:11434 \
   slguerreiro/flexibilityforecasting:1.0.0-SNAPSHOT

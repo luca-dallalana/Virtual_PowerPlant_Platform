@@ -54,7 +54,7 @@ services:
       context: .
       dockerfile: src/main/docker/Dockerfile.jvm
     ports:
-      - "8086:8086"
+      - "8087:8087"
     environment:
       QUARKUS_DATASOURCE_REACTIVE_URL: mysql://mysql:3306/flexibilityforecasting
       QUARKUS_DATASOURCE_USERNAME: teste
