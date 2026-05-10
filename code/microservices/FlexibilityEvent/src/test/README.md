@@ -8,8 +8,11 @@ The module has two test classes:
 
 - `src/test/java/org/acme/FlexibilityEventResourceTest.java`: unit tests for the `FlexibilityEventResource` and the `FlexibilityEvent` domain behaviour.
 - `src/test/java/org/acme/FlexibilityEventResourceIT.java`: Quarkus REST tests for the HTTP endpoints exposed by `FlexibilityEventResource`.
+- `src/test/java/org/acme/FlexibilityEventKafkaTest.java`: Kafka logic tests that use the SmallRye in-memory connector to verify emitted flexibility offer messages.
 
 Both test classes use Mockito to mock `MySQLPool` so the tests do not need a live database. The unit tests also mock the `Emitter<String>` to verify messages published to the configured channel.
+
+The Kafka test uses the real flexibility-event resource with mocked persistence and verifies the outgoing JSON payload on the `flexibility-offers` channel for both high-SoC and low-SoC events.
 
 ## What Is Covered
 
@@ -27,6 +30,7 @@ These tests validate the behavior of the `FlexibilityEvent` model and `Flexibili
 - `evaluateTelemetry_normalSoC_returnsNoContent`: verifies that posting telemetry with a normal SoC (e.g., `50.0f`) returns `204 No Content` and does not persist an event.
 - `evaluateTelemetry_nullSoC_returnsNoContent`: verifies that posting telemetry with `State_of_Charge = null` returns `204 No Content`.
 - `evaluateTelemetry_publishesCorrectKafkaMessage`: verifies that when an event is created the `Emitter<String>` is invoked once and the emitted string is valid JSON containing the expected keys and values.
+- `kafka_publish_high_and_low_soc_events`: verifies the resource publishes the expected JSON payloads through the in-memory connector for both high-SoC and low-SoC telemetry.
 
 The unit tests also validate the exact SQL used by the model/resource methods:
 
@@ -59,6 +63,11 @@ To run only the unit test class:
 
 ```bash
 mvn test
+```
+
+Run only the Kafka logic test:
+```bash
+mvn test -Dtest=FlexibilityEventKafkaTest
 ```
 
 Run full verification lifecycle:

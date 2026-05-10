@@ -50,6 +50,9 @@ Unit-style tests (direct method calls with mocked DB client and mocked emitter):
 HTTP integration-style tests (Quarkus runtime with RestAssured and mocked DB client):
 - `src/test/java/org/acme/FlexibilityEventResourceIT.java`
 
+Kafka logic tests with the SmallRye in-memory connector:
+- `src/test/java/org/acme/FlexibilityEventKafkaTest.java`
+
 Test configuration:
 - `src/test/resources/application.properties`
 
@@ -64,6 +67,8 @@ FlexibilityEvent scenarios:
   - High SoC (e.g., > 90%) -> `ARBITRAGE_SELL` with `recommendedAction=DISCHARGE` and incentive calculation.
   - Low SoC (e.g., < 20%) -> `BALANCING_UNAVAILABLE` with `recommendedAction = UNAVAILABLE`.
   - Normal SoC -> no event (204).
+- Publish the Kafka message emitted for both high-SoC and low-SoC events.
+- Verify the emitted payload includes the generated event id, asset id, prosumer id, and action fields.
 
 ### 4.3 What Is Validated
 
@@ -80,6 +85,11 @@ From this folder (`code/microservices/FlexibilityEvent`):
 Run tests:
 ```sh
 ./mvnw clean test
+```
+
+Run only the Kafka logic test:
+```sh
+./mvnw test -Dtest=FlexibilityEventKafkaTest
 ```
 
 Run full verification lifecycle:
