@@ -151,7 +151,7 @@ The module:
 
 Defined in `src/main/resources/application.properties` (examples used by this service):
 
-- `quarkus.http.port=8080`
+- `quarkus.http.port=8084`
 - `quarkus.datasource.db-kind=mysql`
 - `quarkus.datasource.username=teste`
 - `quarkus.datasource.password=testeteste`
