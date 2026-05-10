@@ -8,8 +8,11 @@ The module has two test classes:
 
 - `src/test/java/org/acme/GridBalancingRecommendationResourceTest.java`: unit tests for the `GridBalancingRecommendationResource` and the `BalancingRecommendation` domain behaviour.
 - `src/test/java/org/acme/GridBalancingRecommendationResourceIT.java`: Quarkus REST tests for the HTTP endpoints exposed by `GridBalancingRecommendationResource`.
+- `src/test/java/org/acme/GridBalancingRecommendationKafkaTest.java`: Kafka logic tests that use the SmallRye in-memory connector to verify emitted recommendation messages.
 
 Both test classes use Mockito to mock `MySQLPool` so the tests do not need a live database. The unit tests also mock the `GridBalancingRecommendationService` to test the resource layer in isolation.
+
+The Kafka test uses the real recommendation service with mocked persistence and verifies that a `RECOMMENDED` recommendation emits the expected JSON payload and Kafka key on the `grid-balancing-recommendation` channel.
 
 ## What Is Covered
 
@@ -26,6 +29,7 @@ These tests validate the behavior of the `BalancingRecommendation` model and `Gr
 - `evaluate_withNoOverload_returnsEmptyList`: verifies that posting telemetry with all grid cells below threshold returns `200` and an empty list of recommendations.
 - `evaluate_withMultipleOverloads_createsMultipleRecommendations`: verifies that posting telemetry with multiple overloaded grid cells creates multiple recommendations and returns all of them.
 - `evaluate_withEmptyData_returnsEmptyList`: verifies that posting empty telemetry and grid cell data returns `200` and an empty list of recommendations.
+- `kafka_publish_recommended_recommendation_withSourceKey`: verifies the recommendation service publishes the expected JSON payload and uses the source grid cell id as the Kafka key.
 - `create_withValidData_returns201`: verifies that posting a new `BalancingRecommendation` persists it (mocked insert returns generated id `123`), returns `201` and the Location header contains `/GridBalancingRecommendation/123`.
 - `create_appliesDefaults`: verifies that posting a `BalancingRecommendation` without `createdAt`, `thresholdPercent`, and `status` applies default values (`createdAt` = current time, `thresholdPercent` = `0.9`, `status` = `MANUAL`).
 - `update_withExistingId_returns204`: verifies that `PUT /GridBalancingRecommendation/{id}` with valid data returns `204 No Content`.
@@ -70,6 +74,11 @@ To run only the unit test class:
 
 ```bash
 mvn test
+```
+
+Run only the Kafka logic test:
+```bash
+mvn test -Dtest=GridBalancingRecommendationKafkaTest
 ```
 
 Run full verification lifecycle:

@@ -58,6 +58,9 @@ Unit-style tests (direct method calls with mocked DB client and mocked emitter):
 HTTP integration-style tests (Quarkus runtime with RestAssured and mocked DB client):
 - `src/test/java/org/acme/GridBalancingRecommendationResourceIT.java`
 
+Kafka logic tests with the SmallRye in-memory connector:
+- `src/test/java/org/acme/GridBalancingRecommendationKafkaTest.java`
+
 Test configuration:
 - `src/test/resources/application.properties`
 
@@ -76,6 +79,8 @@ GridBalancingRecommendation scenarios:
   - EV_CHARGER increases demand (charging rate).
   - SOLAR increases supply (current generation).
   - BATTERY increases supply (positive output) or demand (negative output/charging).
+- Publish the Kafka message when a `RECOMMENDED` record is created.
+- Verify the emitted Kafka key matches the source grid cell id.
 
 ### 4.3 What Is Validated
 
@@ -96,6 +101,11 @@ From this folder (`code/microservices/GridBalancingRecommendation`):
 Run tests:
 ```sh
 ./mvnw clean test
+```
+
+Run only the Kafka logic test:
+```sh
+./mvnw test -Dtest=GridBalancingRecommendationKafkaTest
 ```
 
 Run full verification lifecycle:
