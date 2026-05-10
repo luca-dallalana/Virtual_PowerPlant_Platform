@@ -11,16 +11,16 @@
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8085:8085 quarkus/flexibilityevent-legacy-jar
+# docker run -i --rm -p 8084:8084 quarkus/flexibilityevent-legacy-jar
 #
 # If you want to include the debug port into your docker image
-# you will have to expose the debug port (default 5005 being the default) like this :  EXPOSE 8085 5005.
+# you will have to expose the debug port (default 5005 being the default) like this :  EXPOSE 8084 5005.
 # Additionally you will have to set -e JAVA_DEBUG=true and -e JAVA_DEBUG_PORT=*:5005
 # when running the container
 #
 # Then run the container using :
 #
-# docker run -i --rm -p 8085:8085 quarkus/flexibilityevent-legacy-jar
+# docker run -i --rm -p 8084:8084 quarkus/flexibilityevent-legacy-jar
 #
 # This image uses the `run-java.sh` script to run the application.
 # This scripts computes the command line to execute your Java application, and
@@ -85,7 +85,7 @@ ENV LANGUAGE='en_US:en'
 COPY target/lib/* /deployments/lib/
 COPY target/*-runner.jar /deployments/quarkus-run.jar
 
-EXPOSE 8085
+EXPOSE 8084
 USER 185
 ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
 ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
