@@ -8,7 +8,7 @@ The GridBalancingRecommendation microservice analyzes aggregated data across dif
 - Identifies zones experiencing overload (exceeding threshold) and scans neighboring zones for available surplus capacity.
 - Generates balancing recommendations that specify source zone, target zone, transferable power capacity, and recommended actions.
 - Persists generated recommendations in MySQL using Quarkus reactive client and Mutiny.
-- Publishes balancing recommendations to "grid-balancing-recommendation" Kafka topic for downstream consumption (e.g., by control systems or aggregators).
+- Publishes balancing recommendations to "GridBalancingRecommendation" Kafka topic for downstream consumption (e.g., Utility Operator Manager).
 
 This service represents the critical grid stabilization and load-balancing capability of the VPPaaS. For example, if Zone A is experiencing an overload (net load exceeds 90% of max capacity) and Zone B has surplus capacity, the system emits a recommendation to shift load from Zone A to Zone B.
 

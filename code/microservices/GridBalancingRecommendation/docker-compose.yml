@@ -25,7 +25,7 @@ services:
       context: .
       dockerfile: src/main/docker/Dockerfile.jvm
     ports:
-      - "8084:8084"
+      - "8085:8085"
     environment:
       QUARKUS_DATASOURCE_REACTIVE_URL: mysql://mysql:3306/gridbalancingrecommendation
       QUARKUS_DATASOURCE_USERNAME: teste
