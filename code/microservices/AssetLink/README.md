@@ -19,7 +19,7 @@ AssetLink endpoints:
 - `PUT /AssetLink/{id}/{idProsumer}/{idUtilityOperator}` - Update an asset link
 
 Swagger UI available at:
-- `/swagger-ui`
+- `http://localhost:8080/q/swagger-ui`
 
 ## 3. Source Code Organization
 
@@ -75,7 +75,7 @@ Run tests:
 
 Run full verification lifecycle:
 ```sh
-./mvnw clean verify
+./mvnw clean verify -Dquarkus.container-image.push=false
 ```
 
 ## 5. Installation and Execution Procedures
@@ -86,23 +86,34 @@ Run full verification lifecycle:
 - Docker and Docker Compose (for container run)
 - Maven wrapper support
 
-### 5.2 Run in Dev Mode (Quarkus)
+### 5.2 Run in Dev Mode (Quarkus) — For Development
+
+Fastest iteration with live reload. Requires MySQL running in a separate terminal:
+
+```sh
+docker compose up
+```
+
+Then in another terminal:
 
 ```sh
 ./mvnw compile quarkus:dev
 ```
 
-Default HTTP port is `8080`.
+Changes are reflected immediately. Access at `http://localhost:8080/q/swagger-ui`
 
-### 5.3 Run with Docker Compose
+### 5.3 Run with Docker Compose — For Testing
+
+All-in-one containerized setup. No live reload; rebuild required for code changes:
 
 ```sh
 docker compose up --build
 ```
 
-Service mapping:
-- `mysql` at `3306`
-- `assetlink` at `8080`
+Services:
+- **AssetLink API**: `http://localhost:8082`
+- **Swagger UI**: `http://localhost:8082/q/swagger-ui`
+- **MySQL**: `localhost:3308`
 
 ## 6. Terraform Scripts and Deployment
 
