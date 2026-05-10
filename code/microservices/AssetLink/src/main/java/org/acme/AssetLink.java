@@ -52,16 +52,16 @@ public class AssetLink {
 					
 	    }
 
-	    public Uni<Boolean> save(MySQLPool client , Long idProsumer_R , Long idUtilityOperator_R) 
-		{
-	        return client.preparedQuery("INSERT INTO AssetLink(idProsumer,idUtilityOperator) VALUES (?,?)").execute(Tuple.of( idProsumer_R , idUtilityOperator_R))
-	        		.onItem().transform(pgRowSet -> pgRowSet.rowCount() == 1 ); 
-	    }
-	    
-	    public static Uni<Boolean> delete(MySQLPool client, Long id_R) {
-	        return client.preparedQuery("DELETE FROM AssetLink WHERE id = ?").execute(Tuple.of(id_R))
-	                .onItem().transform(pgRowSet -> pgRowSet.rowCount() == 1); 
-	    }
+public Uni<Long> save(MySQLPool client , Long idProsumer_R , Long idUtilityOperator_R) 
+	{
+        return client.preparedQuery("INSERT INTO AssetLink(idProsumer,idUtilityOperator) VALUES (?,?)").execute(Tuple.of( idProsumer_R , idUtilityOperator_R))
+        		.onItem().transform(result -> (Long) result.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)); 
+    }
+    
+    public static Uni<Boolean> delete(MySQLPool client, Long id_R) {
+        return client.preparedQuery("DELETE FROM AssetLink WHERE id = ?").execute(Tuple.of(id_R))
+                .onItem().transform(pgRowSet -> pgRowSet.rowCount() == 1); 
+    }
 	    
 	    public static Uni<Boolean> update(MySQLPool client, Long id_R, Long idProsumer_R , Long idUtilityOperator_R ) {
 	        return client.preparedQuery("UPDATE AssetLink SET idProsumer = ? , idUtilityOperator = ? WHERE id = ?").execute(Tuple.of( idProsumer_R , idUtilityOperator_R,id_R))

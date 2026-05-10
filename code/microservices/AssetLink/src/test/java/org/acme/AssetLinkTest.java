@@ -117,23 +117,27 @@ class AssetLinkTest {
     }
 
     @Test
-    void save_returnsTrueWhenInsertSucceeds() {
+    void save_returnsGeneratedIdWhenInsertSucceeds() {
         MySQLPool client = Mockito.mock(MySQLPool.class);
-        stubPreparedQuery(client, "INSERT INTO AssetLink(idProsumer,idUtilityOperator) VALUES (?,?)", rowSetWithRowCount(1));
+        RowSet<Row> rowSet = rowSetWithRowCount(1);
+        Mockito.when(rowSet.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(42L);
+        stubPreparedQuery(client, "INSERT INTO AssetLink(idProsumer,idUtilityOperator) VALUES (?,?)", rowSet);
 
-        boolean result = new AssetLink().save(client, 5L, 6L).await().indefinitely();
+        Long result = new AssetLink().save(client, 5L, 6L).await().indefinitely();
 
-        MatcherAssert.assertThat(result, is(true));
+        MatcherAssert.assertThat(result, is(42L));
     }
 
     @Test
-    void save_returnsFalseWhenInsertDoesNotCreateRow() {
+    void save_returnsGeneratedIdWhenInsertSucceedsWithDifferentId() {
         MySQLPool client = Mockito.mock(MySQLPool.class);
-        stubPreparedQuery(client, "INSERT INTO AssetLink(idProsumer,idUtilityOperator) VALUES (?,?)", rowSetWithRowCount(0));
+        RowSet<Row> rowSet = rowSetWithRowCount(1);
+        Mockito.when(rowSet.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(99L);
+        stubPreparedQuery(client, "INSERT INTO AssetLink(idProsumer,idUtilityOperator) VALUES (?,?)", rowSet);
 
-        boolean result = new AssetLink().save(client, 5L, 6L).await().indefinitely();
+        Long result = new AssetLink().save(client, 5L, 6L).await().indefinitely();
 
-        MatcherAssert.assertThat(result, is(false));
+        MatcherAssert.assertThat(result, is(99L));
     }
 
     @Test

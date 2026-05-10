@@ -53,16 +53,16 @@ public class UtilityOperator {
 	                .onItem().transform(iterator -> iterator.hasNext() ? from(iterator.next()) : null); 
 	    }
 	    
-	    public Uni<Boolean> save(MySQLPool client , String name_R, String loc) 
-		{
-	        return client.preparedQuery("INSERT INTO UtilityOperator(name,location) VALUES (?,?)").execute(Tuple.of(name_R , loc))
-	        		.onItem().transform(pgRowSet -> pgRowSet.rowCount() == 1 ); 
-	    }
-	    
-	    public static Uni<Boolean> delete(MySQLPool client, Long id_R) {
-	        return client.preparedQuery("DELETE FROM UtilityOperator WHERE id = ?").execute(Tuple.of(id_R))
-	                .onItem().transform(pgRowSet -> pgRowSet.rowCount() == 1); 
-	    }
+public Uni<Long> save(MySQLPool client , String name_R, String loc) 
+	{
+        return client.preparedQuery("INSERT INTO UtilityOperator(name,location) VALUES (?,?)").execute(Tuple.of(name_R , loc))
+        		.onItem().transform(result -> (Long) result.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)); 
+    }
+    
+    public static Uni<Boolean> delete(MySQLPool client, Long id_R) {
+        return client.preparedQuery("DELETE FROM UtilityOperator WHERE id = ?").execute(Tuple.of(id_R))
+                .onItem().transform(pgRowSet -> pgRowSet.rowCount() == 1); 
+    }
 	    
 	    public static Uni<Boolean> update(MySQLPool client, Long id_R, String name_R, String loc) {
 	        return client.preparedQuery("UPDATE UtilityOperator SET name = ?, location = ? WHERE id = ?").execute(Tuple.of(name_R,loc,id_R))

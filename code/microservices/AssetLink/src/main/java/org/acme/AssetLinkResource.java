@@ -63,7 +63,7 @@ public class AssetLinkResource {
 
     @POST
     public Uni<Response> create(AssetLink assetlink) {
-        return assetlink.save(client , assetlink.idProsumer , assetlink.idUtilityOperator) //FIXME THIS SOULD RETURN THE ID OF THE CREATED ASSETLINK
+        return assetlink.save(client , assetlink.idProsumer , assetlink.idUtilityOperator)
                 .onItem().transform(id -> URI.create("/AssetLink/" + id))
                 .onItem().transform(uri -> Response.created(uri).build());
     }
