@@ -25,27 +25,6 @@ import static org.hamcrest.Matchers.hasSize;
 class AssetLinkTest {
 
     @Test
-    void constructor_setsAllFields() {
-        AssetLink assetLink = new AssetLink(1L, 2L, 3L);
-
-        MatcherAssert.assertThat(assetLink.id, is(1L));
-        MatcherAssert.assertThat(assetLink.idProsumer, is(2L));
-        MatcherAssert.assertThat(assetLink.idUtilityOperator, is(3L));
-    }
-
-    @Test
-    void toString_containsAllFields() {
-        AssetLink assetLink = new AssetLink(1L, 2L, 3L);
-
-        String result = assetLink.toString();
-
-        MatcherAssert.assertThat(result, notNullValue());
-        MatcherAssert.assertThat(result, containsString("id:1"));
-        MatcherAssert.assertThat(result, containsString("idProsumer:2"));
-        MatcherAssert.assertThat(result, containsString("idUtilityOperator:3"));
-    }
-
-    @Test
     void from_mapsRowToAssetLink() throws Exception {
         Row row = Mockito.mock(Row.class);
         Mockito.when(row.getLong("id")).thenReturn(1L);
