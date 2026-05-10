@@ -125,7 +125,7 @@ public class FlexibilityEventResource {
         }
     }
 
-    private Float getCurrentMarketPrice() {
+    private Float getCurrentMarketPrice() { // In production this SHOULD NOT be hardcoded, but for demo purposes we return a fixed value
         return 150.0f;
     }
 
