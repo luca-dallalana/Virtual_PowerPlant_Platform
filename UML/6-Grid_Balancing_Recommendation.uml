@@ -1,0 +1,84 @@
+@startuml
+autonumber
+
+box "Orchestration Layer" #LightCyan
+participant "Camunda Engine" as Camunda
+participant "Kong Gateway" as Kong
+end box
+
+box "Microservice Layer" #LightYellow
+participant "UtilityOperator MS" as UOMS
+participant "Prosumer MS" as PMS
+participant "AssetLink MS" as ALMS
+participant "Telemetry MS" as TMS
+participant "Grid Balancing MS" as GBMS
+end box
+
+box "Messaging Layer" #Thistle
+queue "Kafka Topic:\nGridBalancingRecommendation" as Kafka
+end box
+
+box "Persistence Layer" #LightGreen
+database "AWS RDS" as DB
+end box
+
+== Data Gathering Phase (Camunda Orchestration) ==
+
+Camunda -> Kong: GET /UtilityOperator/gridcell
+Kong -> UOMS: Forward GET /UtilityOperator/gridcell
+UOMS -> DB: JDBC SELECT Grid Cells
+DB --> UOMS: Results
+UOMS --> Kong: 200 OK (Grid Cells List)
+Kong --> Camunda: 200 OK (Grid Cells Data)
+
+Camunda -> Kong: GET /Prosumer
+Kong -> PMS: Forward GET /Prosumer
+PMS -> DB: JDBC SELECT Prosumers
+DB --> PMS: Results
+PMS --> Kong: 200 OK (Prosumers List)
+Kong --> Camunda: 200 OK (Prosumers Data)
+
+Camunda -> Kong: GET /AssetLink
+Kong -> ALMS: Forward GET /AssetLink
+ALMS -> DB: JDBC SELECT Asset Links
+DB --> ALMS: Results
+ALMS --> Kong: 200 OK (Asset Links List)
+Kong --> Camunda: 200 OK (Asset Links Data)
+
+Camunda -> Kong: GET /Telemetry
+Kong -> TMS: Forward GET /Telemetry
+TMS -> DB: JDBC SELECT Telemetry
+DB --> TMS: Results
+TMS --> Kong: 200 OK (Telemetry Data)
+Kong --> Camunda: 200 OK (Telemetry Data)
+
+== Grid Balancing Evaluation ==
+
+Camunda -> Kong: POST /GridBalancingRecommendation/evaluate\n{telemetryData: [...], gridCells: [...]}
+Kong -> GBMS: Forward POST /evaluate
+
+GBMS -> GBMS: Analyze aggregated data \nacross Grid Zones
+note right
+  1. Calculate current load vs capacity per GridCell.
+  2. If a Zone exceeds its safety threshold,
+     scan neighbouring zones for surplus.
+  3. Formulate Balancing Recommendation.
+end note
+
+GBMS -> DB: JDBC INSERT INTO BalancingRecommendation\n(sourceGridCellId, targetGridCellId, sourceNetLoadKw, \ntargetHeadroomKw, overloadKw, transferableKw, ...)
+DB --> GBMS: 200 OK
+
+GBMS -> Kafka: Publish GridBalancingRecommendation \nEvent {sourceGridCellId, \ntargetGridCellId, ntransferableKw, ...}
+Kafka --> GBMS: Ack
+
+GBMS --> Kong: 200 OK (Array of Recommendations)
+Kong --> Camunda: Evaluation Complete
+
+== Continuous Event Consumption ==
+
+loop continuous polling
+    UOMS -> Kafka: Consume from GridBalancingRecommendation
+    Kafka --> UOMS: JSON Payload
+    note right of UOMS: Utility Operator consumes recommendation for execution/action.
+end
+@enduml

@@ -1,0 +1,75 @@
+@startuml
+autonumber
+
+box "Orchestration Layer" #LightCyan
+participant "Camunda Engine" as Camunda
+participant "Kong Gateway" as Kong
+end box
+
+box "Microservice Layer" #LightYellow
+participant "Prosumer MS" as PMS
+participant "Telemetry MS" as TMS
+participant "Flexibility Event MS" as FlexMS
+end box
+
+box "Messaging Layer" #Thistle
+queue "Kafka Topic:\nflexibility-offers" as KafkaFlex
+end box
+
+box "Persistence Layer" #LightGreen
+database "AWS RDS" as AWSRDS
+end box
+
+== Orchestration & Data Gathering ==
+
+Camunda -> Kong: Request active prosumers/assets
+Kong -> PMS: GET /prosumers/active
+
+PMS -> AWSRDS: JDBC SELECT Prosumers and Assets
+AWSRDS --> PMS: ResultSet
+
+PMS --> Kong: 200 OK\n{prosumerId, assetId}
+Kong --> Camunda: 200 OK {prosumerId, assetId}
+
+Camunda -> Kong: Request asset telemetry
+Kong -> TMS: GET /telemetry/{assetId}
+
+TMS -> AWSRDS: JDBC SELECT Telemetry for {assetId}
+AWSRDS --> TMS: ResultSet
+
+TMS --> Kong: 200 OK TelemetryDTO
+Kong --> Camunda: 200 OK TelemetryDTO
+== Flexibility Evaluation & Emission ==
+
+Camunda -> Kong: Trigger Flexibility Evaluation POST \n/FlexibilityEvent/evaluate/{prosumerId}
+note right of Camunda: Payload: TelemetryDTO
+Kong -> FlexMS: Forward POST
+
+FlexMS -> FlexMS: Apply Flexibility emission rules
+note right of FlexMS
+  If SoC > 90.0:
+    eventType = "ARBITRAGE_SELL"
+    recommendedAction = "DISCHARGE"
+    Calculate Market Price & Incentive
+  If SoC < 20.0:
+    eventType = "BALANCING_UNAVAILABLE"
+    recommendedAction = "UNAVAILABLE"
+end note
+
+FlexMS -> AWSRDS: INSERT INTO FlexibilityEvent\n(assetId, prosumerId, eventType, \nsoc_percent, recommendedAction... )
+AWSRDS --> FlexMS: 200 OK (Generated ID)
+
+FlexMS -> KafkaFlex: Publish to 'flexibility-offers'\n{"eventId":X, "assetId":Y, \n"prosumerId":Z, "eventType":"...",\n "recommendedAction":"...", ...}
+KafkaFlex --> FlexMS: Ack
+
+FlexMS --> Kong: 200 OK (FlexibilityEvent JSON)
+Kong --> Camunda: 200 OK (Event Created)
+
+== Asynchronous Consumption ==
+
+loop Continuous Listening
+   PMS -> KafkaFlex: Consume from flexibility-offers
+   KafkaFlex -> PMS: JSON Event Payload
+   note right of PMS: Process event (e.g., notify prosumer, update prosumer dashboard)
+end
+@enduml

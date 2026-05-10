@@ -1,0 +1,27 @@
+@startuml
+autonumber
+actor "Prosumer Asset" as Asset
+box "Messaging Layer" #Thistle
+queue "Kafka Topic:\n{AssetLinkID}-{idUtilityOperator}" as KafkaIn
+end box
+box "Microservice Layer" #LightYellow
+participant "Telemetry MS" as TelemetryMS
+participant "Energy Analytics MS" as AnalyticsMS
+end box
+box "Persistence Layer" #LightGreen
+database "AWS RDS" as DB
+end box
+
+== High Volume Telemetry Ingestion ==
+
+Asset -> KafkaIn: Publish JSON Payload
+note right: Payloads are (BATTERY, SOLAR, EV_CHARGER).\nPartitioned by asset_id to guarantee chronological order.
+
+loop continuous polling
+    TelemetryMS -> KafkaIn: Consume from Topic:\n'{AssetLinkID}-{idUtilityOperator}'
+    KafkaIn --> TelemetryMS: JSON Payload
+end
+
+TelemetryMS -> DB: JDBC INSERT Telemetry\n(timeStamp, asset_id, asset_type, grid_cell_id,\n State_of_Charge, Available_Energy, ...)
+DB --> TelemetryMS: 200 OK
+@enduml

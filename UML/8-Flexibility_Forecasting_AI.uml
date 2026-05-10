@@ -1,0 +1,81 @@
+@startuml
+autonumber
+skinparam maxMessageSize 250
+
+box "Orchestration Layer" #LightCyan
+participant "Camunda Engine" as Camunda
+participant "Kong Gateway" as Kong
+end box
+
+box "Microservice Layer" #LightYellow
+participant "Prosumer MS" as ProsumerMS
+participant "Utility Operator MS" as UtilityMS
+participant "Telemetry MS" as TelemetryMS
+participant "Flexibility Forecasting MS" as ForecastMS
+end box
+
+box "AI Layer" #LightBlue
+participant "Ollama Server\n(EC2 - LLM)" as Ollama
+end box
+
+box "Persistence Layer" #LightGreen
+database "AWS RDS" as DB
+end box
+
+== Data Gathering Phase (Orchestrated by Camunda) ==
+
+Camunda -> Kong: GET /Prosumers (Fetch Prosumers & Assets)
+Kong -> ProsumerMS: Forward Request
+ProsumerMS -> DB: JDBC SELECT Prosumers and Assets
+DB --> ProsumerMS: Results
+ProsumerMS --> Kong: 200 OK\n{Prosumers[], Assets[]}
+Kong --> Camunda: Prosumer Data Context
+
+Camunda -> Kong: GET /UtilityOperators/GridCells (Fetch Zones)
+Kong -> UtilityMS: Forward Request
+UtilityMS -> DB: JDBC SELECT Grid Cells
+DB --> UtilityMS: Results
+UtilityMS --> Kong: 200 OK {GridCells[]}
+Kong --> Camunda: Grid Zone Context
+
+Camunda -> Kong: GET /Telemetry (Fetch recent metrics)
+Kong -> TelemetryMS: Forward Request
+TelemetryMS -> DB: JDBC SELECT latest Telemetry
+DB --> TelemetryMS: Results
+TelemetryMS --> Kong: 200 OK {TelemetryRecords[]}
+Kong --> Camunda: Telemetry Context
+
+note right
+  Camunda aggregates Prosumer, Grid, Telemetry,
+  Flexibility Events, and Recommendations 
+  into the **ForecastRequest** DTO.
+end note
+
+== Flexibility Forecasting Phase (AI Analysis) ==
+Camunda -> Kong: POST /FlexibilityForecasting/analyze\n{ForecastRequest}
+
+note right
+  **Payload: ForecastRequest** {
+    "analysisType": "...",
+    "eventType": "DISCHARGE",
+    "assetId": 12345,
+    "recommendedAction": "...",
+    "events": [ ... ],
+    "recommendations": [ ... ] }
+end note
+Kong -> ForecastMS: Forward POST /FlexibilityForecasting/analyze
+
+ForecastMS -> Kong: REST POST /api/generate\n{Compiled context from ForecastRequest}
+Kong -> Ollama: Forward POST /api/generate
+
+note right : Goal: Analyze the provided historical events,\ntelemetry context, and recommendations\nfrom the ForecastRequest to determine the\nsentiment and success rate (e.g., if the\npast "Discharge" commands actually resulted\nin a "Grid Stable" state).
+Ollama -> Ollama: Compute Sentiment \n& Success Rate
+Ollama --> Kong: 200 OK {sentiment: "Positive", successProbability: 0.85}
+Kong --> ForecastMS: 200 OK {sentiment, successProbability}
+
+ForecastMS -> DB: JDBC INSERT INTO FlexibilityForecast\n(analysisType, sentiment, successProbability)
+DB --> ForecastMS: 201 Created
+
+ForecastMS --> Kong: 200 OK {ForecastResult}
+Kong --> Camunda: Forecasting Complete & Results Received
+@enduml

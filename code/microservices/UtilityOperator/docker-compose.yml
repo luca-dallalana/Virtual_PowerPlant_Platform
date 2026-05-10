@@ -30,7 +30,6 @@ services:
       QUARKUS_DATASOURCE_REACTIVE_URL: mysql://mysql:3306/utilityoperator
       QUARKUS_DATASOURCE_USERNAME: teste
       QUARKUS_DATASOURCE_PASSWORD: testeteste
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
       mysql:
         condition: service_healthy

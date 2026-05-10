@@ -1,0 +1,74 @@
+@startuml
+autonumber
+
+box "Orchestration Layer" #LightCyan
+participant "Camunda Engine" as Camunda
+participant "Kong Gateway" as Kong
+end box
+
+box "Microservice Layer" #LightYellow
+participant "Prosumer MS" as ProsumerMS
+participant "Utility Operator MS" as UtilityMS
+participant "Telemetry MS" as TelemetryMS
+participant "Energy Analytics MS" as AnalyticsMS
+end box
+
+box "Messaging Layer" #Thistle
+queue "Kafka Topic:\nEnergy-Discharged-By-Zone\n(Partition: ZoneID)" as KafkaZone
+queue "Kafka Topic:\nGenerated-Energy-By-Prosumer\n(Partition: ProsumerID)" as KafkaGenPros
+queue "Kafka Topic:\nConsumed-Energy-By-Prosumer\n(Partition: ProsumerID)" as KafkaConsPros
+queue "Kafka Topic:\nAverage-SoC\n(Partition: ZoneID)" as KafkaSoC
+end box
+
+box "Persistence Layer" #LightGreen
+database "AWS RDS" as DB
+end box
+
+== Data Gathering Phase (Orchestrated by Camunda) ==
+
+Camunda -> Kong: GET /Prosumers \n(Fetch Prosumers & Assets)
+Kong -> ProsumerMS: Forward Request
+ProsumerMS -> DB: JDBC SELECT Prosumers and Assets
+DB --> ProsumerMS: Result Set
+ProsumerMS --> Kong: 200 OK\n{Prosumers[], Assets[]}
+Kong --> Camunda: Prosumer Data Context
+
+Camunda -> Kong: GET /UtilityOperators/GridCells \n(Fetch Zones)
+Kong -> UtilityMS: Forward Request
+UtilityMS -> DB: JDBC SELECT GridCells
+DB --> UtilityMS: Result Set
+UtilityMS --> Kong: 200 OK {GridCells[]}
+Kong --> Camunda: Grid Zone Context
+
+Camunda -> Kong: GET /Telemetry \n(Fetch recent metrics)
+Kong -> TelemetryMS: Forward Request
+TelemetryMS -> DB: JDBC SELECT Telemetry Records
+DB --> TelemetryMS: Result Set
+TelemetryMS --> Kong: 200 OK {TelemetryRecords[]}
+Kong --> Camunda: Telemetry Context
+
+== Energy Analytics Phase ==
+
+Camunda -> Kong: POST /EnergyAnalytics/calculate\nPayload: {Prosumers, \nGridCells, Telemetry}
+Kong -> AnalyticsMS: Forward Request
+
+AnalyticsMS -> AnalyticsMS: Calculate "Energy Discharged by Zone"
+AnalyticsMS -> AnalyticsMS: Calculate "Generated Energy by Prosumer"
+AnalyticsMS -> AnalyticsMS: Calculate "Consumed Energy by Prosumer"
+AnalyticsMS -> AnalyticsMS: Calculate "Average SoC"
+
+== Dashboard Event Publishing ==
+
+AnalyticsMS -> KafkaZone: Publish Event (Key: ZoneID)
+AnalyticsMS -> KafkaGenPros: Publish Event (Key: ProsumerID)
+AnalyticsMS -> KafkaConsPros: Publish Event (Key: ProsumerID)
+AnalyticsMS -> KafkaSoC: Publish Event (Key: ZoneID)
+
+KafkaZone --> AnalyticsMS: Ack
+KafkaGenPros --> AnalyticsMS: Ack
+KafkaConsPros --> AnalyticsMS: Ack
+KafkaSoC --> AnalyticsMS: Ack
+
+AnalyticsMS --> Kong: 200 OK (Analytics Complete)
+Kong --> Camunda: Process Completed \nSuccessfully
+@enduml

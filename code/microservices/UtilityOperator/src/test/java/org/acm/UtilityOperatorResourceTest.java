@@ -12,12 +12,9 @@ import jakarta.ws.rs.core.Response;
 import org.acme.GridCell;
 import org.acme.UtilityOperator;
 import org.acme.UtilityOperatorResource;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
@@ -35,15 +32,12 @@ class UtilityOperatorResourceUnitTest {
     UtilityOperatorResource resource;
 
     private MySQLPool client;
-    private Emitter<String> gridCellEventsEmitter;
 
     @BeforeEach
     void setup() {
         resource = new UtilityOperatorResource();
         client = Mockito.mock(MySQLPool.class);
-        gridCellEventsEmitter = Mockito.mock(Emitter.class);
         injectClient(resource, client);
-        injectGridCellEmitter(resource, gridCellEventsEmitter);
         injectSchemaCreate(resource, false);
     }
 
@@ -169,6 +163,14 @@ class UtilityOperatorResourceUnitTest {
     }
 
     @Test
+    void getGridCellsByOperator_returnsEmptyList() {
+        stubPreparedQuery("SELECT gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries FROM GridCell WHERE utilityOperatorId = ?", rowSetWithRows());
+
+        List<GridCell> result = resource.getGridCellsByOperator(99L).collect().asList().await().indefinitely();
+        MatcherAssert.assertThat(result, hasSize(0));
+    }
+
+    @Test
     void createGridCell_returnsCreated() {
         GridCell gridCell = new GridCell("LISBON-DT", 1L, 50.0, "Lisbon Downtown Area");
         stubPreparedQuery("INSERT INTO GridCell(gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries) VALUES (?,?,?,?)", rowSetWithRowCount(1));
@@ -177,8 +179,6 @@ class UtilityOperatorResourceUnitTest {
         MatcherAssert.assertThat(response.getStatus(), is(201));
         MatcherAssert.assertThat(response.getLocation(), notNullValue());
         MatcherAssert.assertThat(response.getLocation().getPath(), is("/UtilityOperator/gridcell/LISBON-DT"));
-
-        assertGridCellEventPayload("CREATED", "LISBON-DT", 1L, 50.0, "Lisbon Downtown Area");
     }
 
     @Test
@@ -189,8 +189,6 @@ class UtilityOperatorResourceUnitTest {
 
         Response response = resource.deleteGridCell("LISBON-DT").await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(204));
-
-        assertGridCellEventPayload("DELETED", "LISBON-DT", null, null, null);
     }
 
     @Test
@@ -200,8 +198,6 @@ class UtilityOperatorResourceUnitTest {
 
         Response response = resource.deleteGridCell("UNKNOWN").await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(404));
-
-        Mockito.verifyNoInteractions(gridCellEventsEmitter);
     }
 
     @Test
@@ -211,8 +207,6 @@ class UtilityOperatorResourceUnitTest {
 
         Response response = resource.updateGridCell("LISBON-DT", updated).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(204));
-
-        assertGridCellEventPayload("UPDATED", "LISBON-DT", 1L, 60.0, "Updated");
     }
 
     @Test
@@ -222,20 +216,14 @@ class UtilityOperatorResourceUnitTest {
 
         Response response = resource.updateGridCell("UNKNOWN", updated).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(404));
-
-        Mockito.verifyNoInteractions(gridCellEventsEmitter);
     }
 
     @Test
     void updateGridCellCapacity_returnsNoContent() {
-        Row row = gridCellRow("LISBON-DT", 1L, 50.0, "Lisbon Downtown Area");
         stubPreparedQuery("UPDATE GridCell SET maxCapacity = ? WHERE gridCellId = ?", rowSetWithRowCount(1));
-        stubPreparedQuery("SELECT gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries FROM GridCell WHERE gridCellId = ?", rowSetWithRows(row));
 
         Response response = resource.updateGridCellCapacity("LISBON-DT", 55.0).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(204));
-
-        assertGridCellEventPayload("UPDATED", "LISBON-DT", 1L, 50.0, "Lisbon Downtown Area");
     }
 
     @Test
@@ -244,32 +232,6 @@ class UtilityOperatorResourceUnitTest {
 
         Response response = resource.updateGridCellCapacity("UNKNOWN", 55.0).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(404));
-
-        Mockito.verifyNoInteractions(gridCellEventsEmitter);
-    }
-
-    private void assertGridCellEventPayload(String eventType, String gridCellId, Long utilityOperatorId,
-                                            Double maxCapacity, String geographicBoundaries) {
-        ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
-        Mockito.verify(gridCellEventsEmitter).send(captor.capture());
-
-        Message message = captor.getValue();
-        Object payload = message.getPayload();
-        MatcherAssert.assertThat(payload, notNullValue());
-
-        String json = payload.toString();
-        MatcherAssert.assertThat(json, org.hamcrest.Matchers.containsString("\"gridCellId\":\"" + gridCellId + "\""));
-        MatcherAssert.assertThat(json, org.hamcrest.Matchers.containsString("\"eventType\":\"" + eventType + "\""));
-
-        if (utilityOperatorId != null) {
-            MatcherAssert.assertThat(json, org.hamcrest.Matchers.containsString("\"utilityOperatorId\":" + utilityOperatorId));
-        }
-        if (maxCapacity != null) {
-            MatcherAssert.assertThat(json, org.hamcrest.Matchers.containsString("\"maxCapacity\":" + String.format("%.2f", maxCapacity)));
-        }
-        if (geographicBoundaries != null) {
-            MatcherAssert.assertThat(json, org.hamcrest.Matchers.containsString("\"geographicBoundaries\":\"" + geographicBoundaries + "\""));
-        }
     }
 
     private void injectClient(UtilityOperatorResource target, MySQLPool pool) {
@@ -279,16 +241,6 @@ class UtilityOperatorResourceUnitTest {
             field.set(target, pool);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IllegalStateException("Failed to inject MySQLPool", e);
-        }
-    }
-
-    private void injectGridCellEmitter(UtilityOperatorResource target, Emitter<String> emitter) {
-        try {
-            Field field = UtilityOperatorResource.class.getDeclaredField("gridCellEventsEmitter");
-            field.setAccessible(true);
-            field.set(target, emitter);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IllegalStateException("Failed to inject gridCellEventsEmitter", e);
         }
     }
 

@@ -1,0 +1,39 @@
+@startuml
+autonumber
+actor "Utility Operator" as Actor
+
+box "Orchestration Layer" #LightCyan
+participant "Camunda Engine" as Camunda
+participant "Kong Gateway" as Kong
+end box
+
+box "Microservice Layer" #LightYellow
+participant "Utility Operator MS" as UOMS
+end box
+
+box "Data Layer" #LightGreen
+database "AWS RDS " as DBu
+end box
+
+note over Actor, DBu: Decommissioning/Deregistration process follows the same information flow but using operators like DELETE
+
+== Utility Operator Registration ==
+Actor -> Camunda: Operator Register
+Camunda -> Kong: POST /UtilityOperator
+Kong -> UOMS: Forward Request
+UOMS -> DBu: JDBC INSERT INTO UtilityOperator: \n(Name, Location)
+DBu --> UOMS: 200 OK
+UOMS --> Kong: 201 Created
+Kong --> Camunda: 201 Created
+Camunda --> Actor: Successful Registration
+
+== Grid Cell Registration ==
+Actor -> Camunda: Register Grid Cell
+Camunda -> Kong: POST /UtilityOperator/GridCell
+Kong -> UOMS: Forward Request
+UOMS -> DBu: JDBC INSERT INTO GridCell: \n(GridCellId, UtilityOperatorId, \nMaxCapacity, GeographicBoundaries)
+DBu --> UOMS: 200 OK
+UOMS --> Kong: 201 Created
+Kong --> Camunda: 201 Created
+Camunda --> Actor: Grid Cell Successfully Added
+@enduml

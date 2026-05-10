@@ -1,0 +1,39 @@
+@startuml
+autonumber
+actor "Prosumer" as Actor
+
+box "Orchestration Layer" #LightCyan
+participant "Camunda Engine" as Camunda
+participant "Kong Gateway" as Kong
+end box
+
+box "Microservice Layer" #LightYellow
+participant "Prosumer MS" as PMS
+end box
+
+box "Data Layer" #LightGreen
+database "AWS RDS" as DBp
+end box
+
+note over Actor, DBp: Decommissioning/Deregistration process follows the same information flow but using operators like DELETE
+
+== Prosumer Registration ==
+Actor -> Camunda: Prosumer Register
+Camunda -> Kong: POST /Prosumer
+Kong -> PMS: Forward Request
+PMS -> DBp: JDBC INSERT INTO Prosumer: \n(Name, Fiscal ID, Location, Payment Details)
+DBp --> PMS: 200 OK
+PMS --> Kong: 201 Created
+Kong --> Camunda: 201 Created
+Camunda --> Actor: Successful Registration
+
+== Asset Registration ==
+Actor -> Camunda: Register Asset
+Camunda -> Kong: POST /Prosumer/{prosumerId}/assets
+Kong -> PMS: Forward Request
+PMS -> DBp: JDBC INSERT INTO Asset: \n(AssetID, ProsumerID, AssetType, Model, Status)
+DBp --> PMS: 200 OK
+PMS --> Kong: 201 Created
+Kong --> Camunda: 201 Created
+Camunda --> Actor: Asset Successfully Added
+@enduml

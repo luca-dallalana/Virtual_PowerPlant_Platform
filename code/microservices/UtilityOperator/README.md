@@ -6,7 +6,6 @@ The UtilityOperator microservice manages Utility Operators and Grid Cells in the
 - Create, read, update, and delete utility operators.
 - Manage grid cells associated with each operator.
 - Persist data in MySQL using Quarkus reactive client and Mutiny.
-- Publish events to Kafka when grid cells are modified.
 
 ## 2. API Endpoints
 
@@ -50,7 +49,7 @@ Local container execution:
 ### 4.1 Test Suites
 
 Unit-style tests (direct method calls with mocked DB client):
-- `src/test/java/org/acme/UtilityOperatorTest.java`
+- `src/test/java/org/acme/UtilityOperatorResourceTest.java`
 
 HTTP integration-style tests (Quarkus runtime with RestAssured and mocked DB client):
 - `src/test/java/org/acme/UtilityOperatorResourceIT.java`
@@ -81,8 +80,6 @@ GridCell scenarios:
 - REST behavior (status codes and response structure).
 - Resource layer mapping from DB result to domain response.
 - Correct handling of success and not-found outcomes.
-- Kafka event publishing on grid cell modifications (CREATED, UPDATED, DELETED).
-- Event message keys use `gridCellId` for partition routing.
 
 ### 4.4 How to Run Tests
 
@@ -112,7 +109,7 @@ Run full verification lifecycle:
 ./mvnw compile quarkus:dev
 ```
 
-Default HTTP port is `8080`.
+Default HTTP port is `8081`.
 
 ### 5.3 Run with Docker Compose
 
@@ -122,8 +119,7 @@ docker compose up --build
 
 Service mapping:
 - `mysql` at `3306`
-- `utility-operator` at `8080`
-- `kafka` at `9092`
+- `utility-operator` at `8081`
 
 ## 6. Terraform Scripts and Deployment
 
@@ -152,7 +148,7 @@ The module:
 
 Defined in `src/main/resources/application.properties`:
 
-- `quarkus.http.port=8080`
+- `quarkus.http.port=8081`
 - `quarkus.datasource.db-kind=mysql`
 - `quarkus.datasource.username=teste`
 - `quarkus.datasource.password=testeteste`
@@ -177,7 +173,6 @@ environment:
   MYSQL_DATABASE: utilityoperator
   MYSQL_USER: teste
   MYSQL_PASSWORD: testeteste
-  KAFKA_BROKER: kafka:9092
 ```
 
 ### 7.4 Terraform Variables
@@ -189,25 +184,3 @@ Defined in `terraform.tfvars` or via `-var` CLI flags:
 - `environment_tag`: Environment name for tagging resources
 
 
-## 8. Kafka Integration Details
-
-The microservice publishes events to the `gridcell-events` topic whenever a grid cell is modified:
-
-- **CREATED**: Triggered when a new grid cell is created. Publishes full grid cell data.
-- **UPDATED**: Triggered when a grid cell is modified. Publishes full grid cell data.
-- **DELETED**: Triggered when a grid cell is deleted. Publishes minimal payload (gridCellId and eventType).
-
-Event structure:
-```json
-{
-  "gridCellId": "LISBON-DT",
-  "utilityOperatorId": 1,
-  "maxCapacity": 50.0,
-  "geographicBoundaries": "Lisbon Downtown Area",
-  "eventType": "CREATED"
-}
-```
-
-Message key: `gridCellId` (ensures ordering per grid cell via partition routing)
-
----

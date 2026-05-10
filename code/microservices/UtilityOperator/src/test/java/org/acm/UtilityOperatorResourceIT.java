@@ -11,13 +11,8 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
@@ -28,24 +23,19 @@ import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.endsWith;
 
 @QuarkusTest
+@SuppressWarnings({"deprecation", "unchecked"})
 class UtilityOperatorResourceIT {
 
     @InjectMock
     MySQLPool client;
 
-    @InjectMock
-    @Channel("gridcell-events")
-    Emitter<String> gridCellEventsEmitter;
-
     @BeforeEach
     void setup() {
-        Mockito.reset(client, gridCellEventsEmitter);
+        Mockito.reset(client);
     }
 
     @Test
@@ -93,7 +83,7 @@ class UtilityOperatorResourceIT {
 
     @Test
     void createUtilityOperator_returnsCreated() {
-        stubPreparedQuery("INSERT INTO UtilityOperator(name,location) VALUES (?,?)", rowSetWithRowCount(1));
+        stubPreparedQuery("INSERT INTO UtilityOperator(name,location) VALUES (?,?)", rowSetWithRowCount(1, 42L));
 
         Map<String, Object> body = new HashMap<>();
         body.put("name", "NewOperator");
@@ -106,7 +96,7 @@ class UtilityOperatorResourceIT {
             .post("/UtilityOperator")
             .then()
             .statusCode(201)
-            .header("Location", startsWith("/UtilityOperator/"));
+            .header("Location", endsWith("/UtilityOperator/42"));
     }
 
     @Test
@@ -177,7 +167,19 @@ class UtilityOperatorResourceIT {
     }
 
     @Test
-    void createGridCell_returnsCreated_andEmitsEvent() {
+    void getGridCellsByOperator_returnsEmptyList() {
+        stubPreparedQuery("SELECT gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries FROM GridCell WHERE utilityOperatorId = ?", rowSetWithRows());
+
+        given()
+            .when()
+            .get("/UtilityOperator/99/gridcells")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(0));
+    }
+
+    @Test
+    void createGridCell_returnsCreated() {
         stubPreparedQuery("INSERT INTO GridCell(gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries) VALUES (?,?,?,?)", rowSetWithRowCount(1));
 
         Map<String, Object> body = new HashMap<>();
@@ -193,13 +195,11 @@ class UtilityOperatorResourceIT {
             .post("/UtilityOperator/gridcell")
             .then()
             .statusCode(201)
-            .header("Location", is("/UtilityOperator/gridcell/LISBON-DT"));
-
-        assertGridCellEventPayload("CREATED", "LISBON-DT", 1L, 50.0, "Lisbon Downtown Area");
+            .header("Location", endsWith("/UtilityOperator/gridcell/LISBON-DT"));
     }
 
     @Test
-    void deleteGridCell_returnsNoContent_andEmitsEvent() {
+    void deleteGridCell_returnsNoContent() {
         Row row = gridCellRow("LISBON-DT", 1L, 50.0, "Lisbon Downtown Area");
         stubPreparedQuery("SELECT gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries FROM GridCell WHERE gridCellId = ?", rowSetWithRows(row));
         stubPreparedQuery("DELETE FROM GridCell WHERE gridCellId = ?", rowSetWithRowCount(1));
@@ -209,12 +209,10 @@ class UtilityOperatorResourceIT {
             .delete("/UtilityOperator/gridcell/LISBON-DT")
             .then()
             .statusCode(204);
-
-        assertGridCellEventPayload("DELETED", "LISBON-DT", null, null, null);
     }
 
     @Test
-    void deleteGridCell_returnsNotFound_andNoEvent() {
+    void deleteGridCell_returnsNotFound() {
         stubPreparedQuery("SELECT gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries FROM GridCell WHERE gridCellId = ?", rowSetWithRows());
         stubPreparedQuery("DELETE FROM GridCell WHERE gridCellId = ?", rowSetWithRowCount(0));
 
@@ -223,12 +221,10 @@ class UtilityOperatorResourceIT {
             .delete("/UtilityOperator/gridcell/UNKNOWN")
             .then()
             .statusCode(404);
-
-        Mockito.verifyNoInteractions(gridCellEventsEmitter);
     }
 
     @Test
-    void updateGridCell_returnsNoContent_andEmitsEvent() {
+    void updateGridCell_returnsNoContent() {
         stubPreparedQuery("UPDATE GridCell SET utilityOperatorId = ?, maxCapacity = ?, geographicBoundaries = ? WHERE gridCellId = ?", rowSetWithRowCount(1));
 
         Map<String, Object> body = new HashMap<>();
@@ -244,12 +240,10 @@ class UtilityOperatorResourceIT {
             .put("/UtilityOperator/gridcell/LISBON-DT")
             .then()
             .statusCode(204);
-
-        assertGridCellEventPayload("UPDATED", "LISBON-DT", 1L, 60.0, "Updated");
     }
 
     @Test
-    void updateGridCellCapacity_returnsNoContent_andEmitsEvent() {
+    void updateGridCellCapacity_returnsNoContent() {
         Row row = gridCellRow("LISBON-DT", 1L, 50.0, "Lisbon Downtown Area");
         stubPreparedQuery("UPDATE GridCell SET maxCapacity = ? WHERE gridCellId = ?", rowSetWithRowCount(1));
         stubPreparedQuery("SELECT gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries FROM GridCell WHERE gridCellId = ?", rowSetWithRows(row));
@@ -259,32 +253,6 @@ class UtilityOperatorResourceIT {
             .put("/UtilityOperator/gridcell/LISBON-DT/capacity/55.0")
             .then()
             .statusCode(204);
-
-        assertGridCellEventPayload("UPDATED", "LISBON-DT", 1L, 50.0, "Lisbon Downtown Area");
-    }
-
-    private void assertGridCellEventPayload(String eventType, String gridCellId, Long utilityOperatorId,
-                                            Double maxCapacity, String geographicBoundaries) {
-        ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
-        Mockito.verify(gridCellEventsEmitter).send(captor.capture());
-
-        Message message = captor.getValue();
-        Object payload = message.getPayload();
-        MatcherAssert.assertThat(payload, notNullValue());
-
-        String json = payload.toString();
-        MatcherAssert.assertThat(json, containsString("\"gridCellId\":\"" + gridCellId + "\""));
-        MatcherAssert.assertThat(json, containsString("\"eventType\":\"" + eventType + "\""));
-
-        if (utilityOperatorId != null) {
-            MatcherAssert.assertThat(json, containsString("\"utilityOperatorId\":" + utilityOperatorId));
-        }
-        if (maxCapacity != null) {
-            MatcherAssert.assertThat(json, containsString("\"maxCapacity\":" + String.format("%.2f", maxCapacity)));
-        }
-        if (geographicBoundaries != null) {
-            MatcherAssert.assertThat(json, containsString("\"geographicBoundaries\":\"" + geographicBoundaries + "\""));
-        }
     }
 
     private void stubQuery(String sql, RowSet<Row> rowSet) {
@@ -308,8 +276,13 @@ class UtilityOperatorResourceIT {
     }
 
     private RowSet<Row> rowSetWithRowCount(int rowCount) {
+        return rowSetWithRowCount(rowCount, null);
+    }
+
+    private RowSet<Row> rowSetWithRowCount(int rowCount, Long insertedId) {
         RowSet<Row> rowSet = Mockito.mock(RowSet.class);
         Mockito.when(rowSet.rowCount()).thenReturn(rowCount);
+        Mockito.when(rowSet.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(insertedId);
         io.vertx.mutiny.sqlclient.RowIterator<Row> iterator =
                 io.vertx.mutiny.sqlclient.RowIterator.newInstance(new ListRowIterator(Collections.emptyList()));
         Mockito.when(rowSet.iterator()).thenReturn(iterator);
