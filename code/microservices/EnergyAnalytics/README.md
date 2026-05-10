@@ -59,6 +59,9 @@ Unit-style tests (direct method calls with mocked DB client and mocked service):
 HTTP integration-style tests (Quarkus runtime with RestAssured and mocked DB client/service):
 - `src/test/java/org/acme/EnergyAnalyticsResourceIT.java`
 
+Kafka logic tests with the SmallRye in-memory connector:
+- `src/test/java/org/acme/EnergyAnalyticsKafkaTest.java`
+
 Test configuration:
 - `src/test/resources/application.properties`
 
@@ -74,6 +77,8 @@ EnergyAnalytics scenarios:
 - Get all average SoC records.
 - Evaluate telemetry and asset links to create aggregated metrics.
 - Preserve behavior when telemetry contains null measurement fields or unlinked assets.
+- Publish the four Kafka messages produced by the aggregation flow.
+- Verify Kafka record keys for discharged zone, generated prosumer, consumed prosumer, and average SoC events.
 
 ### 4.3 What Is Validated
 
@@ -89,6 +94,11 @@ From this folder (`code/microservices/EnergyAnalytics`):
 Run tests:
 ```sh
 ./mvnw clean test
+```
+
+Run only the Kafka logic test:
+```sh
+./mvnw test -Dtest=EnergyAnalyticsKafkaTest
 ```
 
 Run full verification lifecycle:

@@ -8,8 +8,11 @@ The module has two test classes:
 
 - `src/test/java/org/acme/EnergyAnalyticsResourceTest.java`: unit tests for `EnergyAnalyticsResource` behavior with mocked `MySQLPool` and mocked `AnalyticsCalculationService`.
 - `src/test/java/org/acme/EnergyAnalyticsResourceIT.java`: Quarkus REST tests for the HTTP endpoints exposed by `EnergyAnalyticsResource`.
+- `src/test/java/org/acme/EnergyAnalyticsKafkaTest.java`: Kafka logic tests that use the SmallRye in-memory connector to validate emitted messages and Kafka keys.
 
 Both test classes use Mockito to mock `MySQLPool` so tests do not need a live database. For `POST /EnergyAnalytics/evaluate`, both classes also mock `AnalyticsCalculationService` to isolate API behavior and response mapping.
+
+The Kafka test uses the real `AnalyticsCalculationService` with mocked persistence and verifies the outgoing messages produced on the `energy-discharged-zone`, `energy-generated-prosumer`, `energy-consumed-prosumer`, and `average-soc` channels.
 
 ## What Is Covered
 
@@ -29,6 +32,7 @@ These tests validate the behavior of `EnergyAnalyticsResource` in isolation:
 - `evaluate_withEmptyData_returnsZeroRecords`: verifies `evaluate(request)` returns `200` and `recordsProcessed = 0` for empty telemetry/link lists.
 - `evaluate_withNullFieldsInTelemetry_handlesGracefully`: verifies `evaluate(request)` returns `200` and delegates once to `AnalyticsCalculationService` when telemetry contains null measurement fields.
 - `evaluate_withUnlinkedAssets_filtersCorrectly`: verifies `evaluate(request)` returns `200` and delegates once when telemetry contains asset ids that are not linked in provided `assetLinks`.
+- `kafka_publish_four_metrics_withKeys`: verifies the aggregation service publishes four JSON payloads through the in-memory connector and attaches the expected Kafka keys for each outgoing channel.
 
 The unit tests also validate the exact SQL used by the entity finder methods called by the resource:
 
@@ -65,6 +69,11 @@ To run only the unit/integration tests in the test phase:
 
 ```bash
 mvn test
+```
+
+Run only the Kafka logic test:
+```bash
+mvn test -Dtest=EnergyAnalyticsKafkaTest
 ```
 
 Run full verification lifecycle:

@@ -30,9 +30,11 @@ public class AnalyticsCalculationService {
     @Channel("energy-discharged-zone")
     Emitter<String> dischargedZoneEmitter;
 
+    @Inject
     @Channel("energy-generated-prosumer")
     Emitter<String> generatedProsumerEmitter;
 
+    @Inject
     @Channel("energy-consumed-prosumer")
     Emitter<String> consumedProsumerEmitter;
 
