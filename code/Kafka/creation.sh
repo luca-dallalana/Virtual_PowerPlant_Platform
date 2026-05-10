@@ -15,4 +15,21 @@ sudo sed -i "s/listeners=PLAINTEXT:\/\/:9092,CONTROLLER:\/\/:9093/listeners=PLAI
 sudo sed -i "s/advertised.listeners=PLAINTEXT:\/\/localhost:9092,CONTROLLER:\/\/localhost:9093/advertised.listeners=PLAINTEXT:\/\/$dnsname:9092,CONTROLLER:\/\/localhost:9093/g" config/server.properties
 
 sudo bin/kafka-server-start.sh config/server.properties&
+
+# Create known application topics if missing.
+sleep 5
+topics=(
+	"Energy-Discharged-By-Zone"
+	"Generated-Energy-By-Prosumer"
+	"Consumed-Energy-By-Prosumer"
+	"Average-SoC"
+	"GridBalancingRecommendation"
+	"flexibility-offers"
+)
+
+for topic in "${topics[@]}"; do
+	sudo bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists \
+		--topic "$topic" --partitions 1 --replication-factor 1
+done
+
 echo "Finished."
