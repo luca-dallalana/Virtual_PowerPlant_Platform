@@ -167,8 +167,8 @@ Defined in `src/main/resources/application.properties`:
 - `quarkus.rest-client.ollama-api.read-timeout=60000`
 - `quarkus.rest-client.ollama-api.connect-timeout=5000`
 - `ollama.model=llama3.2:latest`
-- `ollama.temperature=0.7`
-- `ollama.max-tokens=1000`
+- `ollama.temperature=0.2`
+- `ollama.max-tokens=10000`
 - `forecast.max-events=200`
 - `forecast.correlation-window-minutes=30`
 
@@ -179,8 +179,8 @@ Defined in `src/test/resources/application.properties`:
 - `myapp.schema.create=false`
 - `quarkus.rest-client.ollama-api.url=http://localhost:11434`
 - `ollama.model=llama3.2:latest`
-- `ollama.temperature=0.7`
-- `ollama.max-tokens=1000`
+- `ollama.temperature=0.2`
+- `ollama.max-tokens=10000`
 - `forecast.max-events=200`
 - `forecast.correlation-window-minutes=30`
 
