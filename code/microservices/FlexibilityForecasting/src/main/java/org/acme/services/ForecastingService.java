@@ -9,13 +9,11 @@ import org.acme.dto.*;
 import org.acme.entities.FlexibilityForecast;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.util.ArrayList;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class ForecastingService {
@@ -36,10 +34,10 @@ public class ForecastingService {
     @ConfigProperty(name = "ollama.model", defaultValue = "llama3.2:latest")
     String ollamaModel;
 
-    @ConfigProperty(name = "ollama.temperature", defaultValue = "0.7")
+    @ConfigProperty(name = "ollama.temperature", defaultValue = "0.2")
     double ollamaTemperature;
 
-    @ConfigProperty(name = "ollama.max-tokens", defaultValue = "1000")
+    @ConfigProperty(name = "ollama.max-tokens", defaultValue = "10000")
     int ollamaMaxTokens;
 
     @ConfigProperty(name = "forecast.max-events", defaultValue = "200")
@@ -88,12 +86,14 @@ public class ForecastingService {
         ForecastResult result = new ForecastResult();
         result.analysisType = request.analysisType;
         result.question = request.customQuestion != null ? request.customQuestion : "General analysis";
-        result.aiResponse = ollamaResponse.response;
+        ParsedOllamaResponse parsed = parseOllamaResponse(ollamaResponse.response);
+        result.aiResponse = parsed.summary;
+        result.sentiment = parsed.sentiment;
+        result.confidenceScore = parsed.confidenceScore;
         result.eventsAnalyzed = events.size();
         result.correlatedOutcomes = correlationService.countCorrelatedOutcomes(correlations);
         result.analysisTimestamp = LocalDateTime.now();
-
-        parseOllamaResponse(ollamaResponse.response, result, request);
+        result.insights = parsed.insights;
 
         if (request.recommendedAction != null && "SUCCESS_RATE".equals(request.analysisType)) {
             result.successRate = correlationService.calculateSuccessRate(correlations, request.recommendedAction);
@@ -118,56 +118,83 @@ public class ForecastingService {
                 });
     }
 
-    private void parseOllamaResponse(String response, ForecastResult result, ForecastRequest request) {
-        try {
-            JsonNode jsonNode = objectMapper.readTree(response);
+    private ParsedOllamaResponse parseOllamaResponse(String response) {
+        ParsedOllamaResponse parsed = new ParsedOllamaResponse();
+        parsed.summary = response;
+        parsed.sentiment = "UNKNOWN";
+        parsed.confidenceScore = 0.0;
+        parsed.insights = new HashMap<>();
 
-            if (jsonNode.has("sentiment")) {
-                result.sentiment = jsonNode.get("sentiment").asText();
-            }
-
-            if (jsonNode.has("confidence")) {
-                result.confidenceScore = jsonNode.get("confidence").asDouble();
-            }
-
-            if (jsonNode.has("success")) {
-                result.sentiment = jsonNode.get("success").asBoolean() ? "POSITIVE" : "NEGATIVE";
-            }
-
-            if (jsonNode.has("success_rate")) {
-                result.successRate = jsonNode.get("success_rate").asDouble();
-            }
-
-            if (jsonNode.has("insights")) {
-                Map<String, Object> insights = new HashMap<>();
-                jsonNode.get("insights").forEach(insight -> {
-                    insights.put("insight_" + insights.size(), insight.asText());
-                });
-                result.insights = insights;
-            }
-
-            if (jsonNode.has("correlation_strength")) {
-                if (result.insights == null) {
-                    result.insights = new HashMap<>();
-                }
-                result.insights.put("correlation_strength", jsonNode.get("correlation_strength").asText());
-            }
-
-            if (jsonNode.has("summary")) {
-                if (result.insights == null) {
-                    result.insights = new HashMap<>();
-                }
-                result.insights.put("summary", jsonNode.get("summary").asText());
-            }
-
-        } catch (Exception e) {
-            result.sentiment = "NEUTRAL";
-            result.confidenceScore = 50.0;
-            result.insights = new HashMap<>();
-            result.insights.put("raw_response", response);
-            result.insights.put("parse_error", e.getMessage());
+        if (response == null || response.isBlank()) {
+            return parsed;
         }
+
+        try {
+            JsonNode root = objectMapper.readTree(response);
+            if (!root.isObject()) {
+                return parsed;
+            }
+
+            String summary = getText(root, "summary");
+            if (summary != null && !summary.isBlank()) {
+                parsed.summary = summary;
+            }
+
+            String sentiment = getText(root, "sentiment");
+            if (sentiment != null && !sentiment.isBlank()) {
+                parsed.sentiment = sentiment;
+            }
+
+            Double confidence = getDouble(root, "confidence_score");
+            if (confidence != null) {
+                parsed.confidenceScore = confidence;
+            }
+
+            putIfPresent(parsed.insights, "key_patterns", root.get("key_patterns"));
+            putIfPresent(parsed.insights, "risks", root.get("risks"));
+            putIfPresent(parsed.insights, "recommendations", root.get("recommendations"));
+            putIfPresent(parsed.insights, "data_quality_notes", root.get("data_quality_notes"));
+            putIfPresent(parsed.insights, "statistics", root.get("statistics"));
+        } catch (Exception e) {
+            parsed.insights.put("parse_error", e.getMessage());
+        }
+
+        return parsed;
     }
+
+    private String getText(JsonNode root, String field) {
+        JsonNode node = root.get(field);
+        if (node == null || node.isNull()) {
+            return null;
+        }
+        return node.asText();
+    }
+
+    private Double getDouble(JsonNode root, String field) {
+        JsonNode node = root.get(field);
+        if (node == null || node.isNull()) {
+            return null;
+        }
+        if (node.isNumber()) {
+            return node.asDouble();
+        }
+        if (node.isTextual()) {
+            try {
+                return Double.parseDouble(node.asText());
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private void putIfPresent(Map<String, Object> insights, String key, JsonNode node) {
+        if (node == null || node.isNull()) {
+            return;
+        }
+        insights.put(key, objectMapper.convertValue(node, Object.class));
+    }
+
 
     private String serializeInsights(Map<String, Object> insights) {
         try {
@@ -209,9 +236,11 @@ public class ForecastingService {
         return result;
     }
 
-    public Uni<String> checkOllamaHealth() {
-        return ollamaService.listModels()
-                .onItem().transform(response -> "Ollama is available")
-                .onFailure().recoverWithItem(throwable -> "Ollama is unavailable: " + throwable.getMessage());
+    private static class ParsedOllamaResponse {
+        private String summary;
+        private String sentiment;
+        private Double confidenceScore;
+        private Map<String, Object> insights;
     }
+
 }

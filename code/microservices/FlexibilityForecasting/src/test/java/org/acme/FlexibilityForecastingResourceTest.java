@@ -175,39 +175,6 @@ class FlexibilityForecastingResourceTest {
         MatcherAssert.assertThat(response.getStatus(), is(404));
     }
 
-    @Test
-    void health_whenOllamaAvailable_returnsHealthy() {
-        Mockito.when(forecastingService.checkOllamaHealth())
-               .thenReturn(Uni.createFrom().item("available"));
-
-        Map<String, String> health = resource.checkHealth().await().indefinitely();
-        MatcherAssert.assertThat(health.get("status"), is("healthy"));
-        MatcherAssert.assertThat(health.get("ollama"), is("available"));
-    }
-
-    @Test
-    void health_whenOllamaUnavailable_returnsUnhealthy() {
-        Mockito.when(forecastingService.checkOllamaHealth())
-               .thenReturn(Uni.createFrom().item("offline"));
-
-        Map<String, String> health = resource.checkHealth().await().indefinitely();
-        MatcherAssert.assertThat(health.get("status"), is("unhealthy"));
-        MatcherAssert.assertThat(health.get("ollama"), is("offline"));
-    }
-
-    @Test
-    void health_whenServiceThrows_returnsError() {
-        Mockito.when(forecastingService.checkOllamaHealth())
-               .thenReturn(Uni.createFrom().failure(new RuntimeException("Service error")));
-
-        try {
-            resource.checkHealth().await().indefinitely();
-            MatcherAssert.assertThat("Should have thrown exception", false);
-        } catch (RuntimeException e) {
-            MatcherAssert.assertThat(e.getMessage(), is("Service error"));
-        }
-    }
-
     private void injectClient(FlexibilityForecastingResource target, MySQLPool pool) {
         try {
             Field field = FlexibilityForecastingResource.class.getDeclaredField("client");

@@ -199,34 +199,6 @@ class FlexibilityForecastingResourceIT {
             .statusCode(404);
     }
 
-    @Test
-    void health_whenOllamaAvailable_returnsHealthy() {
-        Mockito.when(forecastingService.checkOllamaHealth())
-               .thenReturn(Uni.createFrom().item("available"));
-
-        given()
-            .when()
-            .get("/FlexibilityForecasting/health")
-            .then()
-            .statusCode(200)
-            .body("status", is("healthy"))
-            .body("ollama", is("available"));
-    }
-
-    @Test
-    void health_whenOllamaUnavailable_returnsUnhealthy() {
-        Mockito.when(forecastingService.checkOllamaHealth())
-               .thenReturn(Uni.createFrom().item("offline"));
-
-        given()
-            .when()
-            .get("/FlexibilityForecasting/health")
-            .then()
-            .statusCode(200)
-            .body("status", is("unhealthy"))
-            .body("ollama", is("offline"));
-    }
-
     private void stubQuery(String sql, RowSet<Row> rowSet) {
         Query<RowSet<Row>> query = Mockito.mock(Query.class);
         Mockito.when(query.execute()).thenReturn(Uni.createFrom().item(rowSet));

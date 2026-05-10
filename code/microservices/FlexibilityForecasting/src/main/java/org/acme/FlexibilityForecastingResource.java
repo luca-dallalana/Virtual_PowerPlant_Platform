@@ -108,16 +108,6 @@ public class FlexibilityForecastingResource {
         return FlexibilityForecast.findByAnalysisType(client, analysisType);
     }
 
-    @GET
-    @Path("/health")
-    public Uni<Map<String, String>> checkHealth() {
-        return forecastingService.checkOllamaHealth()
-                .onItem().transform(status -> Map.of(
-                        "status", status.contains("available") ? "healthy" : "unhealthy",
-                        "ollama", status
-                ));
-    }
-
     @DELETE
     @Path("/history/{id}")
     public Uni<Response> deleteHistory(@PathParam("id") Long id) {

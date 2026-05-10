@@ -19,9 +19,4 @@ public interface OllamaService {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     Uni<OllamaResponse> generate(OllamaRequest request);
-
-    @GET
-    @Path("/tags")
-    @Produces(MediaType.APPLICATION_JSON)
-    Uni<String> listModels();
 }
