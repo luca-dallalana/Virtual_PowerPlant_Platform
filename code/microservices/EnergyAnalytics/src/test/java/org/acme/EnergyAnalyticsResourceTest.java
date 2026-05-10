@@ -52,8 +52,8 @@ class EnergyAnalyticsResourceTest {
     void getDischargedByZone_returnsList() {
         LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
-        Row row1 = dischargedZoneRow(1L, "GRID_A", 100.5, 5, timestamp1, "HOURLY");
-        Row row2 = dischargedZoneRow(2L, "GRID_B", 75.3, 3, timestamp2, "HOURLY");
+        Row row1 = dischargedZoneRow(1L, "GRID_A", 100.5, 5, timestamp1, "CURRENT");
+        Row row2 = dischargedZoneRow(2L, "GRID_B", 75.3, 3, timestamp2, "CURRENT");
         stubQuery("SELECT id, gridCellId, totalEnergyDischargedKw, batteryCount, timestamp, aggregationPeriod FROM EnergyDischargedByZone ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
 
         List<EnergyDischargedByZone> result = resource.getDischargedByZone().collect().asList().await().indefinitely();
@@ -63,13 +63,13 @@ class EnergyAnalyticsResourceTest {
         MatcherAssert.assertThat(result.get(0).totalEnergyDischargedKw, is(100.5));
         MatcherAssert.assertThat(result.get(0).batteryCount, is(5));
         MatcherAssert.assertThat(result.get(0).timestamp, is(timestamp1));
-        MatcherAssert.assertThat(result.get(0).aggregationPeriod, is("HOURLY"));
+        MatcherAssert.assertThat(result.get(0).aggregationPeriod, is("CURRENT"));
     }
 
     @Test
     void getDischargedByGridCell_returnsFiltered() {
         LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-        Row row = dischargedZoneRow(1L, "GRID_A", 100.5, 5, timestamp, "HOURLY");
+        Row row = dischargedZoneRow(1L, "GRID_A", 100.5, 5, timestamp, "CURRENT");
         stubPreparedQuery("SELECT id, gridCellId, totalEnergyDischargedKw, batteryCount, timestamp, aggregationPeriod FROM EnergyDischargedByZone WHERE gridCellId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
 
         List<EnergyDischargedByZone> result = resource.getDischargedByGridCell("GRID_A").collect().asList().await().indefinitely();
@@ -81,8 +81,8 @@ class EnergyAnalyticsResourceTest {
     void getGeneratedByProsumer_returnsList() {
         LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
-        Row row1 = generatedProsumerRow(1L, 1L, 50.5, 2, timestamp1, "HOURLY");
-        Row row2 = generatedProsumerRow(2L, 2L, 75.3, 3, timestamp2, "HOURLY");
+        Row row1 = generatedProsumerRow(1L, 1L, 50.5, 2, timestamp1, "CURRENT");
+        Row row2 = generatedProsumerRow(2L, 2L, 75.3, 3, timestamp2, "CURRENT");
         stubQuery("SELECT id, prosumerId, totalEnergyGeneratedKw, solarAssetCount, timestamp, aggregationPeriod FROM GeneratedEnergyByProsumer ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
 
         List<GeneratedEnergyByProsumer> result = resource.getGeneratedByProsumer().collect().asList().await().indefinitely();
@@ -92,13 +92,13 @@ class EnergyAnalyticsResourceTest {
         MatcherAssert.assertThat(result.get(0).totalEnergyGeneratedKw, is(50.5));
         MatcherAssert.assertThat(result.get(0).solarAssetCount, is(2));
         MatcherAssert.assertThat(result.get(0).timestamp, is(timestamp1));
-        MatcherAssert.assertThat(result.get(0).aggregationPeriod, is("HOURLY"));
+        MatcherAssert.assertThat(result.get(0).aggregationPeriod, is("CURRENT"));
     }
 
     @Test
     void getGeneratedByProsumerId_returnsFiltered() {
         LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-        Row row = generatedProsumerRow(1L, 1L, 50.5, 2, timestamp, "HOURLY");
+        Row row = generatedProsumerRow(1L, 1L, 50.5, 2, timestamp, "CURRENT");
         stubPreparedQuery("SELECT id, prosumerId, totalEnergyGeneratedKw, solarAssetCount, timestamp, aggregationPeriod FROM GeneratedEnergyByProsumer WHERE prosumerId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
 
         List<GeneratedEnergyByProsumer> result = resource.getGeneratedByProsumerId(1L).collect().asList().await().indefinitely();
@@ -110,8 +110,8 @@ class EnergyAnalyticsResourceTest {
     void getConsumedByProsumer_returnsList() {
         LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
-        Row row1 = consumedProsumerRow(1L, 1L, 25.5, 1, timestamp1, "HOURLY");
-        Row row2 = consumedProsumerRow(2L, 2L, 35.3, 2, timestamp2, "HOURLY");
+        Row row1 = consumedProsumerRow(1L, 1L, 25.5, 1, timestamp1, "CURRENT");
+        Row row2 = consumedProsumerRow(2L, 2L, 35.3, 2, timestamp2, "CURRENT");
         stubQuery("SELECT id, prosumerId, totalEnergyConsumedKw, evChargerCount, timestamp, aggregationPeriod FROM ConsumedEnergyByProsumer ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
 
         List<ConsumedEnergyByProsumer> result = resource.getConsumedByProsumer().collect().asList().await().indefinitely();
@@ -121,13 +121,13 @@ class EnergyAnalyticsResourceTest {
         MatcherAssert.assertThat(result.get(0).totalEnergyConsumedKw, is(25.5));
         MatcherAssert.assertThat(result.get(0).evChargerCount, is(1));
         MatcherAssert.assertThat(result.get(0).timestamp, is(timestamp1));
-        MatcherAssert.assertThat(result.get(0).aggregationPeriod, is("HOURLY"));
+        MatcherAssert.assertThat(result.get(0).aggregationPeriod, is("CURRENT"));
     }
 
     @Test
     void getConsumedByProsumerId_returnsFiltered() {
         LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-        Row row = consumedProsumerRow(1L, 2L, 25.5, 1, timestamp, "HOURLY");
+        Row row = consumedProsumerRow(1L, 2L, 25.5, 1, timestamp, "CURRENT");
         stubPreparedQuery("SELECT id, prosumerId, totalEnergyConsumedKw, evChargerCount, timestamp, aggregationPeriod FROM ConsumedEnergyByProsumer WHERE prosumerId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
 
         List<ConsumedEnergyByProsumer> result = resource.getConsumedByProsumerId(2L).collect().asList().await().indefinitely();
@@ -139,8 +139,8 @@ class EnergyAnalyticsResourceTest {
     void getAverageSoC_returnsList() {
         LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
-        Row row1 = averageSoCRow(1L, 75.5, 10, timestamp1, "HOURLY");
-        Row row2 = averageSoCRow(2L, 80.3, 12, timestamp2, "HOURLY");
+        Row row1 = averageSoCRow(1L, 75.5, 10, timestamp1, "CURRENT");
+        Row row2 = averageSoCRow(2L, 80.3, 12, timestamp2, "CURRENT");
         stubQuery("SELECT id, averageSocPercent, batteryCount, timestamp, aggregationPeriod FROM AverageSoC ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
 
         List<AverageSoC> result = resource.getAverageSoC().collect().asList().await().indefinitely();
@@ -149,7 +149,7 @@ class EnergyAnalyticsResourceTest {
         MatcherAssert.assertThat(result.get(0).averageSocPercent, is(75.5));
         MatcherAssert.assertThat(result.get(0).batteryCount, is(10));
         MatcherAssert.assertThat(result.get(0).timestamp, is(timestamp1));
-        MatcherAssert.assertThat(result.get(0).aggregationPeriod, is("HOURLY"));
+        MatcherAssert.assertThat(result.get(0).aggregationPeriod, is("CURRENT"));
     }
 
     @Test

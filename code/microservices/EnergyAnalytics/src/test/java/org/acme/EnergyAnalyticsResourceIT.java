@@ -47,8 +47,8 @@ class EnergyAnalyticsResourceIT {
     void getDischargedByZone_returnsList() {
         LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
-        Row row1 = dischargedZoneRow(1L, "GRID_A", 100.5, 5, timestamp1, "HOURLY");
-        Row row2 = dischargedZoneRow(2L, "GRID_B", 75.3, 3, timestamp2, "HOURLY");
+        Row row1 = dischargedZoneRow(1L, "GRID_A", 100.5, 5, timestamp1, "CURRENT");
+        Row row2 = dischargedZoneRow(2L, "GRID_B", 75.3, 3, timestamp2, "CURRENT");
         stubQuery("SELECT id, gridCellId, totalEnergyDischargedKw, batteryCount, timestamp, aggregationPeriod FROM EnergyDischargedByZone ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
 
         given()
@@ -66,7 +66,7 @@ class EnergyAnalyticsResourceIT {
     @Test
     void getDischargedByGridCell_returnsFiltered() {
         LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-        Row row = dischargedZoneRow(1L, "GRID_A", 100.5, 5, timestamp, "HOURLY");
+        Row row = dischargedZoneRow(1L, "GRID_A", 100.5, 5, timestamp, "CURRENT");
         stubPreparedQuery("SELECT id, gridCellId, totalEnergyDischargedKw, batteryCount, timestamp, aggregationPeriod FROM EnergyDischargedByZone WHERE gridCellId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
 
         given()
@@ -82,8 +82,8 @@ class EnergyAnalyticsResourceIT {
     void getGeneratedByProsumer_returnsList() {
         LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
-        Row row1 = generatedProsumerRow(1L, 1L, 50.5, 2, timestamp1, "HOURLY");
-        Row row2 = generatedProsumerRow(2L, 2L, 75.3, 3, timestamp2, "HOURLY");
+        Row row1 = generatedProsumerRow(1L, 1L, 50.5, 2, timestamp1, "CURRENT");
+        Row row2 = generatedProsumerRow(2L, 2L, 75.3, 3, timestamp2, "CURRENT");
         stubQuery("SELECT id, prosumerId, totalEnergyGeneratedKw, solarAssetCount, timestamp, aggregationPeriod FROM GeneratedEnergyByProsumer ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
 
         given()
@@ -101,7 +101,7 @@ class EnergyAnalyticsResourceIT {
     @Test
     void getGeneratedByProsumerId_returnsFiltered() {
         LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-        Row row = generatedProsumerRow(1L, 1L, 50.5, 2, timestamp, "HOURLY");
+        Row row = generatedProsumerRow(1L, 1L, 50.5, 2, timestamp, "CURRENT");
         stubPreparedQuery("SELECT id, prosumerId, totalEnergyGeneratedKw, solarAssetCount, timestamp, aggregationPeriod FROM GeneratedEnergyByProsumer WHERE prosumerId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
 
         given()
@@ -117,8 +117,8 @@ class EnergyAnalyticsResourceIT {
     void getConsumedByProsumer_returnsList() {
         LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
-        Row row1 = consumedProsumerRow(1L, 1L, 25.5, 1, timestamp1, "HOURLY");
-        Row row2 = consumedProsumerRow(2L, 2L, 35.3, 2, timestamp2, "HOURLY");
+        Row row1 = consumedProsumerRow(1L, 1L, 25.5, 1, timestamp1, "CURRENT");
+        Row row2 = consumedProsumerRow(2L, 2L, 35.3, 2, timestamp2, "CURRENT");
         stubQuery("SELECT id, prosumerId, totalEnergyConsumedKw, evChargerCount, timestamp, aggregationPeriod FROM ConsumedEnergyByProsumer ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
 
         given()
@@ -136,7 +136,7 @@ class EnergyAnalyticsResourceIT {
     @Test
     void getConsumedByProsumerId_returnsFiltered() {
         LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-        Row row = consumedProsumerRow(1L, 2L, 25.5, 1, timestamp, "HOURLY");
+        Row row = consumedProsumerRow(1L, 2L, 25.5, 1, timestamp, "CURRENT");
         stubPreparedQuery("SELECT id, prosumerId, totalEnergyConsumedKw, evChargerCount, timestamp, aggregationPeriod FROM ConsumedEnergyByProsumer WHERE prosumerId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
 
         given()
@@ -152,8 +152,8 @@ class EnergyAnalyticsResourceIT {
     void getAverageSoC_returnsList() {
         LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
-        Row row1 = averageSoCRow(1L, 75.5, 10, timestamp1, "HOURLY");
-        Row row2 = averageSoCRow(2L, 80.3, 12, timestamp2, "HOURLY");
+        Row row1 = averageSoCRow(1L, 75.5, 10, timestamp1, "CURRENT");
+        Row row2 = averageSoCRow(2L, 80.3, 12, timestamp2, "CURRENT");
         stubQuery("SELECT id, averageSocPercent, batteryCount, timestamp, aggregationPeriod FROM AverageSoC ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
 
         given()
