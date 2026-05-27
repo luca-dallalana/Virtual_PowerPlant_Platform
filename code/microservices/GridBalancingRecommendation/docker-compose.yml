@@ -30,7 +30,7 @@ services:
       QUARKUS_DATASOURCE_REACTIVE_URL: mysql://mysql:3306/gridbalancingrecommendation
       QUARKUS_DATASOURCE_USERNAME: teste
       QUARKUS_DATASOURCE_PASSWORD: testeteste
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092,kafka2:9092,kafka3:9092
     depends_on:
       mysql:
         condition: service_healthy
