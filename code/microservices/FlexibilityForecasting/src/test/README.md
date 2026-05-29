@@ -51,7 +51,7 @@ These tests exercise the REST resource through HTTP using `@QuarkusTest` and Res
 
 ## How To Run
 
-From the `FlexibilityEvent` module root:
+From the `FlexibilityForecasting` module root:
 
 To run only the unit test class:
 

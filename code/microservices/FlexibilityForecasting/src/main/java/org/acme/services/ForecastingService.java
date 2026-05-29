@@ -15,6 +15,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.*;
 
+/**
+ * Runs the flexibility analysis pipeline: correlate events → build prompt → call Ollama →
+ * parse JSON response → persist result. Recovers gracefully when Ollama is unavailable.
+ */
 @ApplicationScoped
 public class ForecastingService {
 
@@ -48,6 +52,7 @@ public class ForecastingService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** Returns an empty result immediately if there are no events; otherwise runs the full pipeline. */
     public Uni<ForecastResult> performAnalysis(ForecastRequest request) {
         List<FlexibilityEventDTO> events = request.events != null ? request.events : Collections.emptyList();
         List<BalancingRecommendationDTO> recommendations = request.recommendations != null ? request.recommendations : Collections.emptyList();
@@ -68,6 +73,7 @@ public class ForecastingService {
                         createErrorResult(request, events, correlations, throwable.getMessage()));
     }
 
+    /** Uses num_predict, not max_tokens — Ollama silently ignores the OpenAI-style key. */
     private Uni<OllamaResponse> callOllama(String prompt) {
         OllamaRequest request = new OllamaRequest();
         request.model = ollamaModel;
@@ -80,6 +86,7 @@ public class ForecastingService {
         return ollamaService.generate(request);
     }
 
+    /** Success rate is only computed for SUCCESS_RATE analysis type with a recommendedAction filter set. */
     private Uni<ForecastResult> buildAndPersistResult(ForecastRequest request, OllamaResponse ollamaResponse,
                                                      List<FlexibilityEventDTO> events,
                                                      Map<FlexibilityEventDTO, List<BalancingRecommendationDTO>> correlations) {
@@ -118,6 +125,7 @@ public class ForecastingService {
                 });
     }
 
+    /** On any parse failure, stores the raw response as summary and records the error under "parse_error". */
     private ParsedOllamaResponse parseOllamaResponse(String response) {
         ParsedOllamaResponse parsed = new ParsedOllamaResponse();
         parsed.summary = response;
@@ -170,6 +178,7 @@ public class ForecastingService {
         return node.asText();
     }
 
+    /** Handles both number nodes and quoted numeric strings. */
     private Double getDouble(JsonNode root, String field) {
         JsonNode node = root.get(field);
         if (node == null || node.isNull()) {
@@ -195,7 +204,6 @@ public class ForecastingService {
         insights.put(key, objectMapper.convertValue(node, Object.class));
     }
 
-
     private String serializeInsights(Map<String, Object> insights) {
         try {
             return objectMapper.writeValueAsString(insights);
@@ -219,6 +227,7 @@ public class ForecastingService {
         return result;
     }
 
+    /** Error is surfaced in insights under "error"; nothing is persisted. */
     private ForecastResult createErrorResult(ForecastRequest request, List<FlexibilityEventDTO> events,
                                            Map<FlexibilityEventDTO, List<BalancingRecommendationDTO>> correlations,
                                            String errorMessage) {

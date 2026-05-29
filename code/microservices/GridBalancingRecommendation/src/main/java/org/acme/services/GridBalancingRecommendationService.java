@@ -21,6 +21,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Detects overloaded zones and generates load-shift recommendations.
+ * Per zone: EV chargers and charging batteries add to demand; solar and discharging batteries add to supply.
+ * A zone is overloaded when net load exceeds maxCapacity * thresholdPercent (default 90%).
+ * Target is the zone with the most headroom; transferable = min(overload, headroom).
+ */
 @ApplicationScoped
 public class GridBalancingRecommendationService {
 
@@ -40,6 +46,7 @@ public class GridBalancingRecommendationService {
         return persistAll(recommendations);
     }
 
+    /** Grid cells missing gridCellId or maxCapacity are skipped; unrecognized telemetry zones are ignored. */
     private List<BalancingRecommendation> buildRecommendations(List<TelemetryDTO> telemetryList,
                                                                List<GridCellDTO> gridCells,
                                                                LocalDateTime timestamp,
@@ -109,6 +116,7 @@ public class GridBalancingRecommendationService {
                 .onItem().transform(id -> recommendation);
     }
 
+    /** Status is NO_TARGET when no other zone has positive headroom. */
     private BalancingRecommendation createRecommendation(ZoneMetrics source,
                                                         List<ZoneMetrics> zones,
                                                         LocalDateTime timestamp,
@@ -143,6 +151,7 @@ public class GridBalancingRecommendationService {
         );
     }
 
+    /** Only RECOMMENDED status is published; NO_TARGET is not. Kafka key: sourceGridCellId */
     private void emitRecommendationIfNeeded(BalancingRecommendation recommendation) {
         if (!"RECOMMENDED".equals(recommendation.status)) {
             return;
