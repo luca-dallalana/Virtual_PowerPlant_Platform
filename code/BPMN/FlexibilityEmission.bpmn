@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_FlexibilityEmission" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.47.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:collaboration id="Collaboration_FlexibilityEmission">
+    <bpmn:participant id="Participant_FlexibilityEmissionOrchestrator" name="FLEXIBILITY EMISSION" processRef="FlexibilityEmission" />
+  </bpmn:collaboration>
+  <bpmn:process id="FlexibilityEmission" name="FlexibilityEmission" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_FlexibilityEmission">
+      <bpmn:lane id="Lane_Scheduler" name="Scheduler">
+        <bpmn:flowNodeRef>StartEvent_Timer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_GetAllBatteryAssets</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_HasAssets</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_NoRuleTriggered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_EventCreated</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0iie3zk</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_0f6sje0</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1qq36t0</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_SkipNoTelemetry</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_NoAssets</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_0xwp9jw</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_AssetEvaluation" name="Asset Evaluation Loop">
+        <bpmn:flowNodeRef>Task_EvaluateFlexibility</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_HasTelemetry</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_FetchLatestTelemetry</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0rnx4e6</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1b1jk70</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0xp7pn3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0xtbddh</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_10bhmpn</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_0t0mnav</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1pmvp2o</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="StartEvent_Timer" name="Every 10 Minutes">
+      <bpmn:outgoing>Flow_Timer_To_GetAssets</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TED_Timer">
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/PT10M</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_GetAllBatteryAssets" name="Retrive All Battery Assets" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="noAuth" target="authentication.type" />
+          <zeebe:input source="GET" target="method" />
+          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/Prosumer/AssetBatteries" target="url" />
+          <zeebe:input source="=false" target="storeResponse" />
+          <zeebe:input source="=false" target="followRedirects" />
+          <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
+          <zeebe:input source="=20" target="readTimeoutInSeconds" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="13" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
+          <zeebe:header key="resultExpression" value="={&#10;  catalogStatus: response.status,&#10;  batteryAssets: response.body,&#10;  assetCount:    count(response.body)&#10;}" />
+          <zeebe:header key="retryBackoff" value="PT10S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Timer_To_GetAssets</bpmn:incoming>
+      <bpmn:outgoing>Flow_0j8mzzu</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="GW_HasAssets" name="Are Flexibility Emissions to be evaluated ?">
+      <bpmn:incoming>Flow_0ajuw7g</bpmn:incoming>
+      <bpmn:outgoing>Flow_HasAssets_No</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1336aml</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="EndEvent_NoRuleTriggered" name="No Flexibility Offer Emitted">
+      <bpmn:incoming>Flow_EventCreated_No</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="GW_EventCreated" name="Emit Flexibility Event?">
+      <bpmn:incoming>Flow_0m4gqlh</bpmn:incoming>
+      <bpmn:outgoing>Flow_EventCreated_No</bpmn:outgoing>
+      <bpmn:outgoing>Flow_EventCreated_Yes</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Activity_0iie3zk" name="Decide if Flexibility Offers will be evaluated">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0j8mzzu</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ajuw7g</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_0f6sje0" name="Flexibility Offer Emitted">
+      <bpmn:incoming>Flow_02a8dzj</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1336aml" name="Yes" sourceRef="GW_HasAssets" targetRef="Activity_1b1jk70" />
+    <bpmn:sequenceFlow id="Flow_1d7j3rs" sourceRef="Activity_0xp7pn3" targetRef="Activity_1qq36t0" />
+    <bpmn:sequenceFlow id="Flow_EventCreated_Yes" name="Yes" sourceRef="GW_EventCreated" targetRef="Activity_0xtbddh">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=eventCreated = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_02a8dzj" sourceRef="Activity_1pmvp2o" targetRef="Event_0f6sje0" />
+    <bpmn:sequenceFlow id="Flow_08r6ey9" name="No" sourceRef="Gateway_0t0mnav" targetRef="Event_0xwp9jw" />
+    <bpmn:sequenceFlow id="Flow_HasTelemetry_No" name="No" sourceRef="GW_HasTelemetry" targetRef="EndEvent_SkipNoTelemetry">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=hasTelemetry = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Timer_To_GetAssets" sourceRef="StartEvent_Timer" targetRef="Task_GetAllBatteryAssets" />
+    <bpmn:sequenceFlow id="Flow_0j8mzzu" sourceRef="Task_GetAllBatteryAssets" targetRef="Activity_0iie3zk" />
+    <bpmn:sequenceFlow id="Flow_0ajuw7g" sourceRef="Activity_0iie3zk" targetRef="GW_HasAssets" />
+    <bpmn:sequenceFlow id="Flow_HasAssets_No" name="No" sourceRef="GW_HasAssets" targetRef="EndEvent_NoAssets">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=assetCount = 0</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_EventCreated_No" name="No" sourceRef="GW_EventCreated" targetRef="EndEvent_NoRuleTriggered">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=eventCreated = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0m4gqlh" sourceRef="Activity_1qq36t0" targetRef="GW_EventCreated" />
+    <bpmn:sequenceFlow id="Flow_0348xry" sourceRef="Activity_10bhmpn" targetRef="Activity_1pmvp2o" />
+    <bpmn:userTask id="Activity_1qq36t0" name="Check Flexibility Emission">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1d7j3rs</bpmn:incoming>
+      <bpmn:outgoing>Flow_0m4gqlh</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics />
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_SkipNoTelemetry" name="No Telemetry&#10;Available">
+      <bpmn:incoming>Flow_HasTelemetry_No</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_NoAssets" name="No analysis of Flexibility Emissions">
+      <bpmn:incoming>Flow_HasAssets_No</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="Event_0xwp9jw" name="Evaluation Not posible">
+      <bpmn:incoming>Flow_08r6ey9</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Task_EvaluateFlexibility" name="Evaluate Flexibility Emission" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="noAuth" target="authentication.type" />
+          <zeebe:input source="POST" target="method" />
+          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/FlexibilityEvent/evaluate" target="url" />
+          <zeebe:input source="={&#34;Content-Type&#34;: &#34;application/json&#34;, &#34;accept&#34;: &#34;application/json&#34;}" target="headers" />
+          <zeebe:input source="=false" target="storeResponse" />
+          <zeebe:input source="=false" target="followRedirects" />
+          <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
+          <zeebe:input source="=20" target="readTimeoutInSeconds" />
+          <zeebe:input source="=telemetryPayload" target="body" />
+          <zeebe:input source="=false" target="ignoreNullValues" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="13" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
+          <zeebe:header key="resultExpression" value="={&#10;  evaluationStatus:   response.status,&#10;  eventCreated:       response.body.eventCreated,&#10;  flexibilityEventID: response.body.flexibilityEventID&#10;}" />
+          <zeebe:header key="retryBackoff" value="PT5S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_HasTelemetry_Yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_0e0669x</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="GW_HasTelemetry" name="Telemetry&#10;Reading Exists?">
+      <bpmn:incoming>Flow_FetchTelemetry_To_HasTelemetry</bpmn:incoming>
+      <bpmn:outgoing>Flow_HasTelemetry_No</bpmn:outgoing>
+      <bpmn:outgoing>Flow_HasTelemetry_Yes</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_FetchLatestTelemetry" name="Retrive Latest Telemetry" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="noAuth" target="authentication.type" />
+          <zeebe:input source="GET" target="method" />
+          <zeebe:input source="=&#34;http://ec2-23-22-152-18.compute-1.amazonaws.com:8080/Telemetry/latest/&#34; + string(currentAsset.id)" target="url" />
+          <zeebe:input source="=false" target="storeResponse" />
+          <zeebe:input source="=false" target="followRedirects" />
+          <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
+          <zeebe:input source="=20" target="readTimeoutInSeconds" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="13" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
+          <zeebe:header key="resultExpression" value="={&#10;  telemetryStatus:  response.status,&#10;  telemetryPayload: response.body,&#10;  hasTelemetry:     if (response.status = 200 and response.body != null) then true else false&#10;}" />
+          <zeebe:header key="retryBackoff" value="PT5S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_103sqnj</bpmn:incoming>
+      <bpmn:outgoing>Flow_FetchTelemetry_To_HasTelemetry</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:task id="Activity_0rnx4e6" name="Promise Flexibility Offers">
+      <bpmn:incoming>Flow_1jfxnby</bpmn:incoming>
+      <bpmn:outgoing>Flow_103sqnj</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:userTask id="Activity_1b1jk70" name="Verify if execute Flexibility Offer is possible">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1336aml</bpmn:incoming>
+      <bpmn:outgoing>Flow_10xavtw</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:task id="Activity_0xp7pn3" name="Declare Flexibility Emission">
+      <bpmn:incoming>Flow_0e0669x</bpmn:incoming>
+      <bpmn:outgoing>Flow_1d7j3rs</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Activity_0xtbddh" name="Promise Flexibility Offer Emission">
+      <bpmn:incoming>Flow_EventCreated_Yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_0p0cpro</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:serviceTask id="Activity_10bhmpn" name="Emit Flexibility Offer" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="noAuth" target="authentication.type" />
+          <zeebe:input source="GET" target="method" />
+          <zeebe:input target="url" />
+          <zeebe:input source="=false" target="storeResponse" />
+          <zeebe:input source="=false" target="followRedirects" />
+          <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
+          <zeebe:input source="=20" target="readTimeoutInSeconds" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="13" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
+          <zeebe:header key="resultExpression" value="={&#10;  myResponseBody: response.body&#10;  // Use FEEL to extract values, e.g.,:&#10;  // myUserId: response.body.post.userId&#10;}" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0p0cpro</bpmn:incoming>
+      <bpmn:outgoing>Flow_0348xry</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_0t0mnav">
+      <bpmn:incoming>Flow_10xavtw</bpmn:incoming>
+      <bpmn:outgoing>Flow_08r6ey9</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1jfxnby</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_HasTelemetry_Yes" name="Yes" sourceRef="GW_HasTelemetry" targetRef="Task_EvaluateFlexibility">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=hasTelemetry = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0e0669x" sourceRef="Task_EvaluateFlexibility" targetRef="Activity_0xp7pn3" />
+    <bpmn:sequenceFlow id="Flow_FetchTelemetry_To_HasTelemetry" sourceRef="Task_FetchLatestTelemetry" targetRef="GW_HasTelemetry" />
+    <bpmn:sequenceFlow id="Flow_103sqnj" sourceRef="Activity_0rnx4e6" targetRef="Task_FetchLatestTelemetry" />
+    <bpmn:sequenceFlow id="Flow_1jfxnby" name="Yes" sourceRef="Gateway_0t0mnav" targetRef="Activity_0rnx4e6" />
+    <bpmn:sequenceFlow id="Flow_10xavtw" sourceRef="Activity_1b1jk70" targetRef="Gateway_0t0mnav" />
+    <bpmn:sequenceFlow id="Flow_0p0cpro" sourceRef="Activity_0xtbddh" targetRef="Activity_10bhmpn" />
+    <bpmn:task id="Activity_1pmvp2o" name="Declare Flexibility Offer Emission">
+      <bpmn:incoming>Flow_0348xry</bpmn:incoming>
+      <bpmn:outgoing>Flow_02a8dzj</bpmn:outgoing>
+    </bpmn:task>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_FlexibilityEmission">
+    <bpmndi:BPMNPlane id="BPMNPlane_FlexibilityEmission" bpmnElement="Collaboration_FlexibilityEmission">
+      <bpmndi:BPMNShape id="Participant_FlexibilityEmissionOrchestrator_di" bpmnElement="Participant_FlexibilityEmissionOrchestrator" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1510" height="370" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Scheduler_di" bpmnElement="Lane_Scheduler" isHorizontal="true">
+        <dc:Bounds x="190" y="80" width="1480" height="180" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_AssetEvaluation_di" bpmnElement="Lane_AssetEvaluation" isHorizontal="true">
+        <dc:Bounds x="190" y="260" width="1480" height="190" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_Timer_di" bpmnElement="StartEvent_Timer">
+        <dc:Bounds x="252" y="150" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="228" y="193" width="85" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_GetAllBatteryAssets_di" bpmnElement="Task_GetAllBatteryAssets" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+        <dc:Bounds x="340" y="128" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_HasAssets_di" bpmnElement="GW_HasAssets" isMarkerVisible="true">
+        <dc:Bounds x="615" y="143" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="601" y="99" width="78" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0j977vd" bpmnElement="EndEvent_NoRuleTriggered">
+        <dc:Bounds x="1412" y="165" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1398" y="208" width="65" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1bikwuc" bpmnElement="GW_EventCreated" isMarkerVisible="true">
+        <dc:Bounds x="1295" y="158" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1285" y="126" width="71" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_09w1y78_di" bpmnElement="Activity_0iie3zk">
+        <dc:Bounds x="480" y="128" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0f6sje0_di" bpmnElement="Event_0f6sje0">
+        <dc:Bounds x="1582" y="165" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1564" y="135" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0culm0m_di" bpmnElement="Activity_1qq36t0">
+        <dc:Bounds x="1140" y="143" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1qwxc9x" bpmnElement="EndEvent_SkipNoTelemetry">
+        <dc:Bounds x="912" y="150" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="897" y="118" width="65" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_NoAssets_di" bpmnElement="EndEvent_NoAssets">
+        <dc:Bounds x="722" y="150" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="706" y="193" width="70" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0xwp9jw_di" bpmnElement="Event_0xwp9jw">
+        <dc:Bounds x="812" y="150" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="795" y="118" width="72" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0n14jpe" bpmnElement="Task_EvaluateFlexibility" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+        <dc:Bounds x="1000" y="319" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0wlgmnx" bpmnElement="GW_HasTelemetry" isMarkerVisible="true">
+        <dc:Bounds x="905" y="334" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="890" y="388" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_11yw9sl" bpmnElement="Task_FetchLatestTelemetry" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+        <dc:Bounds x="760" y="319" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0rnx4e6_di" bpmnElement="Activity_0rnx4e6">
+        <dc:Bounds x="600" y="319" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1xi3i1d_di" bpmnElement="Activity_1b1jk70">
+        <dc:Bounds x="340" y="319" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0xp7pn3_di" bpmnElement="Activity_0xp7pn3">
+        <dc:Bounds x="1140" y="319" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0xtbddh_di" bpmnElement="Activity_0xtbddh">
+        <dc:Bounds x="1270" y="319" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1kx6qzd_di" bpmnElement="Activity_10bhmpn" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+        <dc:Bounds x="1410" y="319" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0t0mnav_di" bpmnElement="Gateway_0t0mnav" isMarkerVisible="true">
+        <dc:Bounds x="495" y="334" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1pmvp2o_di" bpmnElement="Activity_1pmvp2o">
+        <dc:Bounds x="1550" y="319" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1336aml_di" bpmnElement="Flow_1336aml">
+        <di:waypoint x="640" y="193" />
+        <di:waypoint x="640" y="230" />
+        <di:waypoint x="300" y="230" />
+        <di:waypoint x="300" y="359" />
+        <di:waypoint x="340" y="359" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="617" y="202" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1d7j3rs_di" bpmnElement="Flow_1d7j3rs">
+        <di:waypoint x="1190" y="319" />
+        <di:waypoint x="1190" y="223" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_071keyb" bpmnElement="Flow_EventCreated_Yes">
+        <di:waypoint x="1320" y="208" />
+        <di:waypoint x="1320" y="319" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1324" y="233" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_02a8dzj_di" bpmnElement="Flow_02a8dzj">
+        <di:waypoint x="1600" y="319" />
+        <di:waypoint x="1600" y="201" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_08r6ey9_di" bpmnElement="Flow_08r6ey9">
+        <di:waypoint x="520" y="334" />
+        <di:waypoint x="520" y="290" />
+        <di:waypoint x="830" y="290" />
+        <di:waypoint x="830" y="186" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="499" y="306" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1r0ni2d" bpmnElement="Flow_HasTelemetry_No">
+        <di:waypoint x="930" y="334" />
+        <di:waypoint x="930" y="186" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="911" y="280" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Timer_To_GetAssets_di" bpmnElement="Flow_Timer_To_GetAssets">
+        <di:waypoint x="288" y="168" />
+        <di:waypoint x="340" y="168" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0j8mzzu_di" bpmnElement="Flow_0j8mzzu">
+        <di:waypoint x="440" y="168" />
+        <di:waypoint x="480" y="168" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ajuw7g_di" bpmnElement="Flow_0ajuw7g">
+        <di:waypoint x="580" y="168" />
+        <di:waypoint x="615" y="168" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_HasAssets_No_di" bpmnElement="Flow_HasAssets_No">
+        <di:waypoint x="665" y="168" />
+        <di:waypoint x="722" y="168" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="677" y="148" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1pfka7n" bpmnElement="Flow_EventCreated_No">
+        <di:waypoint x="1345" y="183" />
+        <di:waypoint x="1412" y="183" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1362" y="166" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0m4gqlh_di" bpmnElement="Flow_0m4gqlh">
+        <di:waypoint x="1240" y="183" />
+        <di:waypoint x="1295" y="183" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0348xry_di" bpmnElement="Flow_0348xry">
+        <di:waypoint x="1510" y="359" />
+        <di:waypoint x="1550" y="359" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_091dfg0" bpmnElement="Flow_HasTelemetry_Yes">
+        <di:waypoint x="955" y="359" />
+        <di:waypoint x="1000" y="359" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="965" y="341" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0e0669x_di" bpmnElement="Flow_0e0669x">
+        <di:waypoint x="1100" y="359" />
+        <di:waypoint x="1140" y="359" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0437r5v" bpmnElement="Flow_FetchTelemetry_To_HasTelemetry">
+        <di:waypoint x="860" y="359" />
+        <di:waypoint x="905" y="359" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_103sqnj_di" bpmnElement="Flow_103sqnj">
+        <di:waypoint x="700" y="359" />
+        <di:waypoint x="760" y="359" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1jfxnby_di" bpmnElement="Flow_1jfxnby">
+        <di:waypoint x="545" y="359" />
+        <di:waypoint x="600" y="359" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="564" y="341" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10xavtw_di" bpmnElement="Flow_10xavtw">
+        <di:waypoint x="440" y="359" />
+        <di:waypoint x="495" y="359" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0p0cpro_di" bpmnElement="Flow_0p0cpro">
+        <di:waypoint x="1370" y="359" />
+        <di:waypoint x="1410" y="359" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
