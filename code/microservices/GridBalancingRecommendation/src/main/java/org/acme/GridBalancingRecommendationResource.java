@@ -65,11 +65,20 @@ public class GridBalancingRecommendationResource {
 
     @POST
     @Path("/evaluate")
-    public Uni<Response> evaluate(GridBalancingRequest request) {
-        return recommendationService.calculateRecommendationsFromEvents(
+    public Response evaluate(GridBalancingRequest request) {
+        List<BalancingRecommendation> recommendations = recommendationService.evaluateRecommendations(
             request.telemetryData,
             request.gridCells
-        ).onItem().transform(recommendations -> Response.ok(recommendations).build());
+        );
+        return Response.ok(recommendations).build();
+    }
+
+    @POST
+    @Path("/emit")
+    public Uni<Response> emit(BalancingRecommendation recommendation) {
+        applyDefaults(recommendation);
+        return recommendationService.emitRecommendation(recommendation)
+                .onItem().transform(saved -> Response.ok(saved).build());
     }
 
     @GET

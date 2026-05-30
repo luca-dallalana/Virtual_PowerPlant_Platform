@@ -40,10 +40,12 @@ public class GridBalancingRecommendationService {
     @ConfigProperty(name = "gridbalancing.threshold.percent", defaultValue = "0.9")
     double thresholdPercent;
 
-    public Uni<List<BalancingRecommendation>> calculateRecommendationsFromEvents(List<TelemetryDTO> telemetryList, List<GridCellDTO> gridCells) {
-        LocalDateTime now = LocalDateTime.now();
-        List<BalancingRecommendation> recommendations = buildRecommendations(telemetryList, gridCells, now, thresholdPercent);
-        return persistAll(recommendations);
+    public List<BalancingRecommendation> evaluateRecommendations(List<TelemetryDTO> telemetryList, List<GridCellDTO> gridCells) {
+        return buildRecommendations(telemetryList, gridCells, LocalDateTime.now(), thresholdPercent);
+    }
+
+    public Uni<BalancingRecommendation> emitRecommendation(BalancingRecommendation recommendation) {
+        return persistAndEmit(recommendation);
     }
 
     /** Grid cells missing gridCellId or maxCapacity are skipped; unrecognized telemetry zones are ignored. */

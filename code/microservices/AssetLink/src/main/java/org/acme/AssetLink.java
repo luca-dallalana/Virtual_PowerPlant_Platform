@@ -38,6 +38,13 @@ public class AssetLink {
 	                .onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
 	                .onItem().transform(AssetLink::from);
 	    }
+
+	    public static Multi<AssetLink> findByUtilityOperatorId(MySQLPool client, Long utilityOperatorId) {
+	        return client.preparedQuery("SELECT id, idProsumer, idUtilityOperator FROM AssetLink WHERE idUtilityOperator = ?")
+	                .execute(Tuple.of(utilityOperatorId))
+	                .onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
+	                .onItem().transform(AssetLink::from);
+	    }
 	    
 	    public static Uni<AssetLink> findById(MySQLPool client, Long id) {
 	        return client.preparedQuery("SELECT id, idProsumer, idUtilityOperator  FROM AssetLink WHERE id = ?").execute(Tuple.of(id)) 

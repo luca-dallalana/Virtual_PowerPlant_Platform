@@ -96,6 +96,30 @@ class AssetLinkTest {
     }
 
     @Test
+    void findByUtilityOperatorId_returnsMatchingLinks() {
+        MySQLPool client = Mockito.mock(MySQLPool.class);
+        Row row1 = assetLinkRow(1L, 10L, 5L);
+        Row row2 = assetLinkRow(2L, 11L, 5L);
+        stubPreparedQuery(client, "SELECT id, idProsumer, idUtilityOperator FROM AssetLink WHERE idUtilityOperator = ?", rowSetWithRows(row1, row2));
+
+        List<AssetLink> result = AssetLink.findByUtilityOperatorId(client, 5L).collect().asList().await().indefinitely();
+
+        MatcherAssert.assertThat(result, hasSize(2));
+        MatcherAssert.assertThat(result.get(0).idUtilityOperator, is(5L));
+        MatcherAssert.assertThat(result.get(1).idUtilityOperator, is(5L));
+    }
+
+    @Test
+    void findByUtilityOperatorId_returnsEmptyWhenNoLinks() {
+        MySQLPool client = Mockito.mock(MySQLPool.class);
+        stubPreparedQuery(client, "SELECT id, idProsumer, idUtilityOperator FROM AssetLink WHERE idUtilityOperator = ?", rowSetWithRows());
+
+        List<AssetLink> result = AssetLink.findByUtilityOperatorId(client, 99L).collect().asList().await().indefinitely();
+
+        MatcherAssert.assertThat(result, hasSize(0));
+    }
+
+    @Test
     void save_returnsGeneratedIdWhenInsertSucceeds() {
         MySQLPool client = Mockito.mock(MySQLPool.class);
         RowSet<Row> rowSet = rowSetWithRowCount(1);

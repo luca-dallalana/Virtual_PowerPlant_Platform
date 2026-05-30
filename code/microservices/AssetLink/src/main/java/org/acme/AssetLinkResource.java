@@ -54,6 +54,12 @@ public class AssetLinkResource {
     }
      
     @GET
+    @Path("utilityoperator/{utilityOperatorId}")
+    public Multi<AssetLink> getByUtilityOperator(Long utilityOperatorId) {
+        return AssetLink.findByUtilityOperatorId(client, utilityOperatorId);
+    }
+
+    @GET
     @Path("{idProsumer}/{idUtilityOperator}")
     public Uni<Response> getDual(Long idProsumer, Long idUtilityOperator) {
         return AssetLink.findById2(client, idProsumer, idUtilityOperator)

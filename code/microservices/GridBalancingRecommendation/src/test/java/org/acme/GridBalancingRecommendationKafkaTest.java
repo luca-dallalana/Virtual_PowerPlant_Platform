@@ -55,7 +55,10 @@ class GridBalancingRecommendationKafkaTest {
     }
 
     @Test
-    void calculateRecommendationsFromEvents_publishesKafkaMessage() {
+    void evaluate_doesNotPublishToKafka() {
+        InMemorySink<String> sink = connector.sink("grid-balancing-recommendation");
+        int sizeBefore = sink.received().size();
+
         List<GridCellDTO> gridCells = List.of(
                 gridCell("GRID_A", 100.0),
                 gridCell("GRID_B", 100.0)
@@ -65,13 +68,27 @@ class GridBalancingRecommendationKafkaTest {
                 evTelemetry(2L, "GRID_B", 50.0f)
         );
 
+        recommendationService.evaluateRecommendations(telemetry, gridCells);
+
+        Assertions.assertEquals(sizeBefore, sink.received().size(), "evaluate should not publish to Kafka");
+    }
+
+    @Test
+    void emit_publishesKafkaMessage() {
+        InMemorySink<String> sink = connector.sink("grid-balancing-recommendation");
+        int sizeBefore = sink.received().size();
+
         stubInsert("INSERT INTO BalancingRecommendation(sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw, overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt) VALUES (?,?,?,?,?,?,?,?,?,?)", 11L);
 
-        recommendationService.calculateRecommendationsFromEvents(telemetry, gridCells)
-                .await().indefinitely();
+        org.acme.entities.BalancingRecommendation rec = new org.acme.entities.BalancingRecommendation(
+                null, "GRID_A", "GRID_B", 95.0, 40.0, 5.0, 5.0, 0.9, "RECOMMENDED",
+                "Overload above threshold; target zone selected by max headroom.",
+                java.time.LocalDateTime.of(2024, 1, 15, 10, 30)
+        );
 
-        InMemorySink<String> sink = connector.sink("grid-balancing-recommendation");
-        Assertions.assertEquals(1, sink.received().size(), "grid-balancing-recommendation should receive one message");
+        recommendationService.emitRecommendation(rec).await().indefinitely();
+
+        Assertions.assertEquals(sizeBefore + 1, sink.received().size(), "emit should publish one message to Kafka");
 
         var message = sink.received().get(0);
         JSONObject payload = new JSONObject(message.getPayload());
