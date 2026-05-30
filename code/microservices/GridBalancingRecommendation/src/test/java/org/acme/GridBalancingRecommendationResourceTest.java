@@ -409,6 +409,34 @@ class GridBalancingRecommendationResourceTest {
         MatcherAssert.assertThat(response.getStatus(), is(404));
     }
 
+    @Test
+    void getByTimeWindow_returnsList() {
+        LocalDateTime from = LocalDateTime.of(2024, 1, 1, 0, 0);
+        LocalDateTime to = LocalDateTime.of(2024, 12, 31, 23, 59);
+        LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
+        LocalDateTime timestamp2 = LocalDateTime.of(2024, 6, 20, 14, 0);
+        Row row1 = balancingRecommendationRow(1L, "GRID_A", "GRID_B", 95.0, 40.0, 5.0, 5.0, 0.9, "RECOMMENDED", "Transfer 5kW to GRID_B", timestamp1);
+        Row row2 = balancingRecommendationRow(2L, "GRID_C", null, 100.0, null, 10.0, null, 0.9, "NO_TARGET", "No available target", timestamp2);
+        stubPreparedQuery("SELECT id, sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw, overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt FROM BalancingRecommendation WHERE createdAt >= ? AND createdAt <= ? ORDER BY createdAt DESC", rowSetWithRows(row1, row2));
+
+        List<BalancingRecommendation> result = resource.getByTimeWindow(from.toString(), to.toString()).collect().asList().await().indefinitely();
+        MatcherAssert.assertThat(result, hasSize(2));
+        MatcherAssert.assertThat(result.get(0).id, is(1L));
+        MatcherAssert.assertThat(result.get(0).sourceGridCellId, is("GRID_A"));
+        MatcherAssert.assertThat(result.get(1).id, is(2L));
+        MatcherAssert.assertThat(result.get(1).status, is("NO_TARGET"));
+    }
+
+    @Test
+    void getByTimeWindow_returnsEmptyList() {
+        LocalDateTime from = LocalDateTime.of(2020, 1, 1, 0, 0);
+        LocalDateTime to = LocalDateTime.of(2020, 12, 31, 23, 59);
+        stubPreparedQuery("SELECT id, sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw, overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt FROM BalancingRecommendation WHERE createdAt >= ? AND createdAt <= ? ORDER BY createdAt DESC", rowSetWithRows());
+
+        List<BalancingRecommendation> result = resource.getByTimeWindow(from.toString(), to.toString()).collect().asList().await().indefinitely();
+        MatcherAssert.assertThat(result, hasSize(0));
+    }
+
     private void injectClient(GridBalancingRecommendationResource target, MySQLPool pool) {
         try {
             Field field = GridBalancingRecommendationResource.class.getDeclaredField("client");

@@ -94,6 +94,16 @@ public class BalancingRecommendation {
                 .onItem().transform(BalancingRecommendation::from);
     }
 
+    public static Multi<BalancingRecommendation> findByTimeWindow(MySQLPool client, LocalDateTime from, LocalDateTime to) {
+        return client.preparedQuery(
+            "SELECT id, sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw, " +
+            "overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt " +
+            "FROM BalancingRecommendation WHERE createdAt >= ? AND createdAt <= ? ORDER BY createdAt DESC"
+        ).execute(Tuple.of(from, to))
+         .onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
+         .onItem().transform(BalancingRecommendation::from);
+    }
+
     public Uni<Long> save(MySQLPool client) {
         return client.preparedQuery("INSERT INTO BalancingRecommendation("
                 + "sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw, overloadKw, "

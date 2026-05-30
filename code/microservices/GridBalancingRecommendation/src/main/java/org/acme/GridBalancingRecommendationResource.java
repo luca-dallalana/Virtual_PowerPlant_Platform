@@ -100,6 +100,14 @@ public class GridBalancingRecommendationResource {
         return BalancingRecommendation.findBySourceGridCellId(client, gridCellId);
     }
 
+    @GET
+    @Path("recommendations")
+    public Multi<BalancingRecommendation> getByTimeWindow(
+            @QueryParam("from") String from,
+            @QueryParam("to") String to) {
+        return BalancingRecommendation.findByTimeWindow(client, LocalDateTime.parse(from), LocalDateTime.parse(to));
+    }
+
     @POST
     public Uni<Response> create(BalancingRecommendation recommendation) {
         applyDefaults(recommendation);

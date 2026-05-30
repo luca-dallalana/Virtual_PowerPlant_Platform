@@ -9,6 +9,9 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
 import jakarta.ws.rs.core.Response;
+import org.acme.dto.ForecastResultRequest;
+import org.acme.dto.ForecastResultResponse;
+import org.acme.dto.OllamaPromptDTO;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.BeforeEach;
@@ -230,6 +233,75 @@ class FlexibilityEventResourceTest {
         MatcherAssert.assertThat(message.contains("\"eventType\":\"ARBITRAGE_SELL\""), is(true));
         MatcherAssert.assertThat(message.contains("\"recommendedAction\":\"DISCHARGE\""), is(true));
         MatcherAssert.assertThat(message.contains("\"timestamp\":"), is(true));
+    }
+
+    @Test
+    void getLogs_withTimeWindow_returnsList() {
+        LocalDateTime from = LocalDateTime.of(2024, 1, 1, 0, 0);
+        LocalDateTime to = LocalDateTime.of(2024, 12, 31, 23, 59);
+        LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
+        LocalDateTime timestamp2 = LocalDateTime.of(2024, 6, 20, 14, 0);
+        Row row1 = flexibilityEventRow(1L, 1L, 1L, "ARBITRAGE_SELL", 95.0f, "DISCHARGE", 150.0f, 10.0f, "GRID_A", timestamp1);
+        Row row2 = flexibilityEventRow(2L, 2L, 1L, "BALANCING_UNAVAILABLE", 15.0f, "UNAVAILABLE", null, null, "GRID_B", timestamp2);
+        stubPreparedQuery("SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp FROM FlexibilityEvent WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
+
+        List<FlexibilityEvent> result = resource.getLogs(from.toString(), to.toString()).collect().asList().await().indefinitely();
+        MatcherAssert.assertThat(result, hasSize(2));
+        MatcherAssert.assertThat(result.get(0).id, is(1L));
+        MatcherAssert.assertThat(result.get(0).eventType, is("ARBITRAGE_SELL"));
+        MatcherAssert.assertThat(result.get(1).id, is(2L));
+        MatcherAssert.assertThat(result.get(1).eventType, is("BALANCING_UNAVAILABLE"));
+    }
+
+    @Test
+    void getLogs_withTimeWindow_returnsEmptyList() {
+        LocalDateTime from = LocalDateTime.of(2020, 1, 1, 0, 0);
+        LocalDateTime to = LocalDateTime.of(2020, 12, 31, 23, 59);
+        stubPreparedQuery("SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp FROM FlexibilityEvent WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp DESC", rowSetWithRows());
+
+        List<FlexibilityEvent> result = resource.getLogs(from.toString(), to.toString()).collect().asList().await().indefinitely();
+        MatcherAssert.assertThat(result, hasSize(0));
+    }
+
+    @Test
+    void getPrompt_withEvents_returnsPromptString() {
+        LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
+        Row row = flexibilityEventRow(1L, 1L, 1L, "ARBITRAGE_SELL", 95.0f, "DISCHARGE", 150.0f, 10.0f, "GRID_A", timestamp);
+        stubQuery("SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp FROM FlexibilityEvent ORDER BY timestamp DESC", rowSetWithRows(row));
+
+        OllamaPromptDTO result = resource.getPrompt().await().indefinitely();
+        MatcherAssert.assertThat(result, notNullValue());
+        MatcherAssert.assertThat(result.prompt, notNullValue());
+        MatcherAssert.assertThat(result.prompt.contains("ARBITRAGE_SELL"), is(true));
+        MatcherAssert.assertThat(result.prompt.contains("DISCHARGE"), is(true));
+    }
+
+    @Test
+    void getPrompt_withNoEvents_returnsEmptyPrompt() {
+        stubQuery("SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp FROM FlexibilityEvent ORDER BY timestamp DESC", rowSetWithRows());
+
+        OllamaPromptDTO result = resource.getPrompt().await().indefinitely();
+        MatcherAssert.assertThat(result, notNullValue());
+        MatcherAssert.assertThat(result.prompt.contains("Events:"), is(true));
+    }
+
+    @Test
+    void persistForecast_returnsForecastId() {
+        ForecastResultRequest request = new ForecastResultRequest();
+        request.windowStart = "2024-01-01T00:00:00";
+        request.windowEnd = "2024-01-31T23:59:59";
+        request.flexibilityEventsCount = 10;
+        request.gridBalancingCount = 3;
+        request.forecastResult = "Positive sentiment, 80% DISCHARGE success rate";
+
+        RowSet<Row> insertResult = rowSetWithRowCount(1);
+        Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(7L);
+        stubPreparedQuery("INSERT INTO FlexibilityForecastResult(windowStart, windowEnd, flexibilityEventsCount, gridBalancingCount, forecastResult, createdAt) VALUES (?,?,?,?,?,?)", insertResult);
+
+        Response response = resource.persistForecast(request).await().indefinitely();
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        ForecastResultResponse body = (ForecastResultResponse) response.getEntity();
+        MatcherAssert.assertThat(body.forecastId, is(7L));
     }
 
     private void injectClient(FlexibilityEventResource target, MySQLPool pool) {

@@ -81,6 +81,16 @@ public class FlexibilityEvent {
                 .onItem().transform(FlexibilityEvent::from);
     }
 
+    public static Multi<FlexibilityEvent> findByTimeWindow(MySQLPool client, LocalDateTime from, LocalDateTime to) {
+        return client.preparedQuery(
+            "SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, " +
+            "marketPrice, incentiveAmount, gridCellId, timestamp " +
+            "FROM FlexibilityEvent WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp DESC"
+        ).execute(Tuple.of(from, to))
+         .onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
+         .onItem().transform(FlexibilityEvent::from);
+    }
+
     public Uni<Long> save(MySQLPool client) {
         return client.preparedQuery("INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)")
                 .execute(Tuple.from(java.util.Arrays.asList(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp)))
