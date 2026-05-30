@@ -82,4 +82,12 @@ public class KafkaProvisioningResource {
                 .onItem().transform(ResponseBuilder::build); 
     }
 
+    @GET
+    @Path("latest/{assetId}")
+    public Uni<Response> getLatestByAssetId(Long assetId) {
+        return Telemetry.findLatestByAssetId(client, assetId)
+                .onItem().transform(telemetry -> telemetry != null ? Response.ok(telemetry) : Response.status(Response.Status.NOT_FOUND))
+                .onItem().transform(ResponseBuilder::build);
+    }
+
 }

@@ -123,43 +123,37 @@ class FlexibilityEventResourceTest {
     }
 
     @Test
-    void evaluateTelemetry_highSoC_createsArbitrageSellEvent() {
+    void evaluateTelemetry_highSoC_returnsArbitrageSellEvent() {
         TelemetryDTO telemetry = createTelemetryDTO(1L, 95.0f, "GRID_A");
-        RowSet<Row> insertResult = rowSetWithRowCount(1);
-        Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(123L);
-        stubPreparedQuery("INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)", insertResult);
 
         Response response = resource.evaluateTelemetry(telemetry, 1L).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
         FlexibilityEvent event = (FlexibilityEvent) response.getEntity();
         MatcherAssert.assertThat(event, notNullValue());
-        MatcherAssert.assertThat(event.id, is(123L));
+        MatcherAssert.assertThat(event.id, is((Long) null));
         MatcherAssert.assertThat(event.eventType, is("ARBITRAGE_SELL"));
         MatcherAssert.assertThat(event.recommendedAction, is("DISCHARGE"));
         MatcherAssert.assertThat(event.marketPrice, is(150.0f));
         MatcherAssert.assertThat(event.incentiveAmount, is(10.0f));
 
-        Mockito.verify(flexibilityEmitter, Mockito.times(1)).send(Mockito.anyString());
+        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
     }
 
     @Test
-    void evaluateTelemetry_lowSoC_createsBalancingUnavailableEvent() {
+    void evaluateTelemetry_lowSoC_returnsBalancingUnavailableEvent() {
         TelemetryDTO telemetry = createTelemetryDTO(1L, 15.0f, "GRID_A");
-        RowSet<Row> insertResult = rowSetWithRowCount(1);
-        Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(124L);
-        stubPreparedQuery("INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)", insertResult);
 
         Response response = resource.evaluateTelemetry(telemetry, 1L).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
         FlexibilityEvent event = (FlexibilityEvent) response.getEntity();
         MatcherAssert.assertThat(event, notNullValue());
-        MatcherAssert.assertThat(event.id, is(124L));
+        MatcherAssert.assertThat(event.id, is((Long) null));
         MatcherAssert.assertThat(event.eventType, is("BALANCING_UNAVAILABLE"));
         MatcherAssert.assertThat(event.recommendedAction, is("UNAVAILABLE"));
         MatcherAssert.assertThat(event.marketPrice, is((Float) null));
         MatcherAssert.assertThat(event.incentiveAmount, is((Float) null));
 
-        Mockito.verify(flexibilityEmitter, Mockito.times(1)).send(Mockito.anyString());
+        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
     }
 
     @Test
@@ -183,19 +177,54 @@ class FlexibilityEventResourceTest {
     }
 
     @Test
-    void evaluateTelemetry_publishesCorrectKafkaMessage() {
+    void evaluateTelemetry_doesNotSaveOrPublishToKafka() {
         TelemetryDTO telemetry = createTelemetryDTO(1L, 95.0f, "GRID_A");
-        RowSet<Row> insertResult = rowSetWithRowCount(1);
-        Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(123L);
-        stubPreparedQuery("INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)", insertResult);
 
         resource.evaluateTelemetry(telemetry, 1L).await().indefinitely();
 
-        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-        Mockito.verify(flexibilityEmitter).send(messageCaptor.capture());
+        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
+    }
 
-        String message = messageCaptor.getValue();
-        MatcherAssert.assertThat(message.contains("\"eventId\":123"), is(true));
+    @Test
+    void emitFlexibilityOffer_savesAndPublishesToKafka() {
+        FlexibilityEvent event = new FlexibilityEvent();
+        event.assetId = 1L;
+        event.prosumerId = 1L;
+        event.eventType = "ARBITRAGE_SELL";
+        event.recommendedAction = "DISCHARGE";
+        event.timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
+
+        RowSet<Row> insertResult = rowSetWithRowCount(1);
+        Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(42L);
+        stubPreparedQuery("INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)", insertResult);
+
+        Response response = resource.emitFlexibilityOffer(event).await().indefinitely();
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        FlexibilityEvent saved = (FlexibilityEvent) response.getEntity();
+        MatcherAssert.assertThat(saved.id, is(42L));
+
+        Mockito.verify(flexibilityEmitter, Mockito.times(1)).send(Mockito.anyString());
+    }
+
+    @Test
+    void emitFlexibilityOffer_publishesCorrectKafkaMessage() {
+        FlexibilityEvent event = new FlexibilityEvent();
+        event.assetId = 1L;
+        event.prosumerId = 1L;
+        event.eventType = "ARBITRAGE_SELL";
+        event.recommendedAction = "DISCHARGE";
+        event.timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
+
+        RowSet<Row> insertResult = rowSetWithRowCount(1);
+        Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(42L);
+        stubPreparedQuery("INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)", insertResult);
+
+        resource.emitFlexibilityOffer(event).await().indefinitely();
+
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        Mockito.verify(flexibilityEmitter).send(captor.capture());
+        String message = captor.getValue();
+        MatcherAssert.assertThat(message.contains("\"eventId\":42"), is(true));
         MatcherAssert.assertThat(message.contains("\"assetId\":1"), is(true));
         MatcherAssert.assertThat(message.contains("\"prosumerId\":1"), is(true));
         MatcherAssert.assertThat(message.contains("\"eventType\":\"ARBITRAGE_SELL\""), is(true));

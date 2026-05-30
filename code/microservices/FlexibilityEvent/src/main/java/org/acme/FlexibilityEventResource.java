@@ -1,6 +1,5 @@
 package org.acme;
 
-import java.net.URI;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -107,22 +106,25 @@ public class FlexibilityEventResource {
         }
 
         if (event != null) {
-            final FlexibilityEvent finalEvent = event;
-            return event.save(client)
-                .onItem().transform(eventId -> {
-                    finalEvent.id = eventId;
-                    String kafkaMessage = String.format(
-                        "{\"eventId\":%d,\"assetId\":%d,\"prosumerId\":%d,\"eventType\":\"%s\",\"recommendedAction\":\"%s\",\"timestamp\":\"%s\"}",
-                        eventId, finalEvent.assetId, finalEvent.prosumerId, finalEvent.eventType, finalEvent.recommendedAction, finalEvent.timestamp
-                    );
-                    flexibilityEmitter.send(kafkaMessage);
-                    System.out.printf("FlexibilityEvent created: assetId=%d, eventType=%s, soc=%.2f%%\n",
-                        finalEvent.assetId, finalEvent.eventType, finalEvent.soc_percent);
-                    return Response.ok(finalEvent).build();
-                });
+            return Uni.createFrom().item(Response.ok(event).build());
         } else {
             return Uni.createFrom().item(Response.status(204).build());
         }
+    }
+
+    @POST
+    @Path("emit")
+    public Uni<Response> emitFlexibilityOffer(FlexibilityEvent event) {
+        return event.save(client)
+                .onItem().transform(eventId -> {
+                    event.id = eventId;
+                    String kafkaMessage = String.format(
+                        "{\"eventId\":%d,\"assetId\":%d,\"prosumerId\":%d,\"eventType\":\"%s\",\"recommendedAction\":\"%s\",\"timestamp\":\"%s\"}",
+                        event.id, event.assetId, event.prosumerId, event.eventType, event.recommendedAction, event.timestamp
+                    );
+                    flexibilityEmitter.send(kafkaMessage);
+                    return Response.ok(event).build();
+                });
     }
 
     private Float getCurrentMarketPrice() { // In production this SHOULD NOT be hardcoded, but for demo purposes we return a fixed value

@@ -53,15 +53,31 @@ class FlexibilityEventKafkaTest {
     }
 
     @Test
-    void evaluateTelemetry_publishesKafkaMessage() {
+    void evaluateTelemetry_doesNotPublishToKafka() {
         TelemetryDTO telemetry = telemetry(1L, 95.0f, "GRID_A");
-        stubInsert("INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)", 123L);
         InMemorySink<String> sink = connector.sink("flexibility-offers");
         int before = sink.received().size();
 
         Response response = resource.evaluateTelemetry(telemetry, 732L).await().indefinitely();
         Assertions.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(before, sink.received().size(), "flexibility-offers should not receive a message on evaluate");
+    }
 
+    @Test
+    void emitFlexibilityOffer_publishesKafkaMessage() {
+        FlexibilityEvent event = new FlexibilityEvent();
+        event.assetId = 1L;
+        event.prosumerId = 732L;
+        event.eventType = "ARBITRAGE_SELL";
+        event.recommendedAction = "DISCHARGE";
+        event.timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
+
+        stubInsert("INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)", 123L);
+        InMemorySink<String> sink = connector.sink("flexibility-offers");
+        int before = sink.received().size();
+
+        Response response = resource.emitFlexibilityOffer(event).await().indefinitely();
+        Assertions.assertEquals(200, response.getStatus());
         Assertions.assertEquals(before + 1, sink.received().size(), "flexibility-offers should receive one new message");
 
         JSONObject payload = new JSONObject(sink.received().get(sink.received().size() - 1).getPayload());
@@ -71,24 +87,6 @@ class FlexibilityEventKafkaTest {
         Assertions.assertEquals("ARBITRAGE_SELL", payload.getString("eventType"));
         Assertions.assertEquals("DISCHARGE", payload.getString("recommendedAction"));
         Assertions.assertTrue(payload.has("timestamp"));
-    }
-
-    @Test
-    void evaluateTelemetry_lowSoC_publishesKafkaMessage() {
-        TelemetryDTO telemetry = telemetry(1L, 15.0f, "GRID_A");
-        stubInsert("INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)", 124L);
-        InMemorySink<String> sink = connector.sink("flexibility-offers");
-        int before = sink.received().size();
-
-        Response response = resource.evaluateTelemetry(telemetry, 732L).await().indefinitely();
-        Assertions.assertEquals(200, response.getStatus());
-
-        Assertions.assertEquals(before + 1, sink.received().size(), "flexibility-offers should receive one new message");
-
-        JSONObject payload = new JSONObject(sink.received().get(sink.received().size() - 1).getPayload());
-        Assertions.assertEquals(124, payload.getInt("eventId"));
-        Assertions.assertEquals("BALANCING_UNAVAILABLE", payload.getString("eventType"));
-        Assertions.assertEquals("UNAVAILABLE", payload.getString("recommendedAction"));
     }
 
     private void stubInsert(String sql, Long insertedId) {

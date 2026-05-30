@@ -111,4 +111,10 @@ public class ProsumerResource {
                 .onItem().transform(status1 -> Response.status(status1).build());
     }
 
+    @GET
+    @Path("assets/batteries/active")
+    public Multi<BatteryAssetDTO> getActiveBatteries() {
+        return Asset.findActiveBatteries(client);
+    }
+
 }

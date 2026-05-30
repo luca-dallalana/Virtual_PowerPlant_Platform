@@ -69,4 +69,11 @@ public class Asset {
 		return client.preparedQuery("UPDATE Asset SET status = ? WHERE assetId = ?").execute(Tuple.of(status_R, assetId_R))
 				.onItem().transform(pgRowSet -> pgRowSet.rowCount() == 1);
 	}
+
+	public static Multi<BatteryAssetDTO> findActiveBatteries(MySQLPool client) {
+		return client.preparedQuery("SELECT assetId, prosumerId FROM Asset WHERE assetType = ? AND status = ?")
+				.execute(Tuple.of("BATTERY", "ACTIVE"))
+				.onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
+				.onItem().transform(row -> new BatteryAssetDTO(row.getLong("prosumerId"), row.getLong("assetId")));
+	}
 }
