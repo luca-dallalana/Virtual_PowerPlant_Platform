@@ -81,6 +81,12 @@ public class UtilityOperatorResource {
     }
 
     @GET
+    @Path("zones")
+    public Multi<ZoneInfo> getZones() {
+        return ZoneInfo.findAll(client);
+    }
+
+    @GET
     @Path("gridcell")
     public Multi<GridCell> getAllGridCells() {
         return GridCell.findAll(client);

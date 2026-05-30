@@ -42,7 +42,7 @@ class KafkaProvisioningResourceTest {
         Row row2 = telemetryRow(2L, LocalDateTime.of(2024, 1, 10, 12, 31), 1002L, "SOLAR", "CELL-2");
         stubQuery("SELECT *  FROM Telemetry ORDER BY id ASC", rowSetWithRows(row1, row2));
 
-        List<Telemetry> result = resource.get().collect().asList().await().indefinitely();
+        List<Telemetry> result = resource.get(null, null).collect().asList().await().indefinitely();
         assertThat(result, hasSize(2));
         assertThat(result.get(0).id, is(1L));
         assertThat(result.get(0).asset_type, is("BATTERY"));
@@ -88,6 +88,17 @@ class KafkaProvisioningResourceTest {
 
         Response response = resource.getLatestByAssetId(9999L).await().indefinitely();
         assertThat(response.getStatus(), is(404));
+    }
+
+    @Test
+    void get_withTimeWindow_returnsFiltered() {
+        Row row = telemetryRow(3L, LocalDateTime.of(2024, 6, 1, 10, 0), 1001L, "BATTERY", "CELL-1");
+        stubPreparedQuery("SELECT * FROM Telemetry WHERE timeStamp >= ? AND timeStamp <= ? ORDER BY timeStamp ASC", rowSetWithRows(row));
+
+        List<Telemetry> result = resource.get("2024-06-01T00:00:00", "2024-06-01T23:59:59").collect().asList().await().indefinitely();
+        assertThat(result, hasSize(1));
+        assertThat(result.get(0).id, is(3L));
+        assertThat(result.get(0).asset_type, is("BATTERY"));
     }
 
 

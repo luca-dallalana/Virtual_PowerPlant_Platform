@@ -4,13 +4,15 @@ import java.util.List;
 
 public class AnalyticsRequest {
     public List<TelemetryDTO> telemetryData;
-    public List<AssetLinkDTO> assetLinks;
+    public List<AssetDTO> assets;
+    public List<ZoneDTO> zones;
 
     public AnalyticsRequest() {
     }
 
-    public AnalyticsRequest(List<TelemetryDTO> telemetryData, List<AssetLinkDTO> assetLinks) {
+    public AnalyticsRequest(List<TelemetryDTO> telemetryData, List<AssetDTO> assets, List<ZoneDTO> zones) {
         this.telemetryData = telemetryData;
-        this.assetLinks = assetLinks;
+        this.assets = assets;
+        this.zones = zones;
     }
 }

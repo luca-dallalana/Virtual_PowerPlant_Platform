@@ -189,6 +189,29 @@ class ProsumerResourceUnitTest {
     }
 
     @Test
+    void getAllAssets_returnsList() {
+        Row row1 = assetRow(1001L, 1L, "BATTERY", "Tesla Powerwall 2", "ACTIVE");
+        Row row2 = assetRow(1002L, 1L, "SOLAR", "SolarEdge SE7600H", "ACTIVE");
+        Row row3 = assetRow(1003L, 2L, "EV_CHARGER", "ChargePoint Home Flex", "ACTIVE");
+        stubQuery("SELECT assetId, prosumerId, assetType, model, status FROM Asset ORDER BY assetId ASC", rowSetWithRows(row1, row2, row3));
+
+        List<Asset> result = resource.getAllAssets().collect().asList().await().indefinitely();
+        MatcherAssert.assertThat(result, hasSize(3));
+        MatcherAssert.assertThat(result.get(0).assetId, is(1001L));
+        MatcherAssert.assertThat(result.get(0).prosumerId, is(1L));
+        MatcherAssert.assertThat(result.get(1).assetId, is(1002L));
+        MatcherAssert.assertThat(result.get(2).prosumerId, is(2L));
+    }
+
+    @Test
+    void getAllAssets_returnsEmptyList() {
+        stubQuery("SELECT assetId, prosumerId, assetType, model, status FROM Asset ORDER BY assetId ASC", rowSetWithRows());
+
+        List<Asset> result = resource.getAllAssets().collect().asList().await().indefinitely();
+        MatcherAssert.assertThat(result, hasSize(0));
+    }
+
+    @Test
     void getActiveBatteries_returnsList() {
         Row row1 = batteryAssetRow(1001L, 1L);
         Row row2 = batteryAssetRow(1004L, 3L);

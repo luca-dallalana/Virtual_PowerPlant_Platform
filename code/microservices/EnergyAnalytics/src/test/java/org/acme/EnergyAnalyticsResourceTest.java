@@ -11,8 +11,9 @@ import io.vertx.sqlclient.RowIterator;
 import jakarta.ws.rs.core.Response;
 import org.acme.dto.AnalyticsRequest;
 import org.acme.dto.AnalyticsResult;
-import org.acme.dto.AssetLinkDTO;
+import org.acme.dto.AssetDTO;
 import org.acme.dto.TelemetryDTO;
+import org.acme.dto.ZoneDTO;
 import org.acme.entities.AverageSoC;
 import org.acme.entities.ConsumedEnergyByProsumer;
 import org.acme.entities.EnergyDischargedByZone;
@@ -159,10 +160,14 @@ class EnergyAnalyticsResourceTest {
             createSolarTelemetry(2L, 100.0f),
             createEVChargerTelemetry(3L, 25.0f)
         );
-        List<AssetLinkDTO> assetLinks = Arrays.asList(
-            createAssetLink(1L, 1L, "GRID_A"),
-            createAssetLink(2L, 1L, "GRID_A"),
-            createAssetLink(3L, 2L, "GRID_B")
+        List<AssetDTO> assets = Arrays.asList(
+            createAssetDTO(1L, 1L),
+            createAssetDTO(2L, 1L),
+            createAssetDTO(3L, 2L)
+        );
+        List<ZoneDTO> zones = Arrays.asList(
+            createZoneDTO("GRID_A"),
+            createZoneDTO("GRID_B")
         );
 
         AnalyticsResult expectedResult = new AnalyticsResult();
@@ -170,10 +175,10 @@ class EnergyAnalyticsResourceTest {
         expectedResult.recordsProcessed = 3;
         expectedResult.timestamp = LocalDateTime.now();
 
-        Mockito.when(analyticsService.calculateMetricsFromEvents(telemetry, assetLinks))
+        Mockito.when(analyticsService.calculateMetricsFromEvents(telemetry, assets, zones))
                .thenReturn(Uni.createFrom().item(expectedResult));
 
-        AnalyticsRequest request = new AnalyticsRequest(telemetry, assetLinks);
+        AnalyticsRequest request = new AnalyticsRequest(telemetry, assets, zones);
 
         Response response = resource.evaluate(request).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
@@ -187,8 +192,11 @@ class EnergyAnalyticsResourceTest {
         List<TelemetryDTO> telemetry = Arrays.asList(
             createBatteryTelemetry(1L, 50.0f, 75.0f)
         );
-        List<AssetLinkDTO> assetLinks = Arrays.asList(
-            createAssetLink(1L, 1L, "GRID_A")
+        List<AssetDTO> assets = Arrays.asList(
+            createAssetDTO(1L, 1L)
+        );
+        List<ZoneDTO> zones = Arrays.asList(
+            createZoneDTO("GRID_A")
         );
 
         AnalyticsResult expectedResult = new AnalyticsResult();
@@ -196,10 +204,10 @@ class EnergyAnalyticsResourceTest {
         expectedResult.recordsProcessed = 1;
         expectedResult.timestamp = LocalDateTime.now();
 
-        Mockito.when(analyticsService.calculateMetricsFromEvents(telemetry, assetLinks))
+        Mockito.when(analyticsService.calculateMetricsFromEvents(telemetry, assets, zones))
                .thenReturn(Uni.createFrom().item(expectedResult));
 
-        AnalyticsRequest request = new AnalyticsRequest(telemetry, assetLinks);
+        AnalyticsRequest request = new AnalyticsRequest(telemetry, assets, zones);
 
         Response response = resource.evaluate(request).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
@@ -211,17 +219,18 @@ class EnergyAnalyticsResourceTest {
     @Test
     void evaluate_withEmptyData_returnsZeroRecords() {
         List<TelemetryDTO> telemetry = Collections.emptyList();
-        List<AssetLinkDTO> assetLinks = Collections.emptyList();
+        List<AssetDTO> assets = Collections.emptyList();
+        List<ZoneDTO> zones = Collections.emptyList();
 
         AnalyticsResult expectedResult = new AnalyticsResult();
         expectedResult.status = "SUCCESS";
         expectedResult.recordsProcessed = 0;
         expectedResult.timestamp = LocalDateTime.now();
 
-        Mockito.when(analyticsService.calculateMetricsFromEvents(telemetry, assetLinks))
+        Mockito.when(analyticsService.calculateMetricsFromEvents(telemetry, assets, zones))
                .thenReturn(Uni.createFrom().item(expectedResult));
 
-        AnalyticsRequest request = new AnalyticsRequest(telemetry, assetLinks);
+        AnalyticsRequest request = new AnalyticsRequest(telemetry, assets, zones);
 
         Response response = resource.evaluate(request).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
@@ -232,45 +241,43 @@ class EnergyAnalyticsResourceTest {
     @Test
     void evaluate_withNullFieldsInTelemetry_handlesGracefully() {
         TelemetryDTO telemetry = createBatteryTelemetry(1L, null, 75.0f);
-        List<AssetLinkDTO> assetLinks = Arrays.asList(
-            createAssetLink(1L, 1L, "GRID_A")
-        );
+        List<AssetDTO> assets = Arrays.asList(createAssetDTO(1L, 1L));
+        List<ZoneDTO> zones = Arrays.asList(createZoneDTO("GRID_A"));
 
         AnalyticsResult expectedResult = new AnalyticsResult();
         expectedResult.status = "SUCCESS";
         expectedResult.recordsProcessed = 0;
         expectedResult.timestamp = LocalDateTime.now();
 
-        Mockito.when(analyticsService.calculateMetricsFromEvents(Arrays.asList(telemetry), assetLinks))
+        Mockito.when(analyticsService.calculateMetricsFromEvents(Arrays.asList(telemetry), assets, zones))
                .thenReturn(Uni.createFrom().item(expectedResult));
 
-        AnalyticsRequest request = new AnalyticsRequest(Arrays.asList(telemetry), assetLinks);
+        AnalyticsRequest request = new AnalyticsRequest(Arrays.asList(telemetry), assets, zones);
 
         Response response = resource.evaluate(request).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
-        Mockito.verify(analyticsService, Mockito.times(1)).calculateMetricsFromEvents(Arrays.asList(telemetry), assetLinks);
+        Mockito.verify(analyticsService, Mockito.times(1)).calculateMetricsFromEvents(Arrays.asList(telemetry), assets, zones);
     }
 
     @Test
     void evaluate_withUnlinkedAssets_filtersCorrectly() {
         TelemetryDTO telemetry = createBatteryTelemetry(99L, 50.0f, 75.0f);
-        List<AssetLinkDTO> assetLinks = Arrays.asList(
-            createAssetLink(1L, 1L, "GRID_A")
-        );
+        List<AssetDTO> assets = Arrays.asList(createAssetDTO(1L, 1L));
+        List<ZoneDTO> zones = Arrays.asList(createZoneDTO("GRID_A"));
 
         AnalyticsResult expectedResult = new AnalyticsResult();
         expectedResult.status = "SUCCESS";
         expectedResult.recordsProcessed = 0;
         expectedResult.timestamp = LocalDateTime.now();
 
-        Mockito.when(analyticsService.calculateMetricsFromEvents(Arrays.asList(telemetry), assetLinks))
+        Mockito.when(analyticsService.calculateMetricsFromEvents(Arrays.asList(telemetry), assets, zones))
                .thenReturn(Uni.createFrom().item(expectedResult));
 
-        AnalyticsRequest request = new AnalyticsRequest(Arrays.asList(telemetry), assetLinks);
+        AnalyticsRequest request = new AnalyticsRequest(Arrays.asList(telemetry), assets, zones);
 
         Response response = resource.evaluate(request).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
-        Mockito.verify(analyticsService, Mockito.times(1)).calculateMetricsFromEvents(Arrays.asList(telemetry), assetLinks);
+        Mockito.verify(analyticsService, Mockito.times(1)).calculateMetricsFromEvents(Arrays.asList(telemetry), assets, zones);
     }
 
     private void injectClient(EnergyAnalyticsResource target, MySQLPool pool) {
@@ -398,13 +405,12 @@ class EnergyAnalyticsResourceTest {
         return dto;
     }
 
-    private AssetLinkDTO createAssetLink(Long assetId, Long prosumerId, String gridCellId) {
-        AssetLinkDTO dto = new AssetLinkDTO();
-        dto.assetId = assetId;
-        dto.prosumerId = prosumerId;
-        dto.gridCellId = gridCellId;
-        dto.status = "ACTIVE";
-        return dto;
+    private AssetDTO createAssetDTO(Long assetId, Long prosumerId) {
+        return new AssetDTO(assetId, prosumerId);
+    }
+
+    private ZoneDTO createZoneDTO(String gridCellId) {
+        return new ZoneDTO(gridCellId, "Operator-" + gridCellId, "Location-" + gridCellId);
     }
 
     private static final class ListRowIterator implements RowIterator<Row> {

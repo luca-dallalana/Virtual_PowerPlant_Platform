@@ -10,6 +10,8 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.acme.dto.AnalyticsResult;
+import org.acme.dto.AssetDTO;
+import org.acme.dto.ZoneDTO;
 import org.acme.entities.AverageSoC;
 import org.acme.entities.ConsumedEnergyByProsumer;
 import org.acme.entities.EnergyDischargedByZone;
@@ -85,7 +87,8 @@ public class EnergyAnalyticsResource {
     public Uni<Response> evaluate(AnalyticsRequest request) {
         return analyticsService.calculateMetricsFromEvents(
             request.telemetryData,
-            request.assetLinks
+            request.assets,
+            request.zones
         ).onItem().transform(result -> Response.ok(result).build());
     }
 

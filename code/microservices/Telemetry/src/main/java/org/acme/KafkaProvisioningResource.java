@@ -6,9 +6,11 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
+import java.time.LocalDateTime;
 
 import org.acme.model.Topic;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -70,7 +72,10 @@ public class KafkaProvisioningResource {
     }
 
     @GET
-    public Multi<Telemetry> get() {
+    public Multi<Telemetry> get(@QueryParam("from") String from, @QueryParam("to") String to) {
+        if (from != null && to != null) {
+            return Telemetry.findByTimeWindow(client, LocalDateTime.parse(from), LocalDateTime.parse(to));
+        }
         return Telemetry.findAll(client);
     }
 

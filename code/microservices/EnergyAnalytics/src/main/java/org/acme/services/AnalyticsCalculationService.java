@@ -6,8 +6,9 @@ import io.vertx.mutiny.mysqlclient.MySQLPool;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.dto.AnalyticsResult;
-import org.acme.dto.AssetLinkDTO;
+import org.acme.dto.AssetDTO;
 import org.acme.dto.TelemetryDTO;
+import org.acme.dto.ZoneDTO;
 import org.acme.entities.AverageSoC;
 import org.acme.entities.ConsumedEnergyByProsumer;
 import org.acme.entities.EnergyDischargedByZone;
@@ -20,11 +21,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Aggregates telemetry into four metrics (energy discharged by zone, generated/consumed by prosumer,
- * fleet SoC average), persists each to MySQL, and publishes the corresponding Kafka event.
- * All four calculations run concurrently.
- */
 @ApplicationScoped
 public class AnalyticsCalculationService {
 
@@ -47,28 +43,28 @@ public class AnalyticsCalculationService {
     @Channel("average-soc")
     Emitter<String> averageSocEmitter;
 
-    /**
-     * Builds an asset-id-to-link index (first link wins on duplicates) and runs the calculation pipeline.
-     */
-    public Uni<AnalyticsResult> calculateMetricsFromEvents(List<TelemetryDTO> telemetryList, List<AssetLinkDTO> assetLinkList) {
+    public Uni<AnalyticsResult> calculateMetricsFromEvents(List<TelemetryDTO> telemetryList, List<AssetDTO> assets, List<ZoneDTO> zones) {
         LocalDateTime timestamp = LocalDateTime.now();
         String aggregationPeriod = "CURRENT";
 
-        Map<Long, AssetLinkDTO> assetLinkMap = assetLinkList.stream()
-            .collect(Collectors.toMap(link -> link.assetId, link -> link, (a, b) -> a));
+        Map<Long, Long> assetToProsumerMap = assets.stream()
+            .collect(Collectors.toMap(a -> a.assetId, a -> a.prosumerId, (a, b) -> a));
 
-        return calculateAndSave(telemetryList, assetLinkMap, timestamp, aggregationPeriod);
+        Map<String, ZoneDTO> zoneMap = zones.stream()
+            .collect(Collectors.toMap(z -> z.gridCellId, z -> z, (a, b) -> a));
+
+        return calculateAndSave(telemetryList, assetToProsumerMap, zoneMap, timestamp, aggregationPeriod);
     }
 
-    /** Average-SoC always produces at most one record, so it contributes 0 or 1 to totalRecords. */
     private Uni<AnalyticsResult> calculateAndSave(List<TelemetryDTO> telemetryList,
-                                                  Map<Long, AssetLinkDTO> assetLinkMap,
+                                                  Map<Long, Long> assetToProsumerMap,
+                                                  Map<String, ZoneDTO> zoneMap,
                                                   LocalDateTime timestamp,
                                                   String aggregationPeriod) {
         return Uni.combine().all().unis(
-            calculateEnergyDischargedByZone(telemetryList, assetLinkMap, timestamp, aggregationPeriod),
-            calculateGeneratedEnergyByProsumer(telemetryList, assetLinkMap, timestamp, aggregationPeriod),
-            calculateConsumedEnergyByProsumer(telemetryList, assetLinkMap, timestamp, aggregationPeriod),
+            calculateEnergyDischargedByZone(telemetryList, zoneMap, timestamp, aggregationPeriod),
+            calculateGeneratedEnergyByProsumer(telemetryList, assetToProsumerMap, timestamp, aggregationPeriod),
+            calculateConsumedEnergyByProsumer(telemetryList, assetToProsumerMap, timestamp, aggregationPeriod),
             calculateAverageSoC(telemetryList, timestamp, aggregationPeriod)
         ).combinedWith((discharged, generated, consumed, avgSoc) -> {
             int totalRecords = discharged + generated + consumed + (avgSoc > 0 ? 1 : 0);
@@ -76,16 +72,15 @@ public class AnalyticsCalculationService {
         });
     }
 
-    /** Groups BATTERY assets by grid cell, sums positive Current_Output, persists and publishes one record per zone. */
     private Uni<Integer> calculateEnergyDischargedByZone(List<TelemetryDTO> telemetryList,
-                                                         Map<Long, AssetLinkDTO> assetLinkMap,
+                                                         Map<String, ZoneDTO> zoneMap,
                                                          LocalDateTime timestamp,
                                                          String aggregationPeriod) {
         Map<String, List<TelemetryDTO>> groupedByZone = telemetryList.stream()
             .filter(t -> "BATTERY".equals(t.asset_type))
             .filter(t -> t.Current_Output != null && t.Current_Output > 0)
-            .filter(t -> assetLinkMap.containsKey(t.asset_id))
-            .collect(Collectors.groupingBy(t -> assetLinkMap.get(t.asset_id).gridCellId));
+            .filter(t -> t.grid_cell_id != null)
+            .collect(Collectors.groupingBy(t -> t.grid_cell_id));
 
         List<Uni<Long>> saveOperations = new ArrayList<>();
 
@@ -97,12 +92,16 @@ public class AnalyticsCalculationService {
                 .mapToDouble(t -> t.Current_Output != null ? t.Current_Output : 0.0)
                 .sum();
 
+            ZoneDTO zone = zoneMap.get(gridCellId);
+            String operatorName = zone != null ? zone.operatorName : "Unknown";
+            String operatorLocation = zone != null ? zone.operatorLocation : "Unknown";
+
             EnergyDischargedByZone record = new EnergyDischargedByZone(
                 null, gridCellId, totalDischarged, batteries.size(), timestamp, aggregationPeriod
             );
 
             Uni<Long> saveUni = record.save(client)
-                .invoke(() -> publishDischargedZoneEvent(gridCellId, totalDischarged, batteries.size(), timestamp));
+                .invoke(() -> publishDischargedZoneEvent(gridCellId, operatorName, operatorLocation, totalDischarged, batteries.size(), timestamp));
 
             saveOperations.add(saveUni);
         }
@@ -110,15 +109,14 @@ public class AnalyticsCalculationService {
         return Uni.combine().all().unis(saveOperations).combinedWith(results -> results.size());
     }
 
-    /** Groups SOLAR assets by prosumer, sums Current_Generation, persists and publishes one record per prosumer. */
     private Uni<Integer> calculateGeneratedEnergyByProsumer(List<TelemetryDTO> telemetryList,
-                                                           Map<Long, AssetLinkDTO> assetLinkMap,
-                                                           LocalDateTime timestamp,
-                                                           String aggregationPeriod) {
+                                                            Map<Long, Long> assetToProsumerMap,
+                                                            LocalDateTime timestamp,
+                                                            String aggregationPeriod) {
         Map<Long, List<TelemetryDTO>> groupedByProsumer = telemetryList.stream()
             .filter(t -> "SOLAR".equals(t.asset_type))
-            .filter(t -> assetLinkMap.containsKey(t.asset_id))
-            .collect(Collectors.groupingBy(t -> assetLinkMap.get(t.asset_id).prosumerId));
+            .filter(t -> assetToProsumerMap.containsKey(t.asset_id))
+            .collect(Collectors.groupingBy(t -> assetToProsumerMap.get(t.asset_id)));
 
         List<Uni<Long>> saveOperations = new ArrayList<>();
 
@@ -143,15 +141,14 @@ public class AnalyticsCalculationService {
         return Uni.combine().all().unis(saveOperations).combinedWith(results -> results.size());
     }
 
-    /** Groups EV_CHARGER assets by prosumer, sums Charging_Rate, persists and publishes one record per prosumer. */
     private Uni<Integer> calculateConsumedEnergyByProsumer(List<TelemetryDTO> telemetryList,
-                                                          Map<Long, AssetLinkDTO> assetLinkMap,
-                                                          LocalDateTime timestamp,
-                                                          String aggregationPeriod) {
+                                                           Map<Long, Long> assetToProsumerMap,
+                                                           LocalDateTime timestamp,
+                                                           String aggregationPeriod) {
         Map<Long, List<TelemetryDTO>> groupedByProsumer = telemetryList.stream()
             .filter(t -> "EV_CHARGER".equals(t.asset_type))
-            .filter(t -> assetLinkMap.containsKey(t.asset_id))
-            .collect(Collectors.groupingBy(t -> assetLinkMap.get(t.asset_id).prosumerId));
+            .filter(t -> assetToProsumerMap.containsKey(t.asset_id))
+            .collect(Collectors.groupingBy(t -> assetToProsumerMap.get(t.asset_id)));
 
         List<Uni<Long>> saveOperations = new ArrayList<>();
 
@@ -176,10 +173,9 @@ public class AnalyticsCalculationService {
         return Uni.combine().all().unis(saveOperations).combinedWith(results -> results.size());
     }
 
-    /** Averages State_of_Charge across all non-null BATTERY readings; defaults to 0.0 if none present. */
     private Uni<Integer> calculateAverageSoC(List<TelemetryDTO> telemetryList,
-                                            LocalDateTime timestamp,
-                                            String aggregationPeriod) {
+                                             LocalDateTime timestamp,
+                                             String aggregationPeriod) {
         List<TelemetryDTO> batteries = telemetryList.stream()
             .filter(t -> "BATTERY".equals(t.asset_type))
             .filter(t -> t.State_of_Charge != null)
@@ -199,17 +195,15 @@ public class AnalyticsCalculationService {
             .map(id -> 1);
     }
 
-    /** Kafka key: gridCellId */
-    private void publishDischargedZoneEvent(String gridCellId, double totalDischarge, int batteryCount, LocalDateTime timestamp) {
+    private void publishDischargedZoneEvent(String gridCellId, String operatorName, String operatorLocation, double totalDischarge, int batteryCount, LocalDateTime timestamp) {
         String json = String.format(
-            "{\"gridCellId\":\"%s\",\"totalDischarge\":%.2f,\"batteryCount\":%d,\"timestamp\":\"%s\"}",
-            gridCellId, totalDischarge, batteryCount, timestamp.toString()
+            "{\"gridCellId\":\"%s\",\"operatorName\":\"%s\",\"operatorLocation\":\"%s\",\"totalDischarge\":%.2f,\"batteryCount\":%d,\"timestamp\":\"%s\"}",
+            gridCellId, operatorName, operatorLocation, totalDischarge, batteryCount, timestamp.toString()
         );
         dischargedZoneEmitter.send(Message.of(json)
             .addMetadata(OutgoingKafkaRecordMetadata.builder().withKey(gridCellId).build()));
     }
 
-    /** Kafka key: prosumerId */
     private void publishGeneratedProsumerEvent(Long prosumerId, double totalGeneration, int assetCount, LocalDateTime timestamp) {
         String json = String.format(
             "{\"prosumerId\":%d,\"totalGeneration\":%.2f,\"assetCount\":%d,\"timestamp\":\"%s\"}",
@@ -219,7 +213,6 @@ public class AnalyticsCalculationService {
             .addMetadata(OutgoingKafkaRecordMetadata.builder().withKey(prosumerId.toString()).build()));
     }
 
-    /** Kafka key: prosumerId */
     private void publishConsumedProsumerEvent(Long prosumerId, double totalConsumption, int chargerCount, LocalDateTime timestamp) {
         String json = String.format(
             "{\"prosumerId\":%d,\"totalConsumption\":%.2f,\"chargerCount\":%d,\"timestamp\":\"%s\"}",
@@ -229,7 +222,6 @@ public class AnalyticsCalculationService {
             .addMetadata(OutgoingKafkaRecordMetadata.builder().withKey(prosumerId.toString()).build()));
     }
 
-    /** Kafka key: "system" (fleet-level aggregate, not per-asset) */
     private void publishAverageSocEvent(double averageSoC, int batteryCount, LocalDateTime timestamp) {
         String json = String.format(
             "{\"averageSoC\":%.2f,\"batteryCount\":%d,\"timestamp\":\"%s\"}",
