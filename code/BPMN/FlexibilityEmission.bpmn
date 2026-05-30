@@ -5,20 +5,20 @@
   </bpmn:collaboration>
   <bpmn:process id="FlexibilityEmission" name="FlexibilityEmission" isExecutable="true">
     <bpmn:laneSet id="LaneSet_FlexibilityEmission">
-      <bpmn:lane id="Lane_Scheduler" name="Scheduler">
+      <bpmn:lane id="Lane_Scheduler" name="Flexibility Emission Manager">
         <bpmn:flowNodeRef>StartEvent_Timer</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_GetAllBatteryAssets</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>GW_HasAssets</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>EndEvent_NoRuleTriggered</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>GW_EventCreated</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_0iie3zk</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Event_0f6sje0</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Activity_1qq36t0</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_SkipNoTelemetry</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_NoAssets</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Event_0xwp9jw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1qq36t0</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_EventCreated</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_NoRuleTriggered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_0f6sje0</bpmn:flowNodeRef>
       </bpmn:lane>
-      <bpmn:lane id="Lane_AssetEvaluation" name="Asset Evaluation Loop">
+      <bpmn:lane id="Lane_AssetEvaluation" name="Flexibility Offer Evaluation">
         <bpmn:flowNodeRef>Task_EvaluateFlexibility</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>GW_HasTelemetry</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_FetchLatestTelemetry</bpmn:flowNodeRef>
@@ -64,14 +64,6 @@
       <bpmn:outgoing>Flow_HasAssets_No</bpmn:outgoing>
       <bpmn:outgoing>Flow_1336aml</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:endEvent id="EndEvent_NoRuleTriggered" name="No Flexibility Offer Emitted">
-      <bpmn:incoming>Flow_EventCreated_No</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:exclusiveGateway id="GW_EventCreated" name="Emit Flexibility Event?">
-      <bpmn:incoming>Flow_0m4gqlh</bpmn:incoming>
-      <bpmn:outgoing>Flow_EventCreated_No</bpmn:outgoing>
-      <bpmn:outgoing>Flow_EventCreated_Yes</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
     <bpmn:userTask id="Activity_0iie3zk" name="Decide if Flexibility Offers will be evaluated">
       <bpmn:extensionElements>
         <zeebe:userTask />
@@ -79,9 +71,6 @@
       <bpmn:incoming>Flow_0j8mzzu</bpmn:incoming>
       <bpmn:outgoing>Flow_0ajuw7g</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:endEvent id="Event_0f6sje0" name="Flexibility Offer Emitted">
-      <bpmn:incoming>Flow_02a8dzj</bpmn:incoming>
-    </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_1336aml" name="Yes" sourceRef="GW_HasAssets" targetRef="Activity_1b1jk70" />
     <bpmn:sequenceFlow id="Flow_1d7j3rs" sourceRef="Activity_0xp7pn3" targetRef="Activity_1qq36t0" />
     <bpmn:sequenceFlow id="Flow_EventCreated_Yes" name="Yes" sourceRef="GW_EventCreated" targetRef="Activity_0xtbddh">
@@ -103,14 +92,6 @@
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_0m4gqlh" sourceRef="Activity_1qq36t0" targetRef="GW_EventCreated" />
     <bpmn:sequenceFlow id="Flow_0348xry" sourceRef="Activity_10bhmpn" targetRef="Activity_1pmvp2o" />
-    <bpmn:userTask id="Activity_1qq36t0" name="Check Flexibility Emission">
-      <bpmn:extensionElements>
-        <zeebe:userTask />
-      </bpmn:extensionElements>
-      <bpmn:incoming>Flow_1d7j3rs</bpmn:incoming>
-      <bpmn:outgoing>Flow_0m4gqlh</bpmn:outgoing>
-      <bpmn:multiInstanceLoopCharacteristics />
-    </bpmn:userTask>
     <bpmn:endEvent id="EndEvent_SkipNoTelemetry" name="No Telemetry&#10;Available">
       <bpmn:incoming>Flow_HasTelemetry_No</bpmn:incoming>
     </bpmn:endEvent>
@@ -213,7 +194,7 @@
       <bpmn:incoming>Flow_0p0cpro</bpmn:incoming>
       <bpmn:outgoing>Flow_0348xry</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:exclusiveGateway id="Gateway_0t0mnav">
+    <bpmn:exclusiveGateway id="Gateway_0t0mnav" name="Is Flexibility Offer possible?">
       <bpmn:incoming>Flow_10xavtw</bpmn:incoming>
       <bpmn:outgoing>Flow_08r6ey9</bpmn:outgoing>
       <bpmn:outgoing>Flow_1jfxnby</bpmn:outgoing>
@@ -231,6 +212,24 @@
       <bpmn:incoming>Flow_0348xry</bpmn:incoming>
       <bpmn:outgoing>Flow_02a8dzj</bpmn:outgoing>
     </bpmn:task>
+    <bpmn:userTask id="Activity_1qq36t0" name="Check Flexibility Emission">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1d7j3rs</bpmn:incoming>
+      <bpmn:outgoing>Flow_0m4gqlh</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="GW_EventCreated" name="Emit Flexibility Event?">
+      <bpmn:incoming>Flow_0m4gqlh</bpmn:incoming>
+      <bpmn:outgoing>Flow_EventCreated_No</bpmn:outgoing>
+      <bpmn:outgoing>Flow_EventCreated_Yes</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="EndEvent_NoRuleTriggered" name="No Flexibility Offer Emitted">
+      <bpmn:incoming>Flow_EventCreated_No</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="Event_0f6sje0" name="Flexibility Offer Emitted">
+      <bpmn:incoming>Flow_02a8dzj</bpmn:incoming>
+    </bpmn:endEvent>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_FlexibilityEmission">
     <bpmndi:BPMNPlane id="BPMNPlane_FlexibilityEmission" bpmnElement="Collaboration_FlexibilityEmission">
@@ -238,12 +237,12 @@
         <dc:Bounds x="160" y="80" width="1510" height="370" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Lane_Scheduler_di" bpmnElement="Lane_Scheduler" isHorizontal="true">
-        <dc:Bounds x="190" y="80" width="1480" height="180" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Lane_AssetEvaluation_di" bpmnElement="Lane_AssetEvaluation" isHorizontal="true">
         <dc:Bounds x="190" y="260" width="1480" height="190" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Scheduler_di" bpmnElement="Lane_Scheduler" isHorizontal="true">
+        <dc:Bounds x="190" y="80" width="1480" height="180" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StartEvent_Timer_di" bpmnElement="StartEvent_Timer">
@@ -262,30 +261,8 @@
           <dc:Bounds x="601" y="99" width="78" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_0j977vd" bpmnElement="EndEvent_NoRuleTriggered">
-        <dc:Bounds x="1412" y="165" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1398" y="208" width="65" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_1bikwuc" bpmnElement="GW_EventCreated" isMarkerVisible="true">
-        <dc:Bounds x="1295" y="158" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1285" y="126" width="71" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_09w1y78_di" bpmnElement="Activity_0iie3zk">
         <dc:Bounds x="480" y="128" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0f6sje0_di" bpmnElement="Event_0f6sje0">
-        <dc:Bounds x="1582" y="165" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1564" y="135" width="73" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0culm0m_di" bpmnElement="Activity_1qq36t0">
-        <dc:Bounds x="1140" y="143" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BPMNShape_1qwxc9x" bpmnElement="EndEvent_SkipNoTelemetry">
@@ -342,10 +319,35 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_0t0mnav_di" bpmnElement="Gateway_0t0mnav" isMarkerVisible="true">
         <dc:Bounds x="495" y="334" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="478" y="391" width="85" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1pmvp2o_di" bpmnElement="Activity_1pmvp2o">
         <dc:Bounds x="1550" y="319" width="100" height="80" />
         <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0culm0m_di" bpmnElement="Activity_1qq36t0">
+        <dc:Bounds x="1140" y="128" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1bikwuc" bpmnElement="GW_EventCreated" isMarkerVisible="true">
+        <dc:Bounds x="1295" y="143" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1285" y="111" width="71" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0j977vd" bpmnElement="EndEvent_NoRuleTriggered">
+        <dc:Bounds x="1412" y="150" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1398" y="193" width="65" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0f6sje0_di" bpmnElement="Event_0f6sje0">
+        <dc:Bounds x="1582" y="150" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1564" y="120" width="73" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_1336aml_di" bpmnElement="Flow_1336aml">
         <di:waypoint x="640" y="193" />
@@ -359,18 +361,18 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1d7j3rs_di" bpmnElement="Flow_1d7j3rs">
         <di:waypoint x="1190" y="319" />
-        <di:waypoint x="1190" y="223" />
+        <di:waypoint x="1190" y="208" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="BPMNEdge_071keyb" bpmnElement="Flow_EventCreated_Yes">
-        <di:waypoint x="1320" y="208" />
+        <di:waypoint x="1320" y="193" />
         <di:waypoint x="1320" y="319" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1324" y="233" width="18" height="14" />
+          <dc:Bounds x="1324" y="222" width="18" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_02a8dzj_di" bpmnElement="Flow_02a8dzj">
         <di:waypoint x="1600" y="319" />
-        <di:waypoint x="1600" y="201" />
+        <di:waypoint x="1600" y="186" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_08r6ey9_di" bpmnElement="Flow_08r6ey9">
         <di:waypoint x="520" y="334" />
@@ -385,7 +387,7 @@
         <di:waypoint x="930" y="334" />
         <di:waypoint x="930" y="186" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="911" y="280" width="15" height="14" />
+          <dc:Bounds x="910" y="305" width="15" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_Timer_To_GetAssets_di" bpmnElement="Flow_Timer_To_GetAssets">
@@ -408,15 +410,15 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="BPMNEdge_1pfka7n" bpmnElement="Flow_EventCreated_No">
-        <di:waypoint x="1345" y="183" />
-        <di:waypoint x="1412" y="183" />
+        <di:waypoint x="1345" y="168" />
+        <di:waypoint x="1412" y="168" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1362" y="166" width="15" height="14" />
+          <dc:Bounds x="1363" y="151" width="15" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0m4gqlh_di" bpmnElement="Flow_0m4gqlh">
-        <di:waypoint x="1240" y="183" />
-        <di:waypoint x="1295" y="183" />
+        <di:waypoint x="1240" y="168" />
+        <di:waypoint x="1295" y="168" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0348xry_di" bpmnElement="Flow_0348xry">
         <di:waypoint x="1510" y="359" />
