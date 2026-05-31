@@ -1,0 +1,41 @@
+{
+  "components": [
+    {
+      "label": "Select the Metrics to analyse",
+      "values": [
+        {
+          "label": "Generated Energy by Prosumer",
+          "value": "Generated Energy"
+        },
+        {
+          "label": "Consumed Energy by Prosumer",
+          "value": "Consumed Energy"
+        },
+        {
+          "label": "Energy Discharged by Zone",
+          "value": "Energy Discharged"
+        },
+        {
+          "label": "Average SoC",
+          "value": "Average SoC"
+        }
+      ],
+      "type": "checklist",
+      "layout": {
+        "row": "Row_05afxfn",
+        "columns": null
+      },
+      "id": "Field_1c5a3i4",
+      "key": "selectedMetrics"
+    }
+  ],
+  "type": "default",
+  "id": "Form_Select_EnergyAnalytics",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.47.0"
+  },
+  "schemaVersion": 19
+}

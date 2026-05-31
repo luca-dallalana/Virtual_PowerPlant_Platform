@@ -56,6 +56,7 @@
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="12" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
+          <zeebe:header key="resultExpression" value="={&#10;  ProsumerStatus: response.status,&#10;  ProsumerList: response.body&#10;}" />
           <zeebe:header key="retryBackoff" value="PT0S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
@@ -125,7 +126,7 @@
       <bpmn:extensionElements>
         <zeebe:assignmentDefinition assignee="demo" />
         <zeebe:userTask />
-        <zeebe:formDefinition formId="Form_Productok_ProsumerMng" />
+        <zeebe:formDefinition formId="Form_Productok_AssetMng" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0bd7ebb2-8146-48f7-a8ee-630bb9e2c989</bpmn:incoming>
       <bpmn:outgoing>Flow_b38445b4-18d9-45fc-b064-3383b937efce</bpmn:outgoing>
@@ -133,7 +134,7 @@
     <bpmn:userTask id="Activity_ec0f63f1-76db-4677-acbe-b1e48c512bb5" name="Decide what to do next">
       <bpmn:extensionElements>
         <zeebe:assignmentDefinition assignee="demo" />
-        <zeebe:formDefinition formId="Form_NewRequest_ProsumerMng" />
+        <zeebe:formDefinition formId="Form_NewRequest_AssetMng" />
         <zeebe:userTask />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_06ce588e-8cb7-4ad5-ba47-b5b67c442120</bpmn:incoming>
@@ -150,7 +151,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_3hf48k5&#34;,&#10;  &#34;correlationKey&#34;: string(fiscalnumber)&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_3hf48k5&#34;,&#10;  &#34;correlationKey&#34;: string(prosumer)&#10;}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -173,7 +174,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_1574nku&#34;,&#10;  &#34;correlationKey&#34;: string(fiscalnumber)&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_1574nku&#34;,&#10;  &#34;correlationKey&#34;: string(prosumer)&#10;}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -196,7 +197,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;processDefinitionId&#34;: &#34;ProsumerMngExecutor&#34;,&#10;  &#34;variables&#34;: &#10;  { &#10;    &#34;name&#34;: name,&#10;    &#34;fiscalnumber&#34;: fiscalnumber,&#10;    &#34;location&#34; : location&#10;  }&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;processDefinitionId&#34;: &#34;ProsumerMngExecutor&#34;,&#10;  &#34;variables&#34;: &#10;  { &#10;    &#34;prosumer&#34;: selectedProsumer,&#10;    &#34;type&#34;: selectedType,&#10;    &#34;model&#34; : model&#10;  }&#10;}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -238,7 +239,7 @@
     <bpmn:sequenceFlow id="Flow_1blf8nl" sourceRef="Activity_02n7eg9" targetRef="Activity_ada7bed6-135e-4d9d-93b9-ce47f1f9b2dc" />
     <bpmn:userTask id="Activity_ada7bed6-135e-4d9d-93b9-ce47f1f9b2dc" name="Decide the Data for Asset Creation order">
       <bpmn:extensionElements>
-        <zeebe:formDefinition formId="Form_Request_ProsumerMng" />
+        <zeebe:formDefinition formId="Form_Request_AssetMng" />
         <zeebe:assignmentDefinition assignee="demo" />
         <zeebe:userTask />
       </bpmn:extensionElements>
@@ -296,7 +297,7 @@
       <bpmn:extensionElements>
         <zeebe:assignmentDefinition assignee="demo" />
         <zeebe:userTask />
-        <zeebe:formDefinition formId="Form_Reject_ProsumerMng" />
+        <zeebe:formDefinition formId="Form_Reject_AssetMng" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_ae29287a-e3b3-4c9d-a6d2-8f73dd6733f2</bpmn:incoming>
       <bpmn:outgoing>Flow_62eb08dc-1f61-4554-b84a-17f3583d79b3</bpmn:outgoing>
@@ -310,7 +311,7 @@
       <bpmn:extensionElements>
         <zeebe:assignmentDefinition assignee="demo" />
         <zeebe:userTask />
-        <zeebe:formDefinition formId="Form_Promise_ProsumerMng" />
+        <zeebe:formDefinition formId="Form_Promise_AssetMng" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_21dcedb0-6a06-475d-aecf-87c723415566</bpmn:incoming>
       <bpmn:outgoing>Flow_ec351f80-2b66-4ba9-9f41-06807a583fa2</bpmn:outgoing>
@@ -326,7 +327,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;FiscalNumber&#34;: fiscalNumber,&#10;  &#34;id&#34;: 0,&#10;  &#34;location&#34;: location,&#10;  &#34;name&#34;: name&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;prosumer&#34;: prosumer,&#10;  &#34;type&#34;: type,&#10;  &#34;model&#34; : model&#10;}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -359,7 +360,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_193pqte&#34;,&#10;  &#34;correlationKey&#34;: string(fiscalnumber)&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_193pqte&#34;,&#10;  &#34;correlationKey&#34;: string(prosumer)&#10;}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -382,7 +383,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_32pq3og&#34;,&#10;  &#34;correlationKey&#34;: string(fiscalnumber)&#10;}&#10;" target="body" />
+          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_32pq3og&#34;,&#10;  &#34;correlationKey&#34;: string(prosumer)&#10;}&#10;" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -405,7 +406,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_104fa6j&#34;,&#10;  &#34;correlationKey&#34;: string(fiscalnumber)&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_104fa6j&#34;,&#10;  &#34;correlationKey&#34;: string(prosumer)&#10;}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -428,7 +429,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_3ed762b&#34;,&#10;  &#34;correlationKey&#34;:  string(fiscalnumber)&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_3ed762b&#34;,&#10;  &#34;correlationKey&#34;:  string(prosumer)&#10;}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -471,32 +472,32 @@
   </bpmn:process>
   <bpmn:message id="Message_193pqte" name="Message_193pqte">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=string(fiscalnumber)" />
+      <zeebe:subscription correlationKey="=string(prosumer)" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_104fa6j" name="Message_104fa6j">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=string(fiscalnumber)" />
+      <zeebe:subscription correlationKey="=string(prosumer)" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_32pq3og" name="Message_32pq3og">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=string(fiscalnumber)" />
+      <zeebe:subscription correlationKey="=string(prosumer)" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_3ed762b" name="Message_3ed762b">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=string(fiscalnumber)" />
+      <zeebe:subscription correlationKey="=string(prosumer)" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_3hf48k5" name="Message_3hf48k5">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=string(fiscalnumber)" />
+      <zeebe:subscription correlationKey="=string(prosumer)" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_1574nku" name="Message_1574nku">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=string(fiscalnumber)" />
+      <zeebe:subscription correlationKey="=string(prosumer)" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_05o1brq" name="Message_05o1brq" />
@@ -620,16 +621,16 @@
         <di:waypoint x="500" y="175" />
         <di:waypoint x="527" y="175" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0dd7jnp_di" bpmnElement="Flow_0dd7jnp">
+        <di:waypoint x="258" y="175" />
+        <di:waypoint x="280" y="175" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_6f68c3ad-563d-412f-b0a0-a3b395025233" bpmnElement="Flow_ea9a4921-ad02-4e2d-9f3a-e187190fc856">
         <di:waypoint x="527" y="349" />
         <di:waypoint x="488" y="349" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="506" y="331" width="15" height="14" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0dd7jnp_di" bpmnElement="Flow_0dd7jnp">
-        <di:waypoint x="258" y="175" />
-        <di:waypoint x="280" y="175" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_bd8c52c4-f775-409f-bf50-444a835a0a92" bpmnElement="Flow_38e92dab-fd4f-4291-a54c-627d5f511332">
         <di:waypoint x="545" y="331" />
@@ -705,7 +706,7 @@
         <di:waypoint x="1266" y="175" />
         <di:waypoint x="1196" y="175" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1224" y="157" width="15" height="14" />
+          <dc:Bounds x="1225" y="157" width="15" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_1f93e041-ebe9-445d-8146-745dbc93d2ee" bpmnElement="Flow_5b6f0882-e6ae-455a-ad09-874788b84edb">

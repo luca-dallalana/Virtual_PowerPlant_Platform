@@ -1,21 +1,20 @@
 {
   "components": [
     {
-      "label": "Is the creation of Utility Operator acceptable?",
+      "label": "start a new request?",
       "type": "checkbox",
       "layout": {
-        "row": "Row_1plwgff",
+        "row": "Row_0it4li1",
         "columns": null
       },
-      "id": "Field_1bn5agz",
-      "key": "accept",
-      "defaultValue": true
+      "id": "Field_0xlc6sm",
+      "key": "newrequest"
     }
   ],
   "type": "default",
-  "id": "Form_Productok_UtilityOperatorMng",
+  "id": "Form_NewRequest_AssetMng",
   "executionPlatform": "Camunda Cloud",
-  "executionPlatformVersion": "8.8.0",
+  "executionPlatformVersion": "8.9.0",
   "exporter": {
     "name": "Camunda Modeler",
     "version": "5.47.0"

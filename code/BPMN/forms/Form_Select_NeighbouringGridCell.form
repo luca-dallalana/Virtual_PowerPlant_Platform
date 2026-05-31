@@ -1,0 +1,24 @@
+{
+  "components": [
+    {
+      "label": "Select the Neighbouring Grid Cells to analyse",
+      "type": "checklist",
+      "layout": {
+        "row": "Row_0go8h6r",
+        "columns": null
+      },
+      "id": "Field_1kdfjpb",
+      "key": "selectedGridCells",
+      "valuesExpression": "=for cell in  neighboursGridCells return { \"label\": cell.name, \"value\": cell }"
+    }
+  ],
+  "type": "default",
+  "id": "Form_NeighbouringGridCellSelection",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.47.0"
+  },
+  "schemaVersion": 19
+}

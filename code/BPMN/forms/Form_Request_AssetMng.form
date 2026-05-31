@@ -1,0 +1,61 @@
+{
+  "components": [
+    {
+      "label": "Select Prosumer",
+      "type": "select",
+      "layout": {
+        "row": "Row_0a9l5to",
+        "columns": null
+      },
+      "id": "Field_0ivtinr",
+      "key": "selectedProsumer",
+      "description": "Asset Prosumer",
+      "valuesExpression": "=for prosumer in ProsumerList return {\"label\": operator.name, \"value\": operator.id}"
+    },
+    {
+      "label": "Select Type",
+      "values": [
+        {
+          "label": "Battery",
+          "value": "BATTERY"
+        },
+        {
+          "label": "Solar",
+          "value": "SOLAR"
+        },
+        {
+          "label": "EV_Charger",
+          "value": "EV_CHARGER"
+        }
+      ],
+      "type": "select",
+      "layout": {
+        "row": "Row_0ozd9wt",
+        "columns": null
+      },
+      "id": "Field_08l3i7y",
+      "key": "selectedType",
+      "description": "Asset Type"
+    },
+    {
+      "label": "Model",
+      "type": "textarea",
+      "layout": {
+        "row": "Row_1ie87h8",
+        "columns": null
+      },
+      "id": "Field_0wsc2b4",
+      "key": "model",
+      "description": "Asset Model"
+    }
+  ],
+  "type": "default",
+  "id": "Form_Request_AssetMng",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.47.0"
+  },
+  "schemaVersion": 19
+}

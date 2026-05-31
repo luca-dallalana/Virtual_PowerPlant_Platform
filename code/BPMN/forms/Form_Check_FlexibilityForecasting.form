@@ -1,21 +1,20 @@
 {
   "components": [
     {
-      "label": "Is the creation of Utility Operator acceptable?",
+      "label": "Is Flexibility Forecasting to be persisted?",
       "type": "checkbox",
       "layout": {
-        "row": "Row_1plwgff",
+        "row": "Row_1nt40q7",
         "columns": null
       },
-      "id": "Field_1bn5agz",
-      "key": "accept",
-      "defaultValue": true
+      "id": "Field_06y77uv",
+      "key": "persist"
     }
   ],
   "type": "default",
-  "id": "Form_Productok_UtilityOperatorMng",
+  "id": "Form_Check_FlexibilityForecasting",
   "executionPlatform": "Camunda Cloud",
-  "executionPlatformVersion": "8.8.0",
+  "executionPlatformVersion": "8.9.0",
   "exporter": {
     "name": "Camunda Modeler",
     "version": "5.47.0"

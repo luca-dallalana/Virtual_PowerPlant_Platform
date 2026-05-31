@@ -1,0 +1,21 @@
+{
+  "components": [
+    {
+      "label": "Select the Grid Cell to analyse",
+      "type": "select",
+      "id": "Field_GridCellSelect",
+      "key": "selectedGridCell",
+      "description": "Choose a cell from the grid list",
+      "valuesExpression": "=for cell in GridCells return {\"label\": cell.name, \"value\": cell}"
+    }
+  ],
+  "type": "default",
+  "id": "Form_GridCellSelection",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.47.0"
+  },
+  "schemaVersion": 19
+}

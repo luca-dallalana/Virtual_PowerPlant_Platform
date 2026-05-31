@@ -34,19 +34,27 @@
         <bpmn:flowNodeRef>Activity_10bhmpn</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_1idmd81</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Gateway_1mcw4ew</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Activity_1mdywsv</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Gateway_11m8jdg</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Gateway_12v3tqe</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Gateway_1or6buk</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_12v3tqe</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_11m8jdg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1mdywsv</bpmn:flowNodeRef>
       </bpmn:lane>
     </bpmn:laneSet>
     <bpmn:sequenceFlow id="Flow_0b2zry9" sourceRef="Activity_1hhodun" targetRef="Activity_13bkodr" />
     <bpmn:sequenceFlow id="Flow_0443x7f" sourceRef="Activity_13bkodr" targetRef="Gateway_1v4dp0x" />
-    <bpmn:sequenceFlow id="Flow_12fseu5" name="No" sourceRef="Gateway_1v4dp0x" targetRef="Event_1ns8djw" />
-    <bpmn:sequenceFlow id="Flow_0kjxhqv" name="Yes" sourceRef="Gateway_1v4dp0x" targetRef="Activity_08qeh6t" />
+    <bpmn:sequenceFlow id="Flow_12fseu5" name="No" sourceRef="Gateway_1v4dp0x" targetRef="Event_1ns8djw">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=promise = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0kjxhqv" name="Yes" sourceRef="Gateway_1v4dp0x" targetRef="Activity_08qeh6t">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=promise = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_1auv1xt" sourceRef="Activity_08qeh6t" targetRef="Gateway_0jfrlfh" />
-    <bpmn:sequenceFlow id="Flow_0c7c7tg" name="Generated&#10;Energy or Consumed&#10;Energy" sourceRef="Gateway_0jfrlfh" targetRef="Task_FetchProsumers" />
-    <bpmn:sequenceFlow id="Flow_1goqek8" name="Energy&#10;Discharged or Average SoC" sourceRef="Gateway_0jfrlfh" targetRef="Activity_1mdywsv" />
+    <bpmn:sequenceFlow id="Flow_0c7c7tg" name="Generated&#10;Energy or Consumed&#10;Energy" sourceRef="Gateway_0jfrlfh" targetRef="Task_FetchProsumers">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=list contains(selectedMetrics, "Generated Energy") or list contains(selectedMetrics, "Consumed Energy")</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1goqek8" name="Energy&#10;Discharged or Average SoC" sourceRef="Gateway_0jfrlfh" targetRef="Activity_1mdywsv">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=list contains(selectedMetrics, "Energy Discharged") or list contains(selectedMetrics, "Average SoC")</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
     <bpmn:startEvent id="StartEvent_Timer" name="Every 30 Minutes">
       <bpmn:outgoing>Flow_1q44axk</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TED_Timer">
@@ -56,6 +64,8 @@
     <bpmn:userTask id="Activity_1hhodun" name="Decide What to Anaiyse">
       <bpmn:extensionElements>
         <zeebe:userTask />
+        <zeebe:formDefinition formId="Form_Select_EnergyAnalytics" />
+        <zeebe:assignmentDefinition assignee="demo" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1q44axk</bpmn:incoming>
       <bpmn:outgoing>Flow_0b2zry9</bpmn:outgoing>
@@ -81,11 +91,12 @@
     <bpmn:userTask id="Activity_13bkodr" name="Verify if execute Energy Analytics is possible">
       <bpmn:extensionElements>
         <zeebe:userTask />
+        <zeebe:formDefinition formId="Form_Promise_EnergyAnalytics" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0b2zry9</bpmn:incoming>
       <bpmn:outgoing>Flow_0443x7f</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:serviceTask id="Task_FetchZones" name="Fetch All Grid Zones" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+    <bpmn:serviceTask id="Task_FetchZones" name="Fetch All Grid Cells" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
         <zeebe:ioMapping>
@@ -100,7 +111,7 @@
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  zoneList:      response.body,&#10;  zoneCount:     count(response.body)&#10;}" />
+          <zeebe:header key="resultExpression" value="={&#10;  GridCellStatus: response.status,&#10;  GridCellList: response.body&#10;}" />
           <zeebe:header key="retryBackoff" value="PT10S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
@@ -122,7 +133,7 @@
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  prosumerList:  response.body,&#10;  prosumerCount: count(response.body)&#10;}" />
+          <zeebe:header key="resultExpression" value="={&#10;  prosumerStatus: response.status,&#10;  prosumerList:  response.body&#10;}" />
           <zeebe:header key="retryBackoff" value="PT10S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
@@ -136,7 +147,7 @@
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
           <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/EnergyAnalytics/average-soc" target="url" />
-          <zeebe:input source="={&#34;Content-Type&#34;: &#34;application/json&#34;, &#34;accept&#34;: &#34;application/json&#34;}" target="headers" />
+          <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=30" target="connectionTimeoutInSeconds" />
@@ -147,7 +158,7 @@
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  averageSoCStatus:    response.status,&#10;  averageSoCPublished: response.body.published&#10;}" />
+          <zeebe:header key="resultExpression" value="={&#10;  averageSoCStatus: response.status,&#10;  averageSoCList: response.body&#10;}" />
           <zeebe:header key="retryBackoff" value="PT5S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
@@ -161,7 +172,7 @@
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
           <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/EnergyAnalytics/consumed-by-prosumer" target="url" />
-          <zeebe:input source="={&#34;Content-Type&#34;: &#34;application/json&#34;, &#34;accept&#34;: &#34;application/json&#34;}" target="headers" />
+          <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=30" target="connectionTimeoutInSeconds" />
@@ -172,14 +183,14 @@
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  consumedByProsumerStatus:    response.status,&#10;  consumedByProsumerPublished: response.body.published&#10;}" />
+          <zeebe:header key="resultExpression" value="={&#10;  consumedByProsumerStatus: response.status,&#10;  consumedByProsumerList: response.body&#10;}" />
           <zeebe:header key="retryBackoff" value="PT5S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1omgp1c</bpmn:incoming>
       <bpmn:outgoing>Flow_1djwlr5</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="Activity_1dqw5ae" name="Retrieve EV_CHARGER" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+    <bpmn:serviceTask id="Activity_1dqw5ae" name="Retrieve EV_CHARGER Telemetry" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
         <zeebe:ioMapping>
@@ -194,7 +205,7 @@
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  evTelemetry:       response.body,&#10;  evTelemetryStatus: response.status&#10;}" />
+          <zeebe:header key="resultExpression" value="={&#10;  evTelemetryStatus: response.status,&#10;  evTelemetry:       response.body&#10;}" />
           <zeebe:header key="retryBackoff" value="PT5S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
@@ -208,7 +219,7 @@
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
           <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/EnergyAnalytics/generated-by-prosumer" target="url" />
-          <zeebe:input source="={&#34;Content-Type&#34;: &#34;application/json&#34;, &#34;accept&#34;: &#34;application/json&#34;}" target="headers" />
+          <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=30" target="connectionTimeoutInSeconds" />
@@ -219,7 +230,7 @@
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  generatedByProsumerStatus:    response.status,&#10;  generatedByProsumerPublished: response.body.published&#10;}" />
+          <zeebe:header key="resultExpression" value="={&#10;  generatedByProsumerStatus: response.status,&#10;  generatedByProsumerList: response.body&#10;}" />
           <zeebe:header key="retryBackoff" value="PT5S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
@@ -241,7 +252,7 @@
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  solarTelemetry:       response.body,&#10;  solarTelemetryStatus: response.status&#10;}" />
+          <zeebe:header key="resultExpression" value="={&#10;  solarTelemetryStatus: response.status,&#10;  solarTelemetry:       response.body&#10;}" />
           <zeebe:header key="retryBackoff" value="PT5S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
@@ -255,7 +266,7 @@
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
           <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/EnergyAnalytics/discharged-by-zone" target="url" />
-          <zeebe:input source="={&#34;Content-Type&#34;: &#34;application/json&#34;, &#34;accept&#34;: &#34;application/json&#34;}" target="headers" />
+          <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=30" target="connectionTimeoutInSeconds" />
@@ -266,7 +277,7 @@
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  dischargedByZoneStatus:    response.status,&#10;  dischargedByZonePublished: response.body.published&#10;}" />
+          <zeebe:header key="resultExpression" value="={&#10;  dischargedByZoneStatus: response.status,&#10;  dischargedByZoneList: response.body&#10;}" />
           <zeebe:header key="retryBackoff" value="PT5S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
@@ -291,12 +302,15 @@
         <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
-          <zeebe:input source="GET" target="method" />
-          <zeebe:input target="url" />
+          <zeebe:input source="POST" target="method" />
+          <zeebe:input source="Kongurl" target="url" />
+          <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
+          <zeebe:input source="={&#34;generatedByProsumer&#34;: generatedByProsumerList, &#34; consumedByProsumer&#34;:  consumedByProsumerList, &#34;dischargedByZone&#34;: dischargedByZoneList, &#34;averageSoC&#34;: averageSoCList}" target="body" />
+          <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
@@ -315,6 +329,7 @@
     <bpmn:userTask id="Activity_18hhwxv" name="Check Energy Analytics">
       <bpmn:extensionElements>
         <zeebe:userTask />
+        <zeebe:formDefinition formId="Form_Check_EnergyAnalytics" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1r7ghg3</bpmn:incoming>
       <bpmn:outgoing>Flow_0sb5f39</bpmn:outgoing>
@@ -334,6 +349,56 @@
       <bpmn:incoming>Flow_04sly7t</bpmn:incoming>
       <bpmn:outgoing>Flow_1db8xep</bpmn:outgoing>
       <bpmn:outgoing>Flow_15snbad</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+    <bpmn:inclusiveGateway id="Gateway_1or6buk">
+      <bpmn:incoming>Flow_121lbvs</bpmn:incoming>
+      <bpmn:incoming>Flow_1djwlr5</bpmn:incoming>
+      <bpmn:outgoing>Flow_134yfzp</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0zelijy" name="Energy&#10;Discharged" sourceRef="Gateway_11m8jdg" targetRef="Task_FetchZones">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=list contains(selectedMetrics, "Energy Discharged")</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0sed4tp" sourceRef="Task_FetchZones" targetRef="Activity_19ov1nc" />
+    <bpmn:sequenceFlow id="Flow_04sly7t" sourceRef="Task_FetchProsumers" targetRef="Gateway_1mcw4ew" />
+    <bpmn:sequenceFlow id="Flow_122gkfu" name="Average SoC" sourceRef="Gateway_11m8jdg" targetRef="Activity_0zfltag">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=list contains(selectedMetrics, "Average SoC")</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_02qzow5" sourceRef="Activity_0zfltag" targetRef="Gateway_12v3tqe" />
+    <bpmn:sequenceFlow id="Flow_1omgp1c" sourceRef="Activity_1dqw5ae" targetRef="Activity_1ip1hsf" />
+    <bpmn:sequenceFlow id="Flow_1djwlr5" sourceRef="Activity_1ip1hsf" targetRef="Gateway_1or6buk" />
+    <bpmn:sequenceFlow id="Flow_15snbad" name="Consumed&#10;Energy" sourceRef="Gateway_1mcw4ew" targetRef="Activity_1dqw5ae">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=list contains(selectedMetrics, "Consumed Energy")</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0bt9rwm" sourceRef="Activity_18x9let" targetRef="Activity_1wmb4p5" />
+    <bpmn:sequenceFlow id="Flow_121lbvs" sourceRef="Activity_1wmb4p5" targetRef="Gateway_1or6buk" />
+    <bpmn:sequenceFlow id="Flow_1db8xep" name="Generated&#10;Energy" sourceRef="Gateway_1mcw4ew" targetRef="Activity_18x9let">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=list contains(selectedMetrics, "Generated Energy")</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1g7bheh" sourceRef="Activity_19ov1nc" targetRef="Gateway_12v3tqe" />
+    <bpmn:sequenceFlow id="Flow_134yfzp" sourceRef="Gateway_1or6buk" targetRef="Gateway_1plpbut" />
+    <bpmn:sequenceFlow id="Flow_12qunbz" sourceRef="Gateway_12v3tqe" targetRef="Gateway_1plpbut" />
+    <bpmn:sequenceFlow id="Flow_1dfoq72" sourceRef="Gateway_1plpbut" targetRef="Activity_0bw6bvz" />
+    <bpmn:sequenceFlow id="Flow_1r7ghg3" sourceRef="Activity_0bw6bvz" targetRef="Activity_18hhwxv" />
+    <bpmn:sequenceFlow id="Flow_1x3m9ee" name="Yes" sourceRef="Gateway_1wembkk" targetRef="Activity_0mdjvv4">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=emit = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_15c294d" sourceRef="Activity_0mdjvv4" targetRef="Activity_10bhmpn" />
+    <bpmn:sequenceFlow id="Flow_1xw5vjl" sourceRef="Activity_10bhmpn" targetRef="Activity_1idmd81" />
+    <bpmn:sequenceFlow id="Flow_12omafo" sourceRef="Activity_1idmd81" targetRef="Event_1hv3gt3" />
+    <bpmn:sequenceFlow id="Flow_0sb5f39" sourceRef="Activity_18hhwxv" targetRef="Gateway_1wembkk" />
+    <bpmn:sequenceFlow id="Flow_0c9hewl" name="No" sourceRef="Gateway_1wembkk" targetRef="Event_12alf4z">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=emit = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_170ttap" sourceRef="Activity_1mdywsv" targetRef="Gateway_11m8jdg" />
+    <bpmn:inclusiveGateway id="Gateway_12v3tqe">
+      <bpmn:incoming>Flow_1g7bheh</bpmn:incoming>
+      <bpmn:incoming>Flow_02qzow5</bpmn:incoming>
+      <bpmn:outgoing>Flow_12qunbz</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+    <bpmn:inclusiveGateway id="Gateway_11m8jdg" name="Analytics Selected?">
+      <bpmn:incoming>Flow_170ttap</bpmn:incoming>
+      <bpmn:outgoing>Flow_0zelijy</bpmn:outgoing>
+      <bpmn:outgoing>Flow_122gkfu</bpmn:outgoing>
     </bpmn:inclusiveGateway>
     <bpmn:serviceTask id="Activity_1mdywsv" name="Retrieve BATTERY Telemetry" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
       <bpmn:extensionElements>
@@ -357,44 +422,6 @@
       <bpmn:incoming>Flow_1goqek8</bpmn:incoming>
       <bpmn:outgoing>Flow_170ttap</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:inclusiveGateway id="Gateway_11m8jdg" name="Analytics Selected?">
-      <bpmn:incoming>Flow_170ttap</bpmn:incoming>
-      <bpmn:outgoing>Flow_0zelijy</bpmn:outgoing>
-      <bpmn:outgoing>Flow_122gkfu</bpmn:outgoing>
-    </bpmn:inclusiveGateway>
-    <bpmn:inclusiveGateway id="Gateway_12v3tqe">
-      <bpmn:incoming>Flow_1g7bheh</bpmn:incoming>
-      <bpmn:incoming>Flow_02qzow5</bpmn:incoming>
-      <bpmn:outgoing>Flow_12qunbz</bpmn:outgoing>
-    </bpmn:inclusiveGateway>
-    <bpmn:inclusiveGateway id="Gateway_1or6buk">
-      <bpmn:incoming>Flow_121lbvs</bpmn:incoming>
-      <bpmn:incoming>Flow_1djwlr5</bpmn:incoming>
-      <bpmn:outgoing>Flow_134yfzp</bpmn:outgoing>
-    </bpmn:inclusiveGateway>
-    <bpmn:sequenceFlow id="Flow_0zelijy" name="Energy&#10;Discharged" sourceRef="Gateway_11m8jdg" targetRef="Task_FetchZones" />
-    <bpmn:sequenceFlow id="Flow_0sed4tp" sourceRef="Task_FetchZones" targetRef="Activity_19ov1nc" />
-    <bpmn:sequenceFlow id="Flow_04sly7t" sourceRef="Task_FetchProsumers" targetRef="Gateway_1mcw4ew" />
-    <bpmn:sequenceFlow id="Flow_122gkfu" name="Average SoC" sourceRef="Gateway_11m8jdg" targetRef="Activity_0zfltag" />
-    <bpmn:sequenceFlow id="Flow_02qzow5" sourceRef="Activity_0zfltag" targetRef="Gateway_12v3tqe" />
-    <bpmn:sequenceFlow id="Flow_1omgp1c" sourceRef="Activity_1dqw5ae" targetRef="Activity_1ip1hsf" />
-    <bpmn:sequenceFlow id="Flow_1djwlr5" sourceRef="Activity_1ip1hsf" targetRef="Gateway_1or6buk" />
-    <bpmn:sequenceFlow id="Flow_15snbad" name="Consumed&#10;Energy" sourceRef="Gateway_1mcw4ew" targetRef="Activity_1dqw5ae" />
-    <bpmn:sequenceFlow id="Flow_0bt9rwm" sourceRef="Activity_18x9let" targetRef="Activity_1wmb4p5" />
-    <bpmn:sequenceFlow id="Flow_121lbvs" sourceRef="Activity_1wmb4p5" targetRef="Gateway_1or6buk" />
-    <bpmn:sequenceFlow id="Flow_1db8xep" name="Generated&#10;Energy" sourceRef="Gateway_1mcw4ew" targetRef="Activity_18x9let" />
-    <bpmn:sequenceFlow id="Flow_1g7bheh" sourceRef="Activity_19ov1nc" targetRef="Gateway_12v3tqe" />
-    <bpmn:sequenceFlow id="Flow_134yfzp" sourceRef="Gateway_1or6buk" targetRef="Gateway_1plpbut" />
-    <bpmn:sequenceFlow id="Flow_12qunbz" sourceRef="Gateway_12v3tqe" targetRef="Gateway_1plpbut" />
-    <bpmn:sequenceFlow id="Flow_1dfoq72" sourceRef="Gateway_1plpbut" targetRef="Activity_0bw6bvz" />
-    <bpmn:sequenceFlow id="Flow_1r7ghg3" sourceRef="Activity_0bw6bvz" targetRef="Activity_18hhwxv" />
-    <bpmn:sequenceFlow id="Flow_1x3m9ee" name="Yes" sourceRef="Gateway_1wembkk" targetRef="Activity_0mdjvv4" />
-    <bpmn:sequenceFlow id="Flow_15c294d" sourceRef="Activity_0mdjvv4" targetRef="Activity_10bhmpn" />
-    <bpmn:sequenceFlow id="Flow_1xw5vjl" sourceRef="Activity_10bhmpn" targetRef="Activity_1idmd81" />
-    <bpmn:sequenceFlow id="Flow_12omafo" sourceRef="Activity_1idmd81" targetRef="Event_1hv3gt3" />
-    <bpmn:sequenceFlow id="Flow_0sb5f39" sourceRef="Activity_18hhwxv" targetRef="Gateway_1wembkk" />
-    <bpmn:sequenceFlow id="Flow_0c9hewl" name="No" sourceRef="Gateway_1wembkk" targetRef="Event_12alf4z" />
-    <bpmn:sequenceFlow id="Flow_170ttap" sourceRef="Activity_1mdywsv" targetRef="Gateway_11m8jdg" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_EnergyAnalytics">
     <bpmndi:BPMNPlane id="BPMNPlane_EnergyAnalytics" bpmnElement="Collaboration_EnergyAnalytics">
@@ -525,21 +552,21 @@
           <dc:Bounds x="1049" y="366" width="49" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_1igi4l9" bpmnElement="Activity_1mdywsv" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
-        <dc:Bounds x="850" y="570" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_1qm4rir_di" bpmnElement="Gateway_11m8jdg">
-        <dc:Bounds x="995" y="585" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1049" y="599" width="49" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_1bkdomb_di" bpmnElement="Gateway_12v3tqe">
-        <dc:Bounds x="1365" y="585" width="50" height="50" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_0ox3yx6_di" bpmnElement="Gateway_1or6buk">
         <dc:Bounds x="1365" y="355" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1bkdomb_di" bpmnElement="Gateway_12v3tqe">
+        <dc:Bounds x="1365" y="575" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1qm4rir_di" bpmnElement="Gateway_11m8jdg">
+        <dc:Bounds x="995" y="575" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1049" y="589" width="49" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1igi4l9" bpmnElement="Activity_1mdywsv" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+        <dc:Bounds x="850" y="560" width="100" height="80" />
+        <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0b2zry9_di" bpmnElement="Flow_0b2zry9">
         <di:waypoint x="410" y="220" />
@@ -577,10 +604,10 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1goqek8_di" bpmnElement="Flow_1goqek8">
         <di:waypoint x="780" y="515" />
-        <di:waypoint x="780" y="610" />
-        <di:waypoint x="850" y="610" />
+        <di:waypoint x="780" y="600" />
+        <di:waypoint x="850" y="600" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="706" y="592.9999999999993" width="69" height="40" />
+          <dc:Bounds x="706" y="583" width="69" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1q44axk_di" bpmnElement="Flow_1q44axk">
@@ -588,7 +615,7 @@
         <di:waypoint x="360" y="180" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0zelijy_di" bpmnElement="Flow_0zelijy">
-        <di:waypoint x="1020" y="585" />
+        <di:waypoint x="1020" y="575" />
         <di:waypoint x="1020" y="540" />
         <di:waypoint x="1090" y="540" />
         <bpmndi:BPMNLabel>
@@ -604,7 +631,7 @@
         <di:waypoint x="995" y="380" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_122gkfu_di" bpmnElement="Flow_122gkfu">
-        <di:waypoint x="1020" y="635" />
+        <di:waypoint x="1020" y="625" />
         <di:waypoint x="1020" y="660" />
         <di:waypoint x="1230" y="660" />
         <bpmndi:BPMNLabel>
@@ -614,7 +641,7 @@
       <bpmndi:BPMNEdge id="Flow_02qzow5_di" bpmnElement="Flow_02qzow5">
         <di:waypoint x="1330" y="660" />
         <di:waypoint x="1390" y="660" />
-        <di:waypoint x="1390" y="635" />
+        <di:waypoint x="1390" y="625" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1omgp1c_di" bpmnElement="Flow_1omgp1c">
         <di:waypoint x="1190" y="440" />
@@ -653,7 +680,7 @@
       <bpmndi:BPMNEdge id="Flow_1g7bheh_di" bpmnElement="Flow_1g7bheh">
         <di:waypoint x="1330" y="540" />
         <di:waypoint x="1390" y="540" />
-        <di:waypoint x="1390" y="585" />
+        <di:waypoint x="1390" y="575" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_134yfzp_di" bpmnElement="Flow_134yfzp">
         <di:waypoint x="1415" y="380" />
@@ -661,8 +688,8 @@
         <di:waypoint x="1460" y="465" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_12qunbz_di" bpmnElement="Flow_12qunbz">
-        <di:waypoint x="1415" y="610" />
-        <di:waypoint x="1460" y="610" />
+        <di:waypoint x="1415" y="600" />
+        <di:waypoint x="1460" y="600" />
         <di:waypoint x="1460" y="515" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1dfoq72_di" bpmnElement="Flow_1dfoq72">
@@ -704,8 +731,8 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_170ttap_di" bpmnElement="Flow_170ttap">
-        <di:waypoint x="950" y="610" />
-        <di:waypoint x="995" y="610" />
+        <di:waypoint x="950" y="600" />
+        <di:waypoint x="995" y="600" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

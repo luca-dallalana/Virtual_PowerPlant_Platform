@@ -36,11 +36,14 @@
       </bpmn:lane>
     </bpmn:laneSet>
     <bpmn:sequenceFlow id="Flow_1c3laoh" sourceRef="StartEvent_Timer" targetRef="Activity_0iwtr17" />
-    <bpmn:sequenceFlow id="Flow_1ebwveg" name="No" sourceRef="GW_HasAssets" targetRef="Event_0azjwnq" />
+    <bpmn:sequenceFlow id="Flow_1ebwveg" name="No" sourceRef="GW_HasAssets" targetRef="Event_0azjwnq">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=decide = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_16ebd6x" sourceRef="Activity_0iwtr17" targetRef="GW_HasAssets" />
     <bpmn:userTask id="Activity_1b1jk70" name="Verify if execute Flexibility Offer is possible">
       <bpmn:extensionElements>
         <zeebe:userTask />
+        <zeebe:formDefinition formId="Form_Promise_FlexibilityForcasting" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1jp7h3m</bpmn:incoming>
       <bpmn:outgoing>Flow_0a9e14a</bpmn:outgoing>
@@ -51,9 +54,15 @@
       <bpmn:outgoing>Flow_1w00wu5</bpmn:outgoing>
       <bpmn:outgoing>Flow_07ktx5n</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="Flow_1w00wu5" name="No" sourceRef="Gateway_10xhc8a" targetRef="Event_19ljhje" />
-    <bpmn:sequenceFlow id="Flow_1jp7h3m" name="Yes" sourceRef="GW_HasAssets" targetRef="Activity_1b1jk70" />
-    <bpmn:sequenceFlow id="Flow_07ktx5n" name="Yes" sourceRef="Gateway_10xhc8a" targetRef="Activity_1obo2qh" />
+    <bpmn:sequenceFlow id="Flow_1w00wu5" name="No" sourceRef="Gateway_10xhc8a" targetRef="Event_19ljhje">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=promise = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1jp7h3m" name="Yes" sourceRef="GW_HasAssets" targetRef="Activity_1b1jk70">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=decide = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_07ktx5n" name="Yes" sourceRef="Gateway_10xhc8a" targetRef="Activity_1obo2qh">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=promise = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
     <bpmn:task id="Activity_1obo2qh" name="Promise Flexibility Forecasting">
       <bpmn:incoming>Flow_07ktx5n</bpmn:incoming>
       <bpmn:outgoing>Flow_0gqczku</bpmn:outgoing>
@@ -88,7 +97,7 @@
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  flexibilityLogsStatus: response.status,&#10;  flexibilityLogs:       response.body,&#10;  flexibilityLogsCount:  count(response.body)&#10;}" />
+          <zeebe:header key="resultExpression" value="={&#10;  flexibilityLogsStatus: response.status,&#10;  flexibilityLogs:       response.body&#10;}" />
           <zeebe:header key="retryBackoff" value="PT10S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
@@ -110,7 +119,7 @@
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  gridBalancingStatus: response.status,&#10;  gridBalancingRecs:   response.body,&#10;  gridBalancingCount:  count(response.body)&#10;}" />
+          <zeebe:header key="resultExpression" value="={&#10;  gridBalancingStatus: response.status,&#10;  gridBalancingLogs:   response.body&#10;}" />
           <zeebe:header key="retryBackoff" value="PT10S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
@@ -207,6 +216,7 @@
     <bpmn:userTask id="Activity_0iwtr17" name="Decide if Flexibility Forecasting will be evaluated">
       <bpmn:extensionElements>
         <zeebe:userTask />
+        <zeebe:formDefinition formId="Form_Decide_FlexibilityForecasting" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1c3laoh</bpmn:incoming>
       <bpmn:outgoing>Flow_16ebd6x</bpmn:outgoing>
@@ -246,7 +256,7 @@
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
           <zeebe:input source="http://ec2-ollama.compute-1.amazonaws.com:11434/api/generate" target="url" />
-          <zeebe:input source="={&#34;Content-Type&#34;: &#34;application/json&#34;}" target="headers" />
+          <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=120" target="connectionTimeoutInSeconds" />
@@ -270,12 +280,12 @@
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
           <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/FlexibilityEvent/forecast" target="url" />
-          <zeebe:input source="={&#34;Content-Type&#34;: &#34;application/json&#34;, &#34;accept&#34;: &#34;application/json&#34;}" target="headers" />
-          <zeebe:input source="={&#10;  &#34;windowStart&#34;:            timeWindow.windowStart,&#10;  &#34;windowEnd&#34;:              timeWindow.windowEnd,&#10;  &#34;flexibilityEventsCount&#34;: flexibilityLogsCount,&#10;  &#34;gridBalancingCount&#34;:     gridBalancingCount,&#10;  &#34;forecastResult&#34;:         forecastResult&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
+          <zeebe:input source="={&#10;  &#34;windowStart&#34;:            timeWindow.windowStart,&#10;  &#34;windowEnd&#34;:              timeWindow.windowEnd,&#10;  &#34;flexibilityEventsCount&#34;: flexibilityLogsCount,&#10;  &#34;gridBalancingCount&#34;:     gridBalancingCount,&#10;  &#34;forecastResult&#34;:         forecastResult&#10;}" target="body" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
@@ -297,6 +307,7 @@
     <bpmn:userTask id="Activity_1gqsmnq" name="Check Flexibility Forecasting">
       <bpmn:extensionElements>
         <zeebe:userTask />
+        <zeebe:formDefinition formId="Form_Check_FlexibilityForecasting" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_10xzvfo</bpmn:incoming>
       <bpmn:outgoing>Flow_1jcpkdo</bpmn:outgoing>
@@ -324,8 +335,12 @@
     <bpmn:sequenceFlow id="Flow_1rn6o3t" sourceRef="Activity_1dvv2oq" targetRef="EndEvent_ForecastComplete" />
     <bpmn:sequenceFlow id="Flow_10xzvfo" sourceRef="Activity_0k6ynkp" targetRef="Activity_1gqsmnq" />
     <bpmn:sequenceFlow id="Flow_1jcpkdo" sourceRef="Activity_1gqsmnq" targetRef="Gateway_0xdan8i" />
-    <bpmn:sequenceFlow id="Flow_0k33l05" name="Yes" sourceRef="Gateway_0xdan8i" targetRef="Activity_08kjrab" />
-    <bpmn:sequenceFlow id="Flow_1dpg2l4" name="No" sourceRef="Gateway_0xdan8i" targetRef="Event_1akqo88" />
+    <bpmn:sequenceFlow id="Flow_0k33l05" name="Yes" sourceRef="Gateway_0xdan8i" targetRef="Activity_08kjrab">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=persist = True</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1dpg2l4" name="No" sourceRef="Gateway_0xdan8i" targetRef="Event_1akqo88">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=persist = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_FlexibilityForecasting">
     <bpmndi:BPMNPlane id="BPMNPlane_FlexibilityForecasting" bpmnElement="Collaboration_FlexibilityForecasting">
@@ -333,12 +348,12 @@
         <dc:Bounds x="155" y="60" width="1815" height="530" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Lane_DataCollection_di" bpmnElement="Lane_DataCollection" isHorizontal="true">
-        <dc:Bounds x="185" y="208" width="1785" height="382" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Lane_Scheduler_di" bpmnElement="Lane_Scheduler" isHorizontal="true">
         <dc:Bounds x="185" y="60" width="1785" height="148" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_DataCollection_di" bpmnElement="Lane_DataCollection" isHorizontal="true">
+        <dc:Bounds x="185" y="208" width="1785" height="382" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1xi3i1d_di" bpmnElement="Activity_1b1jk70">
@@ -364,7 +379,7 @@
       <bpmndi:BPMNShape id="GW_JoinDataFetch_di" bpmnElement="GW_JoinDataFetch">
         <dc:Bounds x="980" y="375" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1022" y="355.5" width="46" height="27" />
+          <dc:Bounds x="1019" y="358" width="46" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_FetchFlexibilityLogs_di" bpmnElement="Task_FetchFlexibilityLogs" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">

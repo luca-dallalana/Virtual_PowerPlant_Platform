@@ -1,0 +1,47 @@
+{
+  "components": [
+    {
+      "label": "Select Utility Operator",
+      "type": "select",
+      "layout": {
+        "row": "Row_11hin42",
+        "columns": null
+      },
+      "id": "Field_05m3pyy",
+      "key": "selectedUtilityOperator",
+      "valuesExpression": "=for operator in UtilityOperatorList return {\"label\": operator.name, \"value\": operator.id}",
+      "description": "Grid Cell Utility Operator"
+    },
+    {
+      "label": "Geographic Boundaries",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_04f51hy",
+        "columns": null
+      },
+      "id": "Field_0h23kvz",
+      "key": "geographicBoundaries",
+      "description": "Grid Cell geographic Boundaries"
+    },
+    {
+      "label": "Max Capacity",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_1ktdodz",
+        "columns": null
+      },
+      "id": "Field_1h3pbhu",
+      "key": "maxCapacity",
+      "description": "Grid Cell Max Capacity"
+    }
+  ],
+  "type": "default",
+  "id": "Form_Request_GridCellMng",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.47.0"
+  },
+  "schemaVersion": 19
+}

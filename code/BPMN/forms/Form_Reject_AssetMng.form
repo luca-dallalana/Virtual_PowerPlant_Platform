@@ -1,21 +1,20 @@
 {
   "components": [
     {
-      "label": "Is the creation of Utility Operator acceptable?",
+      "label": "Would like to reject the arguments?",
       "type": "checkbox",
       "layout": {
-        "row": "Row_1plwgff",
+        "row": "Row_1oax5o3",
         "columns": null
       },
-      "id": "Field_1bn5agz",
-      "key": "accept",
-      "defaultValue": true
+      "id": "Field_16xdrcv",
+      "key": "reject"
     }
   ],
   "type": "default",
-  "id": "Form_Productok_UtilityOperatorMng",
+  "id": "Form_Reject_AssetMng",
   "executionPlatform": "Camunda Cloud",
-  "executionPlatformVersion": "8.8.0",
+  "executionPlatformVersion": "8.9.0",
   "exporter": {
     "name": "Camunda Modeler",
     "version": "5.47.0"

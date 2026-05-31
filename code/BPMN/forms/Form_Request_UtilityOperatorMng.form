@@ -9,7 +9,7 @@
       },
       "id": "Field_0sppgut",
       "key": "name",
-      "description": "Prosumer name"
+      "description": "Utility Operator name"
     },
     {
       "label": "Location",
@@ -20,7 +20,7 @@
       },
       "id": "Field_1ykgxfy",
       "key": "location",
-      "description": "Prosumer Location"
+      "description": "Utility Operator Location"
     }
   ],
   "type": "default",
@@ -29,7 +29,7 @@
   "executionPlatformVersion": "8.8.0",
   "exporter": {
     "name": "Camunda Modeler",
-    "version": "5.44.0"
+    "version": "5.47.0"
   },
   "schemaVersion": 19
 }
