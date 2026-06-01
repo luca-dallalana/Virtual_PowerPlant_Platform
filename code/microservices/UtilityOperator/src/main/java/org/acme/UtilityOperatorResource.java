@@ -145,4 +145,10 @@ public class UtilityOperatorResource {
                 .onItem().transform(status -> Response.status(status).build());
     }
 
+    @GET
+    @Path("gridcell/{gridCellId}/neighbours")
+    public Multi<GridCell> getNeighbourGridCells(String gridCellId) {
+        return GridCell.findNeighbours(client, gridCellId);
+    }
+
 }

@@ -2,6 +2,7 @@
 package org.acme;
 
 import java.net.URI;
+import java.util.List;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -89,5 +90,17 @@ public class AssetLinkResource {
                 .onItem().transform(updated -> updated ? Response.Status.NO_CONTENT : Response.Status.NOT_FOUND)
                 .onItem().transform(status -> Response.status(status).build());
     }
-    
+
+    @GET
+    @Path("prosumerIds/by-operator/{utilityOperatorId}")
+    public Multi<Long> getProsumerIdsByOperator(Long utilityOperatorId) {
+        return AssetLink.findProsumerIdsByOperatorId(client, utilityOperatorId);
+    }
+
+    @POST
+    @Path("prosumerIds/by-operators")
+    public Multi<Long> getProsumerIdsByOperators(List<Long> utilityOperatorIds) {
+        return AssetLink.findProsumerIdsByOperatorIds(client, utilityOperatorIds);
+    }
+
 }

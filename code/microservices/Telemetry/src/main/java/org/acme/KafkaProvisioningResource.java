@@ -2,15 +2,12 @@ package org.acme;
 
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.acme.model.Topic;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -99,6 +96,12 @@ public class KafkaProvisioningResource {
     @Path("latest/{assetType}/{minutes}")
     public Multi<Telemetry> getLatestByAssetType(String assetType, int minutes) {
         return Telemetry.findLatestByAssetType(client, assetType, minutes);
+    }
+
+    @POST
+    @Path("latest/bulk")
+    public Multi<Telemetry> getLatestByAssetIds(List<Long> assetIds) {
+        return Telemetry.findLatestByAssetIds(client, assetIds);
     }
 
 }

@@ -6,6 +6,8 @@ import io.vertx.mutiny.mysqlclient.MySQLPool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class Asset {
 
@@ -75,5 +77,18 @@ public class Asset {
 				.execute(Tuple.of("BATTERY", "ACTIVE"))
 				.onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
 				.onItem().transform(row -> new BatteryAssetDTO(row.getLong("prosumerId"), row.getLong("assetId")));
+	}
+
+	public static Multi<Long> findActiveAssetIdsByProsumerIds(MySQLPool client, List<Long> prosumerIds) {
+		if (prosumerIds == null || prosumerIds.isEmpty()) {
+			return Multi.createFrom().empty();
+		}
+		String placeholders = prosumerIds.stream().map(id -> "?").collect(Collectors.joining(", "));
+		Tuple params = Tuple.tuple();
+		prosumerIds.forEach(params::addLong);
+		return client.preparedQuery("SELECT assetId FROM Asset WHERE status = 'ACTIVE' AND prosumerId IN (" + placeholders + ")")
+				.execute(params)
+				.onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
+				.onItem().transform(row -> row.getLong("assetId"));
 	}
 }

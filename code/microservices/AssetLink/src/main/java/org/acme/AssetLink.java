@@ -6,6 +6,8 @@ import io.vertx.mutiny.mysqlclient.MySQLPool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class AssetLink {
 	
@@ -59,7 +61,27 @@ public class AssetLink {
 					
 	    }
 
-public Uni<Long> save(MySQLPool client , Long idProsumer_R , Long idUtilityOperator_R) 
+	public static Multi<Long> findProsumerIdsByOperatorId(MySQLPool client, Long utilityOperatorId) {
+		return client.preparedQuery("SELECT idProsumer FROM AssetLink WHERE idUtilityOperator = ?")
+				.execute(Tuple.of(utilityOperatorId))
+				.onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
+				.onItem().transform(row -> row.getLong("idProsumer"));
+	}
+
+	public static Multi<Long> findProsumerIdsByOperatorIds(MySQLPool client, List<Long> utilityOperatorIds) {
+		if (utilityOperatorIds == null || utilityOperatorIds.isEmpty()) {
+			return Multi.createFrom().empty();
+		}
+		String placeholders = utilityOperatorIds.stream().map(id -> "?").collect(Collectors.joining(", "));
+		Tuple params = Tuple.tuple();
+		utilityOperatorIds.forEach(params::addLong);
+		return client.preparedQuery("SELECT DISTINCT idProsumer FROM AssetLink WHERE idUtilityOperator IN (" + placeholders + ")")
+				.execute(params)
+				.onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
+				.onItem().transform(row -> row.getLong("idProsumer"));
+	}
+
+public Uni<Long> save(MySQLPool client , Long idProsumer_R , Long idUtilityOperator_R)
 	{
         return client.preparedQuery("INSERT INTO AssetLink(idProsumer,idUtilityOperator) VALUES (?,?)").execute(Tuple.of( idProsumer_R , idUtilityOperator_R))
         		.onItem().transform(result -> (Long) result.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)); 

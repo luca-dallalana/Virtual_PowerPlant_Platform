@@ -72,4 +72,14 @@ public class GridCell {
 		return client.preparedQuery("UPDATE GridCell SET maxCapacity = ? WHERE gridCellId = ?").execute(Tuple.of(maxCapacity, gridCellId))
 				.onItem().transform(pgRowSet -> pgRowSet.rowCount() == 1);
 	}
+
+	public static Multi<GridCell> findNeighbours(MySQLPool client, String gridCellId) {
+		return client.preparedQuery(
+						"SELECT gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries FROM GridCell " +
+						"WHERE geographicBoundaries = (SELECT geographicBoundaries FROM GridCell WHERE gridCellId = ?) " +
+						"AND gridCellId != ?")
+				.execute(Tuple.of(gridCellId, gridCellId))
+				.onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
+				.onItem().transform(GridCell::from);
+	}
 }

@@ -10,6 +10,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
+import org.acme.dto.GridCellEvaluationResult;
 import org.acme.entities.BalancingRecommendation;
 import org.acme.services.GridBalancingRecommendationService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -74,10 +75,17 @@ public class GridBalancingRecommendationResource {
     }
 
     @POST
+    @Path("/evaluateCell")
+    public Response evaluateCell(GridBalancingRequest request) {
+        GridCellEvaluationResult result = recommendationService.evaluateCell(request);
+        return Response.ok(result).build();
+    }
+
+    @POST
     @Path("/emit")
-    public Uni<Response> emit(BalancingRecommendation recommendation) {
-        applyDefaults(recommendation);
-        return recommendationService.emitRecommendation(recommendation)
+    public Uni<Response> emit(List<BalancingRecommendation> recommendations) {
+        recommendations.forEach(this::applyDefaults);
+        return recommendationService.emitAll(recommendations)
                 .onItem().transform(saved -> Response.ok(saved).build());
     }
 

@@ -8,6 +8,8 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class Telemetry 
 {
@@ -132,6 +134,23 @@ public class Telemetry
                 "WHERE asset_type = ? AND timeStamp >= ? GROUP BY asset_id) latest " +
                 "ON t.asset_id = latest.asset_id AND t.timeStamp = latest.maxTs")
                 .execute(Tuple.of(assetType, cutoff))
+                .onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
+                .onItem().transform(Telemetry::from);
+    }
+
+    public static Multi<Telemetry> findLatestByAssetIds(MySQLPool client, List<Long> assetIds) {
+        if (assetIds == null || assetIds.isEmpty()) {
+            return Multi.createFrom().empty();
+        }
+        String placeholders = assetIds.stream().map(id -> "?").collect(Collectors.joining(", "));
+        Tuple params = Tuple.tuple();
+        assetIds.forEach(params::addLong);
+        return client.preparedQuery(
+                "SELECT t.* FROM Telemetry t " +
+                "INNER JOIN (SELECT asset_id, MAX(timeStamp) as maxTs FROM Telemetry " +
+                "WHERE asset_id IN (" + placeholders + ") GROUP BY asset_id) latest " +
+                "ON t.asset_id = latest.asset_id AND t.timeStamp = latest.maxTs")
+                .execute(params)
                 .onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
                 .onItem().transform(Telemetry::from);
     }

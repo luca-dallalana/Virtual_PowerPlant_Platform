@@ -5,7 +5,9 @@ import io.smallrye.reactive.messaging.kafka.api.OutgoingKafkaRecordMetadata;
 import io.vertx.mutiny.mysqlclient.MySQLPool;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.acme.dto.GridBalancingRequest;
 import org.acme.dto.GridCellDTO;
+import org.acme.dto.GridCellEvaluationResult;
 import org.acme.dto.TelemetryDTO;
 import org.acme.entities.BalancingRecommendation;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -44,8 +46,40 @@ public class GridBalancingRecommendationService {
         return buildRecommendations(telemetryList, gridCells, LocalDateTime.now(), thresholdPercent);
     }
 
+    public GridCellEvaluationResult evaluateCell(GridBalancingRequest request) {
+        if (request.gridCells == null || request.gridCells.isEmpty()) {
+            return new GridCellEvaluationResult(false);
+        }
+        GridCellDTO cell = request.gridCells.get(0);
+        if (cell.maxCapacity == null) {
+            return new GridCellEvaluationResult(false);
+        }
+
+        double demandKw = 0;
+        double supplyKw = 0;
+        for (TelemetryDTO t : request.telemetryData) {
+            if ("EV_CHARGER".equals(t.asset_type)) {
+                demandKw += valueOrZero(t.Charging_Rate);
+            } else if ("SOLAR".equals(t.asset_type)) {
+                supplyKw += valueOrZero(t.Current_Generation);
+            } else if ("BATTERY".equals(t.asset_type)) {
+                double output = valueOrZero(t.Current_Output);
+                if (output > 0) supplyKw += output;
+                else demandKw += Math.abs(output);
+            }
+        }
+
+        double netLoadKw = Math.max(0, demandKw - supplyKw);
+        boolean overThreshold = netLoadKw > cell.maxCapacity * thresholdPercent;
+        return new GridCellEvaluationResult(overThreshold);
+    }
+
     public Uni<BalancingRecommendation> emitRecommendation(BalancingRecommendation recommendation) {
         return persistAndEmit(recommendation);
+    }
+
+    public Uni<List<BalancingRecommendation>> emitAll(List<BalancingRecommendation> recommendations) {
+        return persistAll(recommendations);
     }
 
     /** Grid cells missing gridCellId or maxCapacity are skipped; unrecognized telemetry zones are ignored. */

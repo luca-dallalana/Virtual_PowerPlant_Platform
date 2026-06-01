@@ -1,6 +1,7 @@
 package org.acme;
 
 import java.net.URI;
+import java.util.List;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -121,6 +122,12 @@ public class ProsumerResource {
     @Path("assets/batteries/active")
     public Multi<BatteryAssetDTO> getActiveBatteries() {
         return Asset.findActiveBatteries(client);
+    }
+
+    @POST
+    @Path("assets/active/by-prosumers")
+    public Multi<Long> getActiveAssetIdsByProsumers(List<Long> prosumerIds) {
+        return Asset.findActiveAssetIdsByProsumerIds(client, prosumerIds);
     }
 
 }
