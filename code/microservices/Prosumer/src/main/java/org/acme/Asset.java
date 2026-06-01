@@ -79,6 +79,13 @@ public class Asset {
 				.onItem().transform(row -> new BatteryAssetDTO(row.getLong("prosumerId"), row.getLong("assetId")));
 	}
 
+	public static Multi<Asset> findActiveSolar(MySQLPool client) {
+		return client.preparedQuery("SELECT assetId, prosumerId, assetType, model, status FROM Asset WHERE assetType = ? AND status = ?")
+				.execute(Tuple.of("SOLAR", "ACTIVE"))
+				.onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
+				.onItem().transform(Asset::from);
+	}
+
 	public static Multi<ActiveAssetDTO> findAllActive(MySQLPool client) {
 		return client.preparedQuery("SELECT assetId, prosumerId, assetType FROM Asset WHERE status = ?")
 				.execute(Tuple.of("ACTIVE"))

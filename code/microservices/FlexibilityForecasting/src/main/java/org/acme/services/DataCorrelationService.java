@@ -1,13 +1,65 @@
 package org.acme.services;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import org.acme.dto.FlexibilityEventDTO;
-import org.acme.dto.BalancingRecommendationDTO;
+import org.acme.dto.*;
+
 import java.time.LocalDateTime;
 import java.util.*;
 
 @ApplicationScoped
 public class DataCorrelationService {
+
+    private static final int DEFAULT_CORRELATION_WINDOW_MINUTES = 30;
+
+    public EventCorrelationResult buildResult(EventCorrelationRequest request) {
+        List<FlexibilityEventDTO> events = request.flexibilityLogs != null ? request.flexibilityLogs : Collections.emptyList();
+        List<BalancingRecommendationDTO> recommendations = request.gridBalancingLogs != null ? request.gridBalancingLogs : Collections.emptyList();
+        List<SolarAssetDTO> solarAssets = request.solarAssets != null ? request.solarAssets : Collections.emptyList();
+        List<SolarTelemetryDTO> solarTelemetry = request.solarTelemetry != null ? request.solarTelemetry : Collections.emptyList();
+
+        Map<FlexibilityEventDTO, List<BalancingRecommendationDTO>> correlations =
+                correlateEventsWithOutcomes(events, recommendations, DEFAULT_CORRELATION_WINDOW_MINUTES);
+
+        Map<String, Double> solarByGridCell = aggregateSolarByGridCell(solarTelemetry);
+        double totalGeneration = solarTelemetry.stream()
+                .filter(t -> t.Current_Generation != null)
+                .mapToDouble(t -> t.Current_Generation)
+                .sum();
+        double totalDaily = solarTelemetry.stream()
+                .filter(t -> t.Daily_Total != null)
+                .mapToDouble(t -> t.Daily_Total)
+                .sum();
+        long nonNullGenerationCount = solarTelemetry.stream().filter(t -> t.Current_Generation != null).count();
+        double avgGeneration = nonNullGenerationCount > 0 ? totalGeneration / nonNullGenerationCount : 0.0;
+
+        List<CorrelatedEventEntry> correlatedEvents = new ArrayList<>();
+        for (Map.Entry<FlexibilityEventDTO, List<BalancingRecommendationDTO>> entry : correlations.entrySet()) {
+            CorrelatedEventEntry cee = new CorrelatedEventEntry();
+            cee.event = entry.getKey();
+            cee.recommendations = entry.getValue();
+            if (entry.getKey().gridCellId != null) {
+                cee.solarGenerationKw = solarByGridCell.get(entry.getKey().gridCellId);
+            }
+            correlatedEvents.add(cee);
+        }
+
+        EventCorrelationResult result = new EventCorrelationResult();
+        result.flexibilityLogs = events;
+        result.gridBalancingLogs = recommendations;
+        result.solarAssets = solarAssets;
+        result.solarTelemetry = solarTelemetry;
+        result.totalFlexibilityEvents = events.size();
+        result.totalGridBalancingLogs = recommendations.size();
+        result.correlatedOutcomes = countCorrelatedOutcomes(correlations);
+        result.successRate = calculateSuccessRate(correlations, null);
+        result.solarAssetCount = solarAssets.size();
+        result.avgCurrentGenerationKw = avgGeneration;
+        result.totalDailyGenerationKwh = totalDaily;
+        result.solarGenerationByGridCell = solarByGridCell;
+        result.correlatedEvents = correlatedEvents;
+
+        return result;
+    }
 
     public Map<FlexibilityEventDTO, List<BalancingRecommendationDTO>> correlateEventsWithOutcomes(
             List<FlexibilityEventDTO> events,
@@ -43,11 +95,26 @@ public class DataCorrelationService {
         return totalActionsOfType > 0 ? (double) successfulActions / totalActionsOfType * 100.0 : 0.0;
     }
 
+    public int countCorrelatedOutcomes(Map<FlexibilityEventDTO, List<BalancingRecommendationDTO>> correlations) {
+        return (int) correlations.values().stream()
+                .mapToLong(List::size)
+                .sum();
+    }
+
+    private Map<String, Double> aggregateSolarByGridCell(List<SolarTelemetryDTO> solarTelemetry) {
+        Map<String, Double> byGridCell = new HashMap<>();
+        for (SolarTelemetryDTO t : solarTelemetry) {
+            if (t.grid_cell_id != null && t.Current_Generation != null) {
+                byGridCell.merge(t.grid_cell_id, (double) t.Current_Generation, Double::sum);
+            }
+        }
+        return byGridCell;
+    }
+
     private boolean isSuccessfulOutcome(List<BalancingRecommendationDTO> recommendations) {
         if (recommendations.isEmpty()) {
             return false;
         }
-
         for (BalancingRecommendationDTO rec : recommendations) {
             if (rec.status != null &&
                 (rec.status.contains("BALANCED") ||
@@ -59,7 +126,6 @@ public class DataCorrelationService {
                 return true;
             }
         }
-
         return false;
     }
 
@@ -75,11 +141,5 @@ public class DataCorrelationService {
         }
         return recTime.isAfter(eventTime) &&
                recTime.isBefore(eventTime.plusMinutes(minutes));
-    }
-
-    public int countCorrelatedOutcomes(Map<FlexibilityEventDTO, List<BalancingRecommendationDTO>> correlations) {
-        return (int) correlations.values().stream()
-                .mapToLong(List::size)
-                .sum();
     }
 }

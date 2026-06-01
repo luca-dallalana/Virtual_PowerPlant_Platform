@@ -11,20 +11,20 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
-import org.acme.dto.ForecastResult;
-import org.acme.services.ForecastingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.Matchers.hasSize;
 
 @QuarkusTest
@@ -33,22 +33,20 @@ class FlexibilityForecastingResourceIT {
     @InjectMock
     MySQLPool client;
 
-    @InjectMock
-    ForecastingService forecastingService;
-
     @BeforeEach
     void setup() {
         Mockito.reset(client);
-        Mockito.reset(forecastingService);
     }
+
+    // ── GET /history ──────────────────────────────────────────────────────────
 
     @Test
     void getHistory_returnsList() {
         LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
-        Row row1 = flexibilityForecastRow(1L, "SENTIMENT", "Test question", "Positive analysis", "POSITIVE", 85.0, 10, 8, 80.0, timestamp1, "{\"key\":\"value\"}");
-        Row row2 = flexibilityForecastRow(2L, "SUCCESS_RATE", "Success question", "High success rate", "NEUTRAL", 90.0, 20, 18, 90.0, timestamp2, "{\"metric\":\"success\"}");
-        stubQuery("SELECT id, analysisType, question, aiResponse, sentiment, confidenceScore, eventsAnalyzed, correlatedOutcomes, successRate, analysisTimestamp, insightsJson FROM FlexibilityForecast ORDER BY analysisTimestamp DESC", rowSetWithRows(row1, row2));
+        Row row1 = forecastingResultRow(1L, "Forecast A", "2024-01-15T10:00", "2024-01-15T10:30", 5, 3, timestamp1);
+        Row row2 = forecastingResultRow(2L, "Forecast B", "2024-01-15T11:00", "2024-01-15T11:30", 8, 4, timestamp2);
+        stubQuery("SELECT * FROM ForecastingResult ORDER BY createdAt DESC", rowSetWithRows(row1, row2));
 
         given()
             .when()
@@ -57,21 +55,15 @@ class FlexibilityForecastingResourceIT {
             .statusCode(200)
             .body("", hasSize(2))
             .body("[0].id", is(1))
-            .body("[0].analysisType", is("SENTIMENT"))
-            .body("[0].question", is("Test question"))
-            .body("[0].aiResponse", is("Positive analysis"))
-            .body("[0].sentiment", is("POSITIVE"))
-            .body("[0].confidenceScore", is(85.0f))
-            .body("[0].eventsAnalyzed", is(10))
-            .body("[0].correlatedOutcomes", is(8))
-            .body("[0].successRate", is(80.0f));
+            .body("[0].forecastResult", is("Forecast A"))
+            .body("[0].flexibilityEventsCount", is(5));
     }
 
     @Test
     void getById_returnsEntity() {
         LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-        Row row = flexibilityForecastRow(1L, "SENTIMENT", "Test question", "Positive analysis", "POSITIVE", 85.0, 10, 8, 80.0, timestamp, "{\"key\":\"value\"}");
-        stubPreparedQuery("SELECT id, analysisType, question, aiResponse, sentiment, confidenceScore, eventsAnalyzed, correlatedOutcomes, successRate, analysisTimestamp, insightsJson FROM FlexibilityForecast WHERE id = ?", rowSetWithRows(row));
+        Row row = forecastingResultRow(1L, "Forecast A", "2024-01-15T10:00", "2024-01-15T10:30", 5, 3, timestamp);
+        stubPreparedQuery("SELECT * FROM ForecastingResult WHERE id = ?", rowSetWithRows(row));
 
         given()
             .when()
@@ -79,15 +71,13 @@ class FlexibilityForecastingResourceIT {
             .then()
             .statusCode(200)
             .body("id", is(1))
-            .body("analysisType", is("SENTIMENT"))
-            .body("sentiment", is("POSITIVE"))
-            .body("confidenceScore", is(85.0f));
+            .body("forecastResult", is("Forecast A"))
+            .body("flexibilityEventsCount", is(5));
     }
 
     @Test
     void getById_returnsNotFound() {
-        stubPreparedQuery("SELECT id, analysisType, question, aiResponse, sentiment, confidenceScore, eventsAnalyzed, correlatedOutcomes, successRate, analysisTimestamp, insightsJson FROM FlexibilityForecast WHERE id = ?", rowSetWithRows());
-
+        stubPreparedQuery("SELECT * FROM ForecastingResult WHERE id = ?", rowSetWithRows());
         given()
             .when()
             .get("/FlexibilityForecasting/history/99")
@@ -95,91 +85,101 @@ class FlexibilityForecastingResourceIT {
             .statusCode(404);
     }
 
-    @Test
-    void getByAnalysisType_returnsFiltered() {
-        LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-        Row row1 = flexibilityForecastRow(1L, "SENTIMENT", "Question 1", "Answer 1", "POSITIVE", 85.0, 10, 8, 80.0, timestamp, "{}");
-        Row row2 = flexibilityForecastRow(2L, "SENTIMENT", "Question 2", "Answer 2", "POSITIVE", 87.0, 12, 10, 83.0, timestamp, "{}");
-        stubPreparedQuery("SELECT id, analysisType, question, aiResponse, sentiment, confidenceScore, eventsAnalyzed, correlatedOutcomes, successRate, analysisTimestamp, insightsJson FROM FlexibilityForecast WHERE analysisType = ? ORDER BY analysisTimestamp DESC", rowSetWithRows(row1, row2));
+    // ── POST /evaluate-correlation ────────────────────────────────────────────
 
+    @Test
+    void evaluateCorrelation_emptyInputs_returnsZeroStats() {
         given()
+            .contentType(ContentType.JSON)
+            .body("{\"flexibilityLogs\":[],\"gridBalancingLogs\":[],\"solarAssets\":[],\"solarTelemetry\":[]}")
             .when()
-            .get("/FlexibilityForecasting/history/type/SENTIMENT")
+            .post("/FlexibilityForecasting/evaluate-correlation")
             .then()
             .statusCode(200)
-            .body("", hasSize(2))
-            .body("[0].analysisType", is("SENTIMENT"))
-            .body("[1].analysisType", is("SENTIMENT"));
+            .body("totalFlexibilityEvents", is(0))
+            .body("solarAssetCount", is(0));
     }
 
     @Test
-    void analyze_withValidRequest_returnsResult() {
-        ForecastResult expectedResult = createForecastResult("GENERAL");
-
-        Mockito.when(forecastingService.performAnalysis(Mockito.any()))
-               .thenReturn(Uni.createFrom().item(expectedResult));
+    void evaluateCorrelation_withEvents_returnsStats() {
+        Map<String, Object> event = new HashMap<>();
+        event.put("assetId", 100);
+        event.put("prosumerId", 10);
+        event.put("eventType", "ARBITRAGE_SELL");
+        event.put("recommendedAction", "DISCHARGE");
+        event.put("soc_percent", 92.0);
+        event.put("gridCellId", "GRID_A");
+        event.put("timestamp", "2024-01-15T10:30:00");
 
         Map<String, Object> body = new HashMap<>();
-        body.put("analysisType", "GENERAL");
-        body.put("customQuestion", "Test question");
-        body.put("events", Arrays.asList());
-        body.put("recommendations", Arrays.asList());
+        body.put("flexibilityLogs", Collections.singletonList(event));
+        body.put("gridBalancingLogs", Collections.emptyList());
+        body.put("solarAssets", Collections.emptyList());
+        body.put("solarTelemetry", Collections.emptyList());
 
         given()
             .contentType(ContentType.JSON)
             .body(body)
             .when()
-            .post("/FlexibilityForecasting/analyze")
+            .post("/FlexibilityForecasting/evaluate-correlation")
             .then()
             .statusCode(200)
-            .body("analysisType", is("GENERAL"))
-            .body("confidenceScore", is(85.0f))
-            .body("id", is(1));
+            .body("totalFlexibilityEvents", is(1))
+            .body("correlatedEvents", hasSize(1));
     }
 
-    @Test
-    void analyzeSentiment_returnsResult() {
-        ForecastResult expectedResult = createForecastResult("SENTIMENT");
-        expectedResult.sentiment = "POSITIVE";
+    // ── POST /build-prompt ───────────────────────────────────────────────────
 
-        Mockito.when(forecastingService.performAnalysis(Mockito.any()))
-               .thenReturn(Uni.createFrom().item(expectedResult));
+    @Test
+    void buildPrompt_returnsPromptString() {
+        Map<String, Object> correlation = new HashMap<>();
+        correlation.put("flexibilityLogs", Collections.emptyList());
+        correlation.put("gridBalancingLogs", Collections.emptyList());
+        correlation.put("solarAssets", Collections.emptyList());
+        correlation.put("solarTelemetry", Collections.emptyList());
+        correlation.put("correlatedEvents", Collections.emptyList());
+        correlation.put("solarGenerationByGridCell", Collections.emptyMap());
+        correlation.put("totalFlexibilityEvents", 0);
+        correlation.put("totalGridBalancingLogs", 0);
+        correlation.put("correlatedOutcomes", 0);
+        correlation.put("successRate", 0.0);
+        correlation.put("solarAssetCount", 0);
+        correlation.put("avgCurrentGenerationKw", 0.0);
+        correlation.put("totalDailyGenerationKwh", 0.0);
 
         given()
             .contentType(ContentType.JSON)
+            .body(correlation)
             .when()
-            .post("/FlexibilityForecasting/analyze/sentiment")
+            .post("/FlexibilityForecasting/build-prompt")
             .then()
             .statusCode(200)
-            .body("analysisType", is("SENTIMENT"))
-            .body("sentiment", is("POSITIVE"));
+            .body("prompt", notNullValue());
     }
 
-    @Test
-    void analyzeSuccessRate_withFilters_returnsResult() {
-        ForecastResult expectedResult = createForecastResult("SUCCESS_RATE");
-        expectedResult.successRate = 80.0;
+    // ── POST /forecast ────────────────────────────────────────────────────────
 
-        Mockito.when(forecastingService.performAnalysis(Mockito.any()))
-               .thenReturn(Uni.createFrom().item(expectedResult));
+    @Test
+    void persistForecast_returnsId() {
+        RowSet<Row> insertResult = Mockito.mock(RowSet.class);
+        Mockito.when(insertResult.property(Mockito.any())).thenReturn(99L);
+        stubPreparedInsert("INSERT INTO ForecastingResult(forecastResult, windowStart, windowEnd, flexibilityEventsCount, gridBalancingCount, createdAt) VALUES (?,?,?,?,?,?)", insertResult);
 
         given()
             .contentType(ContentType.JSON)
-            .queryParam("eventType", "CHARGE")
-            .queryParam("recommendedAction", "REDUCE_LOAD")
+            .body("{\"forecastResult\":\"{\\\"summary\\\":\\\"all good\\\"}\"}")
             .when()
-            .post("/FlexibilityForecasting/analyze/success-rate")
+            .post("/FlexibilityForecasting/forecast")
             .then()
             .statusCode(200)
-            .body("analysisType", is("SUCCESS_RATE"))
-            .body("successRate", is(80.0f));
+            .body("forecastId", is(99));
     }
+
+    // ── DELETE /history/{id} ─────────────────────────────────────────────────
 
     @Test
     void delete_withExistingId_returns204() {
-        RowSet<Row> deleteResult = rowSetWithRowCount(1);
-        stubPreparedQuery("DELETE FROM FlexibilityForecast WHERE id = ?", deleteResult);
-
+        stubPreparedQuery("DELETE FROM ForecastingResult WHERE id = ?", rowSetWithRowCount(1));
         given()
             .when()
             .delete("/FlexibilityForecasting/history/1")
@@ -189,15 +189,15 @@ class FlexibilityForecastingResourceIT {
 
     @Test
     void delete_withNonExistingId_returns404() {
-        RowSet<Row> deleteResult = rowSetWithRowCount(0);
-        stubPreparedQuery("DELETE FROM FlexibilityForecast WHERE id = ?", deleteResult);
-
+        stubPreparedQuery("DELETE FROM ForecastingResult WHERE id = ?", rowSetWithRowCount(0));
         given()
             .when()
             .delete("/FlexibilityForecasting/history/99")
             .then()
             .statusCode(404);
     }
+
+    // ── helpers ──────────────────────────────────────────────────────────────
 
     private void stubQuery(String sql, RowSet<Row> rowSet) {
         Query<RowSet<Row>> query = Mockito.mock(Query.class);
@@ -206,9 +206,15 @@ class FlexibilityForecastingResourceIT {
     }
 
     private void stubPreparedQuery(String sql, RowSet<Row> rowSet) {
-        PreparedQuery<RowSet<Row>> preparedQuery = Mockito.mock(PreparedQuery.class);
-        Mockito.when(preparedQuery.execute(Mockito.any(Tuple.class))).thenReturn(Uni.createFrom().item(rowSet));
-        Mockito.when(client.preparedQuery(sql)).thenReturn(preparedQuery);
+        PreparedQuery<RowSet<Row>> pq = Mockito.mock(PreparedQuery.class);
+        Mockito.when(pq.execute(Mockito.any(Tuple.class))).thenReturn(Uni.createFrom().item(rowSet));
+        Mockito.when(client.preparedQuery(sql)).thenReturn(pq);
+    }
+
+    private void stubPreparedInsert(String sql, RowSet<Row> rowSet) {
+        PreparedQuery<RowSet<Row>> pq = Mockito.mock(PreparedQuery.class);
+        Mockito.when(pq.execute(Mockito.any(Tuple.class))).thenReturn(Uni.createFrom().item(rowSet));
+        Mockito.when(client.preparedQuery(sql)).thenReturn(pq);
     }
 
     private RowSet<Row> rowSetWithRows(Row... rows) {
@@ -225,41 +231,17 @@ class FlexibilityForecastingResourceIT {
         return rowSet;
     }
 
-    private Row flexibilityForecastRow(Long id, String analysisType, String question,
-                                       String aiResponse, String sentiment, Double confidenceScore,
-                                       Integer eventsAnalyzed, Integer correlatedOutcomes,
-                                       Double successRate, LocalDateTime analysisTimestamp,
-                                       String insightsJson) {
+    private Row forecastingResultRow(Long id, String forecastResult, String windowStart, String windowEnd,
+                                     Integer flexibilityEventsCount, Integer gridBalancingCount, LocalDateTime createdAt) {
         Row row = Mockito.mock(Row.class);
         Mockito.when(row.getLong("id")).thenReturn(id);
-        Mockito.when(row.getString("analysisType")).thenReturn(analysisType);
-        Mockito.when(row.getString("question")).thenReturn(question);
-        Mockito.when(row.getString("aiResponse")).thenReturn(aiResponse);
-        Mockito.when(row.getString("sentiment")).thenReturn(sentiment);
-        Mockito.when(row.getDouble("confidenceScore")).thenReturn(confidenceScore);
-        Mockito.when(row.getInteger("eventsAnalyzed")).thenReturn(eventsAnalyzed);
-        Mockito.when(row.getInteger("correlatedOutcomes")).thenReturn(correlatedOutcomes);
-        Mockito.when(row.getDouble("successRate")).thenReturn(successRate);
-        Mockito.when(row.getLocalDateTime("analysisTimestamp")).thenReturn(analysisTimestamp);
-        Mockito.when(row.getString("insightsJson")).thenReturn(insightsJson);
+        Mockito.when(row.getString("forecastResult")).thenReturn(forecastResult);
+        Mockito.when(row.getString("windowStart")).thenReturn(windowStart);
+        Mockito.when(row.getString("windowEnd")).thenReturn(windowEnd);
+        Mockito.when(row.getInteger("flexibilityEventsCount")).thenReturn(flexibilityEventsCount);
+        Mockito.when(row.getInteger("gridBalancingCount")).thenReturn(gridBalancingCount);
+        Mockito.when(row.getLocalDateTime("createdAt")).thenReturn(createdAt);
         return row;
-    }
-
-    private ForecastResult createForecastResult(String analysisType) {
-        ForecastResult result = new ForecastResult();
-        result.id = 1L;
-        result.analysisType = analysisType;
-        result.question = "Test question";
-        result.aiResponse = "AI response";
-        result.sentiment = "POSITIVE";
-        result.confidenceScore = 85.0;
-        result.eventsAnalyzed = 10;
-        result.correlatedOutcomes = 8;
-        result.successRate = 80.0;
-        result.analysisTimestamp = LocalDateTime.now();
-        result.insights = new HashMap<>();
-        result.insights.put("key", "value");
-        return result;
     }
 
     private static final class ListRowIterator implements RowIterator<Row> {
@@ -270,13 +252,9 @@ class FlexibilityForecastingResourceIT {
         }
 
         @Override
-        public boolean hasNext() {
-            return iterator.hasNext();
-        }
+        public boolean hasNext() { return iterator.hasNext(); }
 
         @Override
-        public Row next() {
-            return iterator.next();
-        }
+        public Row next() { return iterator.next(); }
     }
 }

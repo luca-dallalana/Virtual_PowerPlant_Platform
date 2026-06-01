@@ -130,6 +130,12 @@ public class ProsumerResource {
         return Asset.findActiveBatteries(client);
     }
 
+    @GET
+    @Path("assets/solar/active")
+    public Multi<Asset> getActiveSolarAssets() {
+        return Asset.findActiveSolar(client);
+    }
+
     @POST
     @Path("assets/active/by-prosumers")
     public Multi<Long> getActiveAssetIdsByProsumers(List<Long> prosumerIds) {

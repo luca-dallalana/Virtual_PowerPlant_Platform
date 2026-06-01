@@ -151,7 +151,9 @@ public class FlexibilityEventResource {
     @GET
     @Path("logs")
     public Multi<FlexibilityEvent> getLogs(@QueryParam("from") String from, @QueryParam("to") String to) {
-        return FlexibilityEvent.findByTimeWindow(client, LocalDateTime.parse(from), LocalDateTime.parse(to));
+        LocalDateTime toTime = (to != null) ? LocalDateTime.parse(to) : LocalDateTime.now();
+        LocalDateTime fromTime = (from != null) ? LocalDateTime.parse(from) : toTime.minusMinutes(20);
+        return FlexibilityEvent.findByTimeWindow(client, fromTime, toTime);
     }
 
     @GET

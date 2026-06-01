@@ -1,12 +1,9 @@
 package org.acme.services;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import org.acme.dto.BalancingRecommendationDTO;
-import org.acme.dto.FlexibilityEventDTO;
-import org.acme.dto.ForecastRequest;
+import org.acme.dto.*;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
@@ -15,17 +12,17 @@ import java.util.TreeMap;
 public class PromptBuilder {
 
     private static final String OUTPUT_SCHEMA = """
-You are an energy flexibility analytics assistant.
+You are an energy flexibility analytics assistant for a Virtual Power Plant (VPPaaS).
 Return a single JSON object using the exact schema and key order below.
 No markdown, no code fences, no extra text.
 
 Output schema (keys and structure must match exactly):
 {
-  "analysis_type": "...",
-  "question": "...",
+  "analysis_type": "FLEXIBILITY_FORECASTING",
   "summary": "...",
   "sentiment": "POSITIVE|NEUTRAL|NEGATIVE|MIXED|UNKNOWN",
   "confidence_score": 0.0,
+  "solar_impact": "...",
   "key_patterns": [
     {"pattern": "...", "evidence": "...", "impact": "..."}
   ],
@@ -35,18 +32,16 @@ Output schema (keys and structure must match exactly):
   "recommendations": [
     {"action": "...", "rationale": "...", "expected_effect": "..."}
   ],
-  "data_quality_notes": [
-    {"note": "...", "impact": "..."}
-  ],
   "statistics": {
-    "total_events": 0,
+    "total_flexibility_events": 0,
     "correlated_outcomes": 0,
+    "success_rate_percent": 0.0,
+    "solar_asset_count": 0,
+    "avg_solar_generation_kw": 0.0,
+    "total_daily_solar_kwh": 0.0,
     "event_type_counts": {"TYPE": 0},
     "recommended_action_counts": {"ACTION": 0},
-    "grid_cell_counts": {"CELL": 0},
-    "avg_soc_percent": 0.0,
-    "avg_market_price": 0.0,
-    "avg_incentive_amount": 0.0
+    "grid_cell_counts": {"CELL": 0}
   }
 }
 
@@ -58,162 +53,131 @@ Rules:
 
 """;
 
-    public String buildPrompt(ForecastRequest request,
-                              List<FlexibilityEventDTO> events,
-                              Map<FlexibilityEventDTO, List<BalancingRecommendationDTO>> correlations) {
-        String analysisType = request.analysisType != null ? request.analysisType : "GENERAL";
-        String question = request.customQuestion != null ? request.customQuestion :
-                "Analyze flexibility events and related outcomes.";
-        String eventTypeFilter = request.eventType != null ? request.eventType : "ANY";
-        String assetIdFilter = request.assetId != null ? request.assetId.toString() : "ANY";
-        String recommendedActionFilter = request.recommendedAction != null ? request.recommendedAction : "ANY";
-        String startDateFilter = request.startDate != null ? request.startDate.toString() : "UNSPECIFIED";
-        String endDateFilter = request.endDate != null ? request.endDate.toString() : "UNSPECIFIED";
-
-        int totalEvents = events.size();
-        int correlatedCount = (int) correlations.values().stream()
-                .mapToLong(List::size)
-                .sum();
+    public String buildPrompt(EventCorrelationResult correlation) {
+        int totalEvents = correlation.totalFlexibilityEvents;
+        int correlatedCount = correlation.correlatedOutcomes;
+        double successRate = correlation.successRate;
+        int solarAssets = correlation.solarAssetCount;
+        double avgSolar = correlation.avgCurrentGenerationKw;
+        double totalDaily = correlation.totalDailyGenerationKwh;
 
         Map<String, Integer> eventTypeCounts = new TreeMap<>();
         Map<String, Integer> recommendedActionCounts = new TreeMap<>();
         Map<String, Integer> gridCellCounts = new TreeMap<>();
         double socSum = 0.0;
         int socCount = 0;
-        double marketPriceSum = 0.0;
-        int marketPriceCount = 0;
-        double incentiveSum = 0.0;
-        int incentiveCount = 0;
 
-        for (FlexibilityEventDTO event : events) {
+        for (FlexibilityEventDTO event : safe(correlation.flexibilityLogs)) {
             incrementCount(eventTypeCounts, normalizeKey(event.eventType));
             incrementCount(recommendedActionCounts, normalizeKey(event.recommendedAction));
             incrementCount(gridCellCounts, normalizeKey(event.gridCellId));
-
             if (event.soc_percent != null) {
                 socSum += event.soc_percent;
                 socCount++;
             }
-            if (event.marketPrice != null) {
-                marketPriceSum += event.marketPrice;
-                marketPriceCount++;
-            }
-            if (event.incentiveAmount != null) {
-                incentiveSum += event.incentiveAmount;
-                incentiveCount++;
-            }
         }
 
         String avgSoc = socCount > 0 ? String.format(Locale.US, "%.2f", socSum / socCount) : "null";
-        String avgMarketPrice = marketPriceCount > 0
-                ? String.format(Locale.US, "%.2f", marketPriceSum / marketPriceCount)
-                : "null";
-        String avgIncentive = incentiveCount > 0
-                ? String.format(Locale.US, "%.2f", incentiveSum / incentiveCount)
-                : "null";
 
         StringBuilder prompt = new StringBuilder();
         prompt.append(OUTPUT_SCHEMA);
-        prompt.append(buildInputContext(analysisType, question, eventTypeFilter, assetIdFilter,
-                recommendedActionFilter, startDateFilter, endDateFilter, totalEvents, correlatedCount,
-                eventTypeCounts, recommendedActionCounts, gridCellCounts, avgSoc, avgMarketPrice, avgIncentive));
-        prompt.append(buildEventSample(events, correlations));
-        prompt.append(buildRecommendationSample(correlations));
+        prompt.append(buildInputContext(totalEvents, correlatedCount, successRate,
+                solarAssets, avgSolar, totalDaily,
+                eventTypeCounts, recommendedActionCounts, gridCellCounts, avgSoc,
+                correlation.solarGenerationByGridCell));
+        prompt.append(buildEventSample(correlation));
+        prompt.append(buildSolarSample(correlation));
+        prompt.append(buildRecommendationSample(correlation));
         prompt.append("\nReturn only the JSON object described in the schema.");
         return prompt.toString();
     }
 
-    private String buildInputContext(String analysisType,
-                                     String question,
-                                     String eventTypeFilter,
-                                     String assetIdFilter,
-                                     String recommendedActionFilter,
-                                     String startDateFilter,
-                                     String endDateFilter,
-                                     int totalEvents,
-                                     int correlatedCount,
+    private String buildInputContext(int totalEvents, int correlatedCount, double successRate,
+                                     int solarAssets, double avgSolar, double totalDaily,
                                      Map<String, Integer> eventTypeCounts,
                                      Map<String, Integer> recommendedActionCounts,
                                      Map<String, Integer> gridCellCounts,
                                      String avgSoc,
-                                     String avgMarketPrice,
-                                     String avgIncentive) {
-        return String.format("""
+                                     Map<String, Double> solarByGridCell) {
+        return String.format(Locale.US, """
 Input context:
 {
-  "analysis_type": %s,
-  "question": %s,
-  "filters": {
-    "event_type": %s,
-    "asset_id": %s,
-    "recommended_action": %s,
-    "start_date": %s,
-    "end_date": %s
-  },
+  "analysis_type": "FLEXIBILITY_FORECASTING",
   "totals": {
-    "total_events": %d,
-    "correlated_outcomes": %d
+    "total_flexibility_events": %d,
+    "correlated_outcomes": %d,
+    "success_rate_percent": %.2f,
+    "solar_asset_count": %d,
+    "avg_solar_generation_kw": %.2f,
+    "total_daily_solar_kwh": %.2f,
+    "avg_battery_soc_percent": %s
   },
   "derived_counts": {
     "event_type_counts": %s,
     "recommended_action_counts": %s,
-    "grid_cell_counts": %s
-  },
-  "averages": {
-    "avg_soc_percent": %s,
-    "avg_market_price": %s,
-    "avg_incentive_amount": %s
+    "grid_cell_counts": %s,
+    "solar_generation_by_grid_cell_kw": %s
   }
 }
 
 """,
-                jsonString(analysisType),
-                jsonString(question),
-                jsonString(eventTypeFilter),
-                jsonString(assetIdFilter),
-                jsonString(recommendedActionFilter),
-                jsonString(startDateFilter),
-                jsonString(endDateFilter),
-                totalEvents,
-                correlatedCount,
+                totalEvents, correlatedCount,
+                successRate,
+                solarAssets,
+                avgSolar,
+                totalDaily,
+                avgSoc,
                 formatCounts(eventTypeCounts),
                 formatCounts(recommendedActionCounts),
                 formatCounts(gridCellCounts),
-                avgSoc,
-                avgMarketPrice,
-                avgIncentive);
+                formatDoubleCounts(solarByGridCell != null ? solarByGridCell : Collections.emptyMap()));
     }
 
-    private String buildEventSample(List<FlexibilityEventDTO> events,
-                                    Map<FlexibilityEventDTO, List<BalancingRecommendationDTO>> correlations) {
-        StringBuilder sample = new StringBuilder("Event sample (JSON lines, up to 25):\n");
-        for (FlexibilityEventDTO event : events.stream().limit(25).toList()) {
-            int correlatedForEvent = correlations.getOrDefault(event, Collections.emptyList()).size();
+    private String buildEventSample(EventCorrelationResult correlation) {
+        StringBuilder sample = new StringBuilder("Flexibility event sample (JSON lines, up to 25):\n");
+        for (CorrelatedEventEntry cee : safe(correlation.correlatedEvents).stream().limit(25).toList()) {
+            FlexibilityEventDTO e = cee.event;
             sample.append(String.format(
                     "{\"timestamp\": %s, \"assetId\": %s, \"prosumerId\": %s, \"eventType\": %s, "
                             + "\"recommendedAction\": %s, \"soc_percent\": %s, \"marketPrice\": %s, "
-                            + "\"incentiveAmount\": %s, \"gridCellId\": %s, \"correlated_outcomes\": %d}\n",
-                    jsonString(event.timestamp != null ? event.timestamp.toString() : null),
-                    jsonNumber(event.assetId),
-                    jsonNumber(event.prosumerId),
-                    jsonString(event.eventType),
-                    jsonString(event.recommendedAction),
-                    jsonNumber(event.soc_percent),
-                    jsonNumber(event.marketPrice),
-                    jsonNumber(event.incentiveAmount),
-                    jsonString(event.gridCellId),
-                    correlatedForEvent));
+                            + "\"gridCellId\": %s, \"correlated_outcomes\": %d, \"solar_generation_kw\": %s}\n",
+                    jsonString(e.timestamp != null ? e.timestamp.toString() : null),
+                    jsonNumber(e.assetId),
+                    jsonNumber(e.prosumerId),
+                    jsonString(e.eventType),
+                    jsonString(e.recommendedAction),
+                    jsonNumber(e.soc_percent),
+                    jsonNumber(e.marketPrice),
+                    jsonString(e.gridCellId),
+                    cee.recommendations != null ? cee.recommendations.size() : 0,
+                    jsonNumber(cee.solarGenerationKw)));
         }
         return sample.toString();
     }
 
-    private String buildRecommendationSample(Map<FlexibilityEventDTO, List<BalancingRecommendationDTO>> correlations) {
-        List<BalancingRecommendationDTO> recSample = correlations.values().stream()
-                .flatMap(List::stream)
-                .limit(25)
-                .toList();
-        StringBuilder sample = new StringBuilder("\nRecommendation sample (JSON lines, up to 25):\n");
-        for (BalancingRecommendationDTO rec : recSample) {
+    private String buildSolarSample(EventCorrelationResult correlation) {
+        if (safe(correlation.solarTelemetry).isEmpty()) {
+            return "\nSolar telemetry: no data available\n";
+        }
+        StringBuilder sample = new StringBuilder("\nSolar telemetry sample (JSON lines, up to 10):\n");
+        for (SolarTelemetryDTO t : safe(correlation.solarTelemetry).stream().limit(10).toList()) {
+            sample.append(String.format(
+                    "{\"assetId\": %s, \"gridCellId\": %s, \"currentGeneration_kw\": %s, \"dailyTotal_kwh\": %s, \"timeStamp\": %s}\n",
+                    jsonNumber(t.asset_id),
+                    jsonString(t.grid_cell_id),
+                    jsonNumber(t.Current_Generation),
+                    jsonNumber(t.Daily_Total),
+                    jsonString(t.timeStamp != null ? t.timeStamp.toString() : null)));
+        }
+        return sample.toString();
+    }
+
+    private String buildRecommendationSample(EventCorrelationResult correlation) {
+        if (safe(correlation.gridBalancingLogs).isEmpty()) {
+            return "\nGrid balancing recommendations: no data available\n";
+        }
+        StringBuilder sample = new StringBuilder("\nGrid balancing recommendation sample (JSON lines, up to 25):\n");
+        for (BalancingRecommendationDTO rec : safe(correlation.gridBalancingLogs).stream().limit(25).toList()) {
             sample.append(String.format(
                     "{\"createdAt\": %s, \"sourceGridCellId\": %s, \"targetGridCellId\": %s, "
                             + "\"sourceNetLoadKw\": %s, \"targetHeadroomKw\": %s, \"overloadKw\": %s, "
@@ -230,46 +194,47 @@ Input context:
         return sample.toString();
     }
 
+    private <T> java.util.List<T> safe(java.util.List<T> list) {
+        return list != null ? list : Collections.emptyList();
+    }
+
     private void incrementCount(Map<String, Integer> counts, String key) {
         counts.merge(key, 1, Integer::sum);
     }
 
     private String normalizeKey(String value) {
-        if (value == null || value.isBlank()) {
-            return "UNKNOWN";
-        }
-        return value;
+        return (value == null || value.isBlank()) ? "UNKNOWN" : value;
     }
 
     private String jsonString(String value) {
-        if (value == null) {
-            return "null";
-        }
-        return "\"" + escapeJson(value) + "\"";
+        return value == null ? "null" : "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 
     private String jsonNumber(Number value) {
         return value == null ? "null" : value.toString();
     }
 
-    private String escapeJson(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
-    }
-
     private String formatCounts(Map<String, Integer> counts) {
-        if (counts.isEmpty()) {
-            return "{}";
-        }
-        StringBuilder formatted = new StringBuilder("{");
+        if (counts.isEmpty()) return "{}";
+        StringBuilder sb = new StringBuilder("{");
         boolean first = true;
-        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
-            if (!first) {
-                formatted.append(", ");
-            }
-            formatted.append(jsonString(entry.getKey())).append(": ").append(entry.getValue());
+        for (Map.Entry<String, Integer> e : counts.entrySet()) {
+            if (!first) sb.append(", ");
+            sb.append(jsonString(e.getKey())).append(": ").append(e.getValue());
             first = false;
         }
-        formatted.append("}");
-        return formatted.toString();
+        return sb.append("}").toString();
+    }
+
+    private String formatDoubleCounts(Map<String, Double> counts) {
+        if (counts.isEmpty()) return "{}";
+        StringBuilder sb = new StringBuilder("{");
+        boolean first = true;
+        for (Map.Entry<String, Double> e : counts.entrySet()) {
+            if (!first) sb.append(", ");
+            sb.append(jsonString(e.getKey())).append(": ").append(String.format(Locale.US, "%.2f", e.getValue()));
+            first = false;
+        }
+        return sb.append("}").toString();
     }
 }

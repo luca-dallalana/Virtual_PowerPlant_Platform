@@ -111,7 +111,9 @@ public class GridBalancingRecommendationResource {
     public Multi<BalancingRecommendation> getByTimeWindow(
             @QueryParam("from") String from,
             @QueryParam("to") String to) {
-        return BalancingRecommendation.findByTimeWindow(client, LocalDateTime.parse(from), LocalDateTime.parse(to));
+        LocalDateTime toTime = (to != null) ? LocalDateTime.parse(to) : LocalDateTime.now();
+        LocalDateTime fromTime = (from != null) ? LocalDateTime.parse(from) : toTime.minusMinutes(20);
+        return BalancingRecommendation.findByTimeWindow(client, fromTime, toTime);
     }
 
     @POST

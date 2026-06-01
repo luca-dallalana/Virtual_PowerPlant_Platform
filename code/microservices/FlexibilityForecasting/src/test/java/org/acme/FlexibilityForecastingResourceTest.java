@@ -9,12 +9,10 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
 import jakarta.ws.rs.core.Response;
-import org.acme.dto.BalancingRecommendationDTO;
-import org.acme.dto.FlexibilityEventDTO;
-import org.acme.dto.ForecastRequest;
-import org.acme.dto.ForecastResult;
-import org.acme.entities.FlexibilityForecast;
-import org.acme.services.ForecastingService;
+import org.acme.dto.*;
+import org.acme.entities.ForecastingResult;
+import org.acme.services.DataCorrelationService;
+import org.acme.services.PromptBuilder;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,185 +21,276 @@ import org.mockito.Mockito;
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.notNullValue;
 
 class FlexibilityForecastingResourceTest {
 
     FlexibilityForecastingResource resource;
     private MySQLPool client;
-    private ForecastingService forecastingService;
+    private DataCorrelationService correlationService;
+    private PromptBuilder promptBuilder;
 
     @BeforeEach
     void setup() {
         resource = new FlexibilityForecastingResource();
         client = Mockito.mock(MySQLPool.class);
-        forecastingService = Mockito.mock(ForecastingService.class);
-        injectClient(resource, client);
-        injectSchemaCreate(resource, false);
-        injectService(resource, forecastingService);
+        correlationService = new DataCorrelationService();
+        promptBuilder = new PromptBuilder();
+        injectField(resource, "client", client);
+        injectField(resource, "schemaCreate", false);
+        injectField(resource, "correlationService", correlationService);
+        injectField(resource, "promptBuilder", promptBuilder);
     }
+
+    // ── evaluate-correlation ─────────────────────────────────────────────────
+
+    @Test
+    void evaluateCorrelation_emptyInputs_returnsZeroStats() {
+        EventCorrelationRequest req = new EventCorrelationRequest();
+        req.flexibilityLogs = Collections.emptyList();
+        req.gridBalancingLogs = Collections.emptyList();
+        req.solarAssets = Collections.emptyList();
+        req.solarTelemetry = Collections.emptyList();
+
+        Response response = resource.evaluateCorrelation(req);
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        EventCorrelationResult result = (EventCorrelationResult) response.getEntity();
+        MatcherAssert.assertThat(result.totalFlexibilityEvents, is(0));
+        MatcherAssert.assertThat(result.solarAssetCount, is(0));
+        MatcherAssert.assertThat(result.avgCurrentGenerationKw, is(0.0));
+    }
+
+    @Test
+    void evaluateCorrelation_withSolarTelemetry_aggregatesByGridCell() {
+        EventCorrelationRequest req = new EventCorrelationRequest();
+        req.flexibilityLogs = Collections.emptyList();
+        req.gridBalancingLogs = Collections.emptyList();
+        req.solarAssets = Collections.singletonList(createSolarAsset(1002L));
+
+        SolarTelemetryDTO t1 = new SolarTelemetryDTO();
+        t1.asset_id = 1002L;
+        t1.grid_cell_id = "GRID_A";
+        t1.Current_Generation = 5.0f;
+        t1.Daily_Total = 20.0f;
+
+        SolarTelemetryDTO t2 = new SolarTelemetryDTO();
+        t2.asset_id = 1002L;
+        t2.grid_cell_id = "GRID_A";
+        t2.Current_Generation = 3.0f;
+        t2.Daily_Total = 10.0f;
+
+        req.solarTelemetry = Arrays.asList(t1, t2);
+
+        Response response = resource.evaluateCorrelation(req);
+        EventCorrelationResult result = (EventCorrelationResult) response.getEntity();
+
+        MatcherAssert.assertThat(result.solarAssetCount, is(1));
+        MatcherAssert.assertThat(result.totalDailyGenerationKwh, is(30.0));
+        MatcherAssert.assertThat(result.solarGenerationByGridCell.get("GRID_A"), is(8.0));
+    }
+
+    @Test
+    void evaluateCorrelation_correlatesEventToRecommendation() {
+        FlexibilityEventDTO event = createFlexibilityEventDTO("GRID_A");
+        BalancingRecommendationDTO rec = createRecommendation("GRID_A", event.timestamp.plusMinutes(5));
+
+        EventCorrelationRequest req = new EventCorrelationRequest();
+        req.flexibilityLogs = Collections.singletonList(event);
+        req.gridBalancingLogs = Collections.singletonList(rec);
+        req.solarAssets = Collections.emptyList();
+        req.solarTelemetry = Collections.emptyList();
+
+        Response response = resource.evaluateCorrelation(req);
+        EventCorrelationResult result = (EventCorrelationResult) response.getEntity();
+
+        MatcherAssert.assertThat(result.totalFlexibilityEvents, is(1));
+        MatcherAssert.assertThat(result.correlatedOutcomes, is(1));
+        MatcherAssert.assertThat(result.correlatedEvents, hasSize(1));
+        MatcherAssert.assertThat(result.correlatedEvents.get(0).recommendations, hasSize(1));
+    }
+
+    @Test
+    void evaluateCorrelation_solarContextAttachedToEvent() {
+        FlexibilityEventDTO event = createFlexibilityEventDTO("GRID_A");
+
+        SolarTelemetryDTO solar = new SolarTelemetryDTO();
+        solar.asset_id = 1002L;
+        solar.grid_cell_id = "GRID_A";
+        solar.Current_Generation = 7.5f;
+        solar.Daily_Total = 40.0f;
+
+        EventCorrelationRequest req = new EventCorrelationRequest();
+        req.flexibilityLogs = Collections.singletonList(event);
+        req.gridBalancingLogs = Collections.emptyList();
+        req.solarAssets = Collections.emptyList();
+        req.solarTelemetry = Collections.singletonList(solar);
+
+        Response response = resource.evaluateCorrelation(req);
+        EventCorrelationResult result = (EventCorrelationResult) response.getEntity();
+
+        MatcherAssert.assertThat(result.correlatedEvents.get(0).solarGenerationKw, is(7.5));
+    }
+
+    // ── build-prompt ─────────────────────────────────────────────────────────
+
+    @Test
+    void buildPrompt_returnsNonBlankPrompt() {
+        EventCorrelationResult correlation = new EventCorrelationResult();
+        correlation.flexibilityLogs = Collections.singletonList(createFlexibilityEventDTO("GRID_A"));
+        correlation.gridBalancingLogs = Collections.emptyList();
+        correlation.solarAssets = Collections.emptyList();
+        correlation.solarTelemetry = Collections.emptyList();
+        correlation.correlatedEvents = Collections.emptyList();
+        correlation.solarGenerationByGridCell = Collections.emptyMap();
+        correlation.totalFlexibilityEvents = 1;
+
+        Response response = resource.buildPrompt(correlation);
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        OllamaPromptResult result = (OllamaPromptResult) response.getEntity();
+        MatcherAssert.assertThat(result.prompt, notNullValue());
+        MatcherAssert.assertThat(result.prompt.isBlank(), is(false));
+        MatcherAssert.assertThat(result.prompt, containsString("FLEXIBILITY_FORECASTING"));
+    }
+
+    @Test
+    void buildPrompt_includesSolarSection() {
+        SolarTelemetryDTO solar = new SolarTelemetryDTO();
+        solar.asset_id = 1002L;
+        solar.grid_cell_id = "GRID_A";
+        solar.Current_Generation = 5.0f;
+        solar.Daily_Total = 20.0f;
+
+        EventCorrelationResult correlation = new EventCorrelationResult();
+        correlation.flexibilityLogs = Collections.emptyList();
+        correlation.gridBalancingLogs = Collections.emptyList();
+        correlation.solarAssets = Collections.emptyList();
+        correlation.solarTelemetry = Collections.singletonList(solar);
+        correlation.correlatedEvents = Collections.emptyList();
+        correlation.solarGenerationByGridCell = Collections.emptyMap();
+
+        Response response = resource.buildPrompt(correlation);
+        OllamaPromptResult result = (OllamaPromptResult) response.getEntity();
+        MatcherAssert.assertThat(result.prompt, containsString("Solar telemetry sample"));
+    }
+
+    // ── persist forecast ─────────────────────────────────────────────────────
+
+    @Test
+    void persistForecast_persistsAndReturnsId() {
+        stubPreparedInsert("INSERT INTO ForecastingResult(forecastResult, windowStart, windowEnd, flexibilityEventsCount, gridBalancingCount, createdAt) VALUES (?,?,?,?,?,?)", 42L);
+
+        ForecastPersistRequest req = new ForecastPersistRequest();
+        req.forecastResult = "{\"summary\":\"all good\"}";
+
+        Response response = resource.persistForecast(req).await().indefinitely();
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        ForecastPersistResponse body = (ForecastPersistResponse) response.getEntity();
+        MatcherAssert.assertThat(body.forecastId, is(42L));
+    }
+
+    // ── history endpoints ────────────────────────────────────────────────────
 
     @Test
     void getHistory_returnsList() {
         LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
-        Row row1 = flexibilityForecastRow(1L, "SENTIMENT", "Test question", "Positive analysis", "POSITIVE", 85.0, 10, 8, 80.0, timestamp1, "{\"key\":\"value\"}");
-        Row row2 = flexibilityForecastRow(2L, "SUCCESS_RATE", "Success question", "High success rate", "NEUTRAL", 90.0, 20, 18, 90.0, timestamp2, "{\"metric\":\"success\"}");
-        stubQuery("SELECT id, analysisType, question, aiResponse, sentiment, confidenceScore, eventsAnalyzed, correlatedOutcomes, successRate, analysisTimestamp, insightsJson FROM FlexibilityForecast ORDER BY analysisTimestamp DESC", rowSetWithRows(row1, row2));
+        Row row1 = forecastingResultRow(1L, "Forecast A", "2024-01-15T10:00", "2024-01-15T10:30", 5, 3, timestamp1);
+        Row row2 = forecastingResultRow(2L, "Forecast B", "2024-01-15T11:00", "2024-01-15T11:30", 8, 4, timestamp2);
+        stubQuery("SELECT * FROM ForecastingResult ORDER BY createdAt DESC", rowSetWithRows(row1, row2));
 
-        List<FlexibilityForecast> result = resource.getAllHistory().collect().asList().await().indefinitely();
+        List<ForecastingResult> result = resource.getAllHistory().collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(2));
         MatcherAssert.assertThat(result.get(0).id, is(1L));
-        MatcherAssert.assertThat(result.get(0).analysisType, is("SENTIMENT"));
-        MatcherAssert.assertThat(result.get(0).question, is("Test question"));
-        MatcherAssert.assertThat(result.get(0).aiResponse, is("Positive analysis"));
-        MatcherAssert.assertThat(result.get(0).sentiment, is("POSITIVE"));
-        MatcherAssert.assertThat(result.get(0).confidenceScore, is(85.0));
-        MatcherAssert.assertThat(result.get(0).eventsAnalyzed, is(10));
-        MatcherAssert.assertThat(result.get(0).correlatedOutcomes, is(8));
-        MatcherAssert.assertThat(result.get(0).successRate, is(80.0));
-        MatcherAssert.assertThat(result.get(0).analysisTimestamp, is(timestamp1));
+        MatcherAssert.assertThat(result.get(0).forecastResult, is("Forecast A"));
     }
 
     @Test
     void getById_returnsEntity() {
         LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-        Row row = flexibilityForecastRow(1L, "SENTIMENT", "Test question", "Positive analysis", "POSITIVE", 85.0, 10, 8, 80.0, timestamp, "{\"key\":\"value\"}");
-        stubPreparedQuery("SELECT id, analysisType, question, aiResponse, sentiment, confidenceScore, eventsAnalyzed, correlatedOutcomes, successRate, analysisTimestamp, insightsJson FROM FlexibilityForecast WHERE id = ?", rowSetWithRows(row));
+        Row row = forecastingResultRow(1L, "Forecast A", "2024-01-15T10:00", "2024-01-15T10:30", 5, 3, timestamp);
+        stubPreparedQuery("SELECT * FROM ForecastingResult WHERE id = ?", rowSetWithRows(row));
 
         Response response = resource.getHistoryById(1L).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
-        FlexibilityForecast result = (FlexibilityForecast) response.getEntity();
+        ForecastingResult result = (ForecastingResult) response.getEntity();
         MatcherAssert.assertThat(result.id, is(1L));
-        MatcherAssert.assertThat(result.analysisType, is("SENTIMENT"));
-        MatcherAssert.assertThat(result.sentiment, is("POSITIVE"));
-        MatcherAssert.assertThat(result.confidenceScore, is(85.0));
+        MatcherAssert.assertThat(result.forecastResult, is("Forecast A"));
     }
 
     @Test
     void getById_returnsNotFound() {
-        stubPreparedQuery("SELECT id, analysisType, question, aiResponse, sentiment, confidenceScore, eventsAnalyzed, correlatedOutcomes, successRate, analysisTimestamp, insightsJson FROM FlexibilityForecast WHERE id = ?", rowSetWithRows());
-
+        stubPreparedQuery("SELECT * FROM ForecastingResult WHERE id = ?", rowSetWithRows());
         Response response = resource.getHistoryById(99L).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(404));
     }
 
     @Test
-    void getByAnalysisType_returnsFiltered() {
-        LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-        Row row1 = flexibilityForecastRow(1L, "SENTIMENT", "Question 1", "Answer 1", "POSITIVE", 85.0, 10, 8, 80.0, timestamp, "{}");
-        Row row2 = flexibilityForecastRow(2L, "SENTIMENT", "Question 2", "Answer 2", "POSITIVE", 87.0, 12, 10, 83.0, timestamp, "{}");
-        stubPreparedQuery("SELECT id, analysisType, question, aiResponse, sentiment, confidenceScore, eventsAnalyzed, correlatedOutcomes, successRate, analysisTimestamp, insightsJson FROM FlexibilityForecast WHERE analysisType = ? ORDER BY analysisTimestamp DESC", rowSetWithRows(row1, row2));
-
-        List<FlexibilityForecast> result = resource.getHistoryByType("SENTIMENT").collect().asList().await().indefinitely();
-        MatcherAssert.assertThat(result, hasSize(2));
-        MatcherAssert.assertThat(result.get(0).analysisType, is("SENTIMENT"));
-        MatcherAssert.assertThat(result.get(1).analysisType, is("SENTIMENT"));
-    }
-
-    @Test
-    void analyze_withValidRequest_returnsResult() {
-        ForecastRequest request = createForecastRequest("GENERAL");
-        ForecastResult expectedResult = createForecastResult("GENERAL");
-
-        Mockito.when(forecastingService.performAnalysis(request))
-               .thenReturn(Uni.createFrom().item(expectedResult));
-
-        ForecastResult result = resource.analyze(request).await().indefinitely();
-        MatcherAssert.assertThat(result.analysisType, is("GENERAL"));
-        MatcherAssert.assertThat(result.confidenceScore, is(85.0));
-        MatcherAssert.assertThat(result.id, is(1L));
-    }
-
-    @Test
-    void analyzeSentiment_createsAnalysis() {
-        ForecastResult expectedResult = createForecastResult("SENTIMENT");
-        expectedResult.sentiment = "POSITIVE";
-
-        Mockito.when(forecastingService.performAnalysis(Mockito.any(ForecastRequest.class)))
-               .thenReturn(Uni.createFrom().item(expectedResult));
-
-        ForecastResult result = resource.analyzeSentiment().await().indefinitely();
-        MatcherAssert.assertThat(result.analysisType, is("SENTIMENT"));
-        MatcherAssert.assertThat(result.sentiment, is("POSITIVE"));
-    }
-
-    @Test
-    void analyzeSuccessRate_withFilters_returnsResult() {
-        ForecastResult expectedResult = createForecastResult("SUCCESS_RATE");
-        expectedResult.successRate = 80.0;
-
-        Mockito.when(forecastingService.performAnalysis(Mockito.any(ForecastRequest.class)))
-               .thenReturn(Uni.createFrom().item(expectedResult));
-
-        ForecastResult result = resource.analyzeSuccessRate("CHARGE", "REDUCE_LOAD").await().indefinitely();
-        MatcherAssert.assertThat(result.analysisType, is("SUCCESS_RATE"));
-        MatcherAssert.assertThat(result.successRate, is(80.0));
-    }
-
-    @Test
-    void analyzeSuccessRate_withoutFilters_returnsResult() {
-        ForecastResult expectedResult = createForecastResult("SUCCESS_RATE");
-        expectedResult.successRate = 75.0;
-
-        Mockito.when(forecastingService.performAnalysis(Mockito.any(ForecastRequest.class)))
-               .thenReturn(Uni.createFrom().item(expectedResult));
-
-        ForecastResult result = resource.analyzeSuccessRate(null, null).await().indefinitely();
-        MatcherAssert.assertThat(result.analysisType, is("SUCCESS_RATE"));
-        MatcherAssert.assertThat(result.successRate, is(75.0));
-    }
-
-    @Test
     void delete_withExistingId_returns204() {
-        RowSet<Row> deleteResult = rowSetWithRowCount(1);
-        stubPreparedQuery("DELETE FROM FlexibilityForecast WHERE id = ?", deleteResult);
-
+        stubPreparedQuery("DELETE FROM ForecastingResult WHERE id = ?", rowSetWithRowCount(1));
         Response response = resource.deleteHistory(1L).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(204));
     }
 
     @Test
     void delete_withNonExistingId_returns404() {
-        RowSet<Row> deleteResult = rowSetWithRowCount(0);
-        stubPreparedQuery("DELETE FROM FlexibilityForecast WHERE id = ?", deleteResult);
-
+        stubPreparedQuery("DELETE FROM ForecastingResult WHERE id = ?", rowSetWithRowCount(0));
         Response response = resource.deleteHistory(99L).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(404));
     }
 
-    private void injectClient(FlexibilityForecastingResource target, MySQLPool pool) {
-        try {
-            Field field = FlexibilityForecastingResource.class.getDeclaredField("client");
-            field.setAccessible(true);
-            field.set(target, pool);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IllegalStateException("Failed to inject MySQLPool", e);
-        }
+    // ── helpers ──────────────────────────────────────────────────────────────
+
+    private FlexibilityEventDTO createFlexibilityEventDTO(String gridCellId) {
+        FlexibilityEventDTO dto = new FlexibilityEventDTO();
+        dto.id = 1L;
+        dto.assetId = 100L;
+        dto.prosumerId = 10L;
+        dto.eventType = "ARBITRAGE_SELL";
+        dto.soc_percent = 92.0f;
+        dto.recommendedAction = "DISCHARGE";
+        dto.marketPrice = 150.0f;
+        dto.incentiveAmount = 4.0f;
+        dto.gridCellId = gridCellId;
+        dto.timestamp = LocalDateTime.now();
+        return dto;
     }
 
-    private void injectSchemaCreate(FlexibilityForecastingResource target, boolean value) {
+    private BalancingRecommendationDTO createRecommendation(String gridCellId, LocalDateTime createdAt) {
+        BalancingRecommendationDTO dto = new BalancingRecommendationDTO();
+        dto.id = 1L;
+        dto.sourceGridCellId = gridCellId;
+        dto.targetGridCellId = "GRID_B";
+        dto.sourceNetLoadKw = 95.0;
+        dto.targetHeadroomKw = 40.0;
+        dto.overloadKw = -5.0;
+        dto.status = "BALANCED";
+        dto.rationale = "Grid balanced";
+        dto.createdAt = createdAt;
+        return dto;
+    }
+
+    private SolarAssetDTO createSolarAsset(Long assetId) {
+        SolarAssetDTO dto = new SolarAssetDTO();
+        dto.assetId = assetId;
+        dto.prosumerId = 1L;
+        dto.assetType = "SOLAR";
+        dto.model = "SolarEdge SE7600H";
+        dto.status = "ACTIVE";
+        return dto;
+    }
+
+    private void injectField(Object target, String fieldName, Object value) {
         try {
-            Field field = FlexibilityForecastingResource.class.getDeclaredField("schemaCreate");
+            Field field = target.getClass().getDeclaredField(fieldName);
             field.setAccessible(true);
             field.set(target, value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IllegalStateException("Failed to inject schemaCreate", e);
-        }
-    }
-
-    private void injectService(FlexibilityForecastingResource target, ForecastingService service) {
-        try {
-            Field field = FlexibilityForecastingResource.class.getDeclaredField("forecastingService");
-            field.setAccessible(true);
-            field.set(target, service);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IllegalStateException("Failed to inject ForecastingService", e);
+            throw new IllegalStateException("Failed to inject field " + fieldName, e);
         }
     }
 
@@ -212,9 +301,17 @@ class FlexibilityForecastingResourceTest {
     }
 
     private void stubPreparedQuery(String sql, RowSet<Row> rowSet) {
-        PreparedQuery<RowSet<Row>> preparedQuery = Mockito.mock(PreparedQuery.class);
-        Mockito.when(preparedQuery.execute(Mockito.any(Tuple.class))).thenReturn(Uni.createFrom().item(rowSet));
-        Mockito.when(client.preparedQuery(sql)).thenReturn(preparedQuery);
+        PreparedQuery<RowSet<Row>> pq = Mockito.mock(PreparedQuery.class);
+        Mockito.when(pq.execute(Mockito.any(Tuple.class))).thenReturn(Uni.createFrom().item(rowSet));
+        Mockito.when(client.preparedQuery(sql)).thenReturn(pq);
+    }
+
+    private void stubPreparedInsert(String sql, Long generatedId) {
+        RowSet<Row> rowSet = Mockito.mock(RowSet.class);
+        Mockito.when(rowSet.property(Mockito.any())).thenReturn(generatedId);
+        PreparedQuery<RowSet<Row>> pq = Mockito.mock(PreparedQuery.class);
+        Mockito.when(pq.execute(Mockito.any(Tuple.class))).thenReturn(Uni.createFrom().item(rowSet));
+        Mockito.when(client.preparedQuery(sql)).thenReturn(pq);
     }
 
     private RowSet<Row> rowSetWithRows(Row... rows) {
@@ -231,79 +328,17 @@ class FlexibilityForecastingResourceTest {
         return rowSet;
     }
 
-    private Row flexibilityForecastRow(Long id, String analysisType, String question,
-                                       String aiResponse, String sentiment, Double confidenceScore,
-                                       Integer eventsAnalyzed, Integer correlatedOutcomes,
-                                       Double successRate, LocalDateTime analysisTimestamp,
-                                       String insightsJson) {
+    private Row forecastingResultRow(Long id, String forecastResult, String windowStart, String windowEnd,
+                                     Integer flexibilityEventsCount, Integer gridBalancingCount, LocalDateTime createdAt) {
         Row row = Mockito.mock(Row.class);
         Mockito.when(row.getLong("id")).thenReturn(id);
-        Mockito.when(row.getString("analysisType")).thenReturn(analysisType);
-        Mockito.when(row.getString("question")).thenReturn(question);
-        Mockito.when(row.getString("aiResponse")).thenReturn(aiResponse);
-        Mockito.when(row.getString("sentiment")).thenReturn(sentiment);
-        Mockito.when(row.getDouble("confidenceScore")).thenReturn(confidenceScore);
-        Mockito.when(row.getInteger("eventsAnalyzed")).thenReturn(eventsAnalyzed);
-        Mockito.when(row.getInteger("correlatedOutcomes")).thenReturn(correlatedOutcomes);
-        Mockito.when(row.getDouble("successRate")).thenReturn(successRate);
-        Mockito.when(row.getLocalDateTime("analysisTimestamp")).thenReturn(analysisTimestamp);
-        Mockito.when(row.getString("insightsJson")).thenReturn(insightsJson);
+        Mockito.when(row.getString("forecastResult")).thenReturn(forecastResult);
+        Mockito.when(row.getString("windowStart")).thenReturn(windowStart);
+        Mockito.when(row.getString("windowEnd")).thenReturn(windowEnd);
+        Mockito.when(row.getInteger("flexibilityEventsCount")).thenReturn(flexibilityEventsCount);
+        Mockito.when(row.getInteger("gridBalancingCount")).thenReturn(gridBalancingCount);
+        Mockito.when(row.getLocalDateTime("createdAt")).thenReturn(createdAt);
         return row;
-    }
-
-    private ForecastRequest createForecastRequest(String analysisType) {
-        ForecastRequest request = new ForecastRequest();
-        request.analysisType = analysisType;
-        request.customQuestion = "Test question";
-        request.events = Arrays.asList(createFlexibilityEventDTO());
-        request.recommendations = Arrays.asList(createBalancingRecommendationDTO());
-        return request;
-    }
-
-    private FlexibilityEventDTO createFlexibilityEventDTO() {
-        FlexibilityEventDTO dto = new FlexibilityEventDTO();
-        dto.id = 1L;
-        dto.assetId = 100L;
-        dto.prosumerId = 10L;
-        dto.eventType = "CHARGE";
-        dto.soc_percent = 75.0f;
-        dto.recommendedAction = "REDUCE_LOAD";
-        dto.marketPrice = 50.0f;
-        dto.incentiveAmount = 5.0f;
-        dto.gridCellId = "GRID_A";
-        dto.timestamp = LocalDateTime.now();
-        return dto;
-    }
-
-    private BalancingRecommendationDTO createBalancingRecommendationDTO() {
-        BalancingRecommendationDTO dto = new BalancingRecommendationDTO();
-        dto.id = 1L;
-        dto.sourceGridCellId = "GRID_A";
-        dto.targetGridCellId = "GRID_B";
-        dto.sourceNetLoadKw = 95.0;
-        dto.targetHeadroomKw = 40.0;
-        dto.overloadKw = -5.0;
-        dto.status = "BALANCED";
-        dto.rationale = "Grid balanced";
-        dto.createdAt = LocalDateTime.now();
-        return dto;
-    }
-
-    private ForecastResult createForecastResult(String analysisType) {
-        ForecastResult result = new ForecastResult();
-        result.id = 1L;
-        result.analysisType = analysisType;
-        result.question = "Test question";
-        result.aiResponse = "AI response";
-        result.sentiment = "POSITIVE";
-        result.confidenceScore = 85.0;
-        result.eventsAnalyzed = 10;
-        result.correlatedOutcomes = 8;
-        result.successRate = 80.0;
-        result.analysisTimestamp = LocalDateTime.now();
-        result.insights = new HashMap<>();
-        result.insights.put("key", "value");
-        return result;
     }
 
     private static final class ListRowIterator implements RowIterator<Row> {
@@ -314,13 +349,9 @@ class FlexibilityForecastingResourceTest {
         }
 
         @Override
-        public boolean hasNext() {
-            return iterator.hasNext();
-        }
+        public boolean hasNext() { return iterator.hasNext(); }
 
         @Override
-        public Row next() {
-            return iterator.next();
-        }
+        public Row next() { return iterator.next(); }
     }
 }

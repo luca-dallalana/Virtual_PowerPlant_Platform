@@ -10,13 +10,13 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
-import org.acme.dto.ForecastRequest;
-import org.acme.dto.ForecastResult;
-import org.acme.entities.FlexibilityForecast;
-import org.acme.services.ForecastingService;
+import org.acme.dto.*;
+import org.acme.entities.ForecastingResult;
+import org.acme.services.DataCorrelationService;
+import org.acme.services.PromptBuilder;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import java.util.Map;
+import java.time.LocalDateTime;
 
 @Path("/FlexibilityForecasting")
 @Produces(MediaType.APPLICATION_JSON)
@@ -27,7 +27,10 @@ public class FlexibilityForecastingResource {
     MySQLPool client;
 
     @Inject
-    ForecastingService forecastingService;
+    DataCorrelationService correlationService;
+
+    @Inject
+    PromptBuilder promptBuilder;
 
     @ConfigProperty(name = "myapp.schema.create", defaultValue = "true")
     boolean schemaCreate;
@@ -39,79 +42,65 @@ public class FlexibilityForecastingResource {
     }
 
     private void initdb() {
-        client.query("DROP TABLE IF EXISTS FlexibilityForecast").execute()
-                .flatMap(r -> client.query("CREATE TABLE FlexibilityForecast ("
+        client.query("DROP TABLE IF EXISTS ForecastingResult").execute()
+                .flatMap(r -> client.query("CREATE TABLE ForecastingResult ("
                         + "id SERIAL PRIMARY KEY, "
-                        + "analysisType VARCHAR(50) NOT NULL, "
-                        + "question TEXT NOT NULL, "
-                        + "aiResponse TEXT NOT NULL, "
-                        + "sentiment VARCHAR(20), "
-                        + "confidenceScore DOUBLE, "
-                        + "eventsAnalyzed INT, "
-                        + "correlatedOutcomes INT, "
-                        + "successRate DOUBLE, "
-                        + "analysisTimestamp DATETIME NOT NULL, "
-                        + "insightsJson TEXT, "
-                        + "INDEX idx_analysis_type (analysisType), "
-                        + "INDEX idx_timestamp (analysisTimestamp)"
+                        + "forecastResult TEXT NOT NULL, "
+                        + "windowStart VARCHAR(50), "
+                        + "windowEnd VARCHAR(50), "
+                        + "flexibilityEventsCount INT, "
+                        + "gridBalancingCount INT, "
+                        + "createdAt DATETIME NOT NULL"
                         + ")").execute())
                 .await().indefinitely();
     }
 
     @POST
-    @Path("/analyze")
-    public Uni<ForecastResult> analyze(ForecastRequest request) {
-        return forecastingService.performAnalysis(request);
+    @Path("/evaluate-correlation")
+    public Response evaluateCorrelation(EventCorrelationRequest request) {
+        EventCorrelationResult result = correlationService.buildResult(request);
+        return Response.ok(result).build();
     }
 
     @POST
-    @Path("/analyze/sentiment")
-    public Uni<ForecastResult> analyzeSentiment() {
-        ForecastRequest request = new ForecastRequest();
-        request.analysisType = "SENTIMENT";
-        request.customQuestion = "What is the overall sentiment of flexibility operations?";
-        return forecastingService.performAnalysis(request);
+    @Path("/build-prompt")
+    public Response buildPrompt(EventCorrelationResult correlationResult) {
+        String prompt = promptBuilder.buildPrompt(correlationResult);
+        return Response.ok(new OllamaPromptResult(prompt)).build();
     }
 
     @POST
-    @Path("/analyze/success-rate")
-    public Uni<ForecastResult> analyzeSuccessRate(
-            @QueryParam("eventType") String eventType,
-            @QueryParam("recommendedAction") String recommendedAction) {
-        ForecastRequest request = new ForecastRequest();
-        request.analysisType = "SUCCESS_RATE";
-        request.eventType = eventType;
-        request.recommendedAction = recommendedAction;
-        request.customQuestion = recommendedAction != null
-                ? "Did the " + recommendedAction + " commands result in grid stability?"
-                : "What is the success rate of flexibility actions?";
-        return forecastingService.performAnalysis(request);
+    @Path("/forecast")
+    public Uni<Response> persistForecast(ForecastPersistRequest request) {
+        ForecastingResult entity = new ForecastingResult();
+        entity.forecastResult = request.forecastResult;
+        entity.windowStart = request.windowStart;
+        entity.windowEnd = request.windowEnd;
+        entity.flexibilityEventsCount = request.flexibilityEventsCount;
+        entity.gridBalancingCount = request.gridBalancingCount;
+        entity.createdAt = LocalDateTime.now();
+        return entity.save(client)
+                .onItem().transform(id -> Response.ok(new ForecastPersistResponse(id)).build());
     }
 
     @GET
     @Path("/history")
-    public Multi<FlexibilityForecast> getAllHistory() {
-        return FlexibilityForecast.findAll(client);
+    public Multi<ForecastingResult> getAllHistory() {
+        return ForecastingResult.findAll(client);
     }
 
     @GET
     @Path("/history/{id}")
     public Uni<Response> getHistoryById(@PathParam("id") Long id) {
-        return FlexibilityForecast.findById(client, id)
-                .onItem().transform(forecast -> forecast != null ? Response.ok(forecast) : Response.status(Response.Status.NOT_FOUND))
+        return ForecastingResult.findById(client, id)
+                .onItem().transform(result -> result != null ? Response.ok(result) : Response.status(Response.Status.NOT_FOUND))
                 .onItem().transform(ResponseBuilder::build);
-    }
-
-    @GET
-    @Path("/history/type/{analysisType}")
-    public Multi<FlexibilityForecast> getHistoryByType(@PathParam("analysisType") String analysisType) {
-        return FlexibilityForecast.findByAnalysisType(client, analysisType);
     }
 
     @DELETE
     @Path("/history/{id}")
     public Uni<Response> deleteHistory(@PathParam("id") Long id) {
-        return FlexibilityForecast.delete(client, id)
+        return ForecastingResult.delete(client, id)
                 .onItem().transform(deleted -> deleted ? Response.Status.NO_CONTENT : Response.Status.NOT_FOUND)
                 .onItem().transform(status -> Response.status(status).build());
     }
