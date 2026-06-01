@@ -51,13 +51,13 @@ class EnergyAnalyticsResourceTest {
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
         Row row1 = dischargedZoneRow(1L, "GRID_A", 100.5, 5, timestamp1, "CURRENT");
         Row row2 = dischargedZoneRow(2L, "GRID_B", 75.3, 3, timestamp2, "CURRENT");
-        stubQuery("SELECT id, gridCellId, totalEnergyDischargedKw, batteryCount, timestamp, aggregationPeriod FROM EnergyDischargedByZone ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
+        stubQuery("SELECT id, gridCellId, totalEnergyDischargedKwh, batteryCount, timestamp, aggregationPeriod FROM EnergyDischargedByZone ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
 
         List<EnergyDischargedByZone> result = resource.getDischargedByZone().collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(2));
         MatcherAssert.assertThat(result.get(0).id, is(1L));
         MatcherAssert.assertThat(result.get(0).gridCellId, is("GRID_A"));
-        MatcherAssert.assertThat(result.get(0).totalEnergyDischargedKw, is(100.5));
+        MatcherAssert.assertThat(result.get(0).totalEnergyDischargedKwh, is(100.5));
         MatcherAssert.assertThat(result.get(0).batteryCount, is(5));
         MatcherAssert.assertThat(result.get(0).timestamp, is(timestamp1));
         MatcherAssert.assertThat(result.get(0).aggregationPeriod, is("CURRENT"));
@@ -67,7 +67,7 @@ class EnergyAnalyticsResourceTest {
     void getDischargedByGridCell_returnsFiltered() {
         LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
         Row row = dischargedZoneRow(1L, "GRID_A", 100.5, 5, timestamp, "CURRENT");
-        stubPreparedQuery("SELECT id, gridCellId, totalEnergyDischargedKw, batteryCount, timestamp, aggregationPeriod FROM EnergyDischargedByZone WHERE gridCellId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
+        stubPreparedQuery("SELECT id, gridCellId, totalEnergyDischargedKwh, batteryCount, timestamp, aggregationPeriod FROM EnergyDischargedByZone WHERE gridCellId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
 
         List<EnergyDischargedByZone> result = resource.getDischargedByGridCell("GRID_A").collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(1));
@@ -80,13 +80,13 @@ class EnergyAnalyticsResourceTest {
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
         Row row1 = generatedProsumerRow(1L, 1L, 50.5, 2, timestamp1, "CURRENT");
         Row row2 = generatedProsumerRow(2L, 2L, 75.3, 3, timestamp2, "CURRENT");
-        stubQuery("SELECT id, prosumerId, totalEnergyGeneratedKw, solarAssetCount, timestamp, aggregationPeriod FROM GeneratedEnergyByProsumer ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
+        stubQuery("SELECT id, prosumerId, totalEnergyGeneratedKwh, solarAssetCount, timestamp, aggregationPeriod FROM GeneratedEnergyByProsumer ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
 
         List<GeneratedEnergyByProsumer> result = resource.getGeneratedByProsumer().collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(2));
         MatcherAssert.assertThat(result.get(0).id, is(1L));
         MatcherAssert.assertThat(result.get(0).prosumerId, is(1L));
-        MatcherAssert.assertThat(result.get(0).totalEnergyGeneratedKw, is(50.5));
+        MatcherAssert.assertThat(result.get(0).totalEnergyGeneratedKwh, is(50.5));
         MatcherAssert.assertThat(result.get(0).solarAssetCount, is(2));
         MatcherAssert.assertThat(result.get(0).timestamp, is(timestamp1));
         MatcherAssert.assertThat(result.get(0).aggregationPeriod, is("CURRENT"));
@@ -96,7 +96,7 @@ class EnergyAnalyticsResourceTest {
     void getGeneratedByProsumerId_returnsFiltered() {
         LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
         Row row = generatedProsumerRow(1L, 1L, 50.5, 2, timestamp, "CURRENT");
-        stubPreparedQuery("SELECT id, prosumerId, totalEnergyGeneratedKw, solarAssetCount, timestamp, aggregationPeriod FROM GeneratedEnergyByProsumer WHERE prosumerId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
+        stubPreparedQuery("SELECT id, prosumerId, totalEnergyGeneratedKwh, solarAssetCount, timestamp, aggregationPeriod FROM GeneratedEnergyByProsumer WHERE prosumerId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
 
         List<GeneratedEnergyByProsumer> result = resource.getGeneratedByProsumerId(1L).collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(1));
@@ -109,13 +109,13 @@ class EnergyAnalyticsResourceTest {
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
         Row row1 = consumedProsumerRow(1L, 1L, 25.5, 1, timestamp1, "CURRENT");
         Row row2 = consumedProsumerRow(2L, 2L, 35.3, 2, timestamp2, "CURRENT");
-        stubQuery("SELECT id, prosumerId, totalEnergyConsumedKw, evChargerCount, timestamp, aggregationPeriod FROM ConsumedEnergyByProsumer ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
+        stubQuery("SELECT id, prosumerId, totalEnergyConsumedKwh, evChargerCount, timestamp, aggregationPeriod FROM ConsumedEnergyByProsumer ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
 
         List<ConsumedEnergyByProsumer> result = resource.getConsumedByProsumer().collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(2));
         MatcherAssert.assertThat(result.get(0).id, is(1L));
         MatcherAssert.assertThat(result.get(0).prosumerId, is(1L));
-        MatcherAssert.assertThat(result.get(0).totalEnergyConsumedKw, is(25.5));
+        MatcherAssert.assertThat(result.get(0).totalEnergyConsumedKwh, is(25.5));
         MatcherAssert.assertThat(result.get(0).evChargerCount, is(1));
         MatcherAssert.assertThat(result.get(0).timestamp, is(timestamp1));
         MatcherAssert.assertThat(result.get(0).aggregationPeriod, is("CURRENT"));
@@ -125,7 +125,7 @@ class EnergyAnalyticsResourceTest {
     void getConsumedByProsumerId_returnsFiltered() {
         LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
         Row row = consumedProsumerRow(1L, 2L, 25.5, 1, timestamp, "CURRENT");
-        stubPreparedQuery("SELECT id, prosumerId, totalEnergyConsumedKw, evChargerCount, timestamp, aggregationPeriod FROM ConsumedEnergyByProsumer WHERE prosumerId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
+        stubPreparedQuery("SELECT id, prosumerId, totalEnergyConsumedKwh, evChargerCount, timestamp, aggregationPeriod FROM ConsumedEnergyByProsumer WHERE prosumerId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
 
         List<ConsumedEnergyByProsumer> result = resource.getConsumedByProsumerId(2L).collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(1));
@@ -177,7 +177,7 @@ class EnergyAnalyticsResourceTest {
 
     @Test
     void computeDischargedByZone_returnsList() {
-        List<ZoneDTO> zones = Arrays.asList(createZoneDTO("GRID_A"));
+        List<GridCellDTO> zones = Arrays.asList(createGridCellDTO("GRID_A"));
         List<TelemetryDTO> telemetry = Arrays.asList(createBatteryTelemetry(1L, 50.0f, 75.0f));
         EnergyDischargedByZone expected = new EnergyDischargedByZone(null, "GRID_A", 50.0, 1, LocalDateTime.now(), "LAST_30_MIN");
 
@@ -267,36 +267,36 @@ class EnergyAnalyticsResourceTest {
         return rowSet;
     }
 
-    private Row dischargedZoneRow(Long id, String gridCellId, Double totalEnergyDischargedKw,
+    private Row dischargedZoneRow(Long id, String gridCellId, Double totalEnergyDischargedKwh,
                                   Integer batteryCount, LocalDateTime timestamp, String aggregationPeriod) {
         Row row = Mockito.mock(Row.class);
         Mockito.when(row.getLong("id")).thenReturn(id);
         Mockito.when(row.getString("gridCellId")).thenReturn(gridCellId);
-        Mockito.when(row.getDouble("totalEnergyDischargedKw")).thenReturn(totalEnergyDischargedKw);
+        Mockito.when(row.getDouble("totalEnergyDischargedKwh")).thenReturn(totalEnergyDischargedKwh);
         Mockito.when(row.getInteger("batteryCount")).thenReturn(batteryCount);
         Mockito.when(row.getLocalDateTime("timestamp")).thenReturn(timestamp);
         Mockito.when(row.getString("aggregationPeriod")).thenReturn(aggregationPeriod);
         return row;
     }
 
-    private Row generatedProsumerRow(Long id, Long prosumerId, Double totalEnergyGeneratedKw,
+    private Row generatedProsumerRow(Long id, Long prosumerId, Double totalEnergyGeneratedKwh,
                                      Integer solarAssetCount, LocalDateTime timestamp, String aggregationPeriod) {
         Row row = Mockito.mock(Row.class);
         Mockito.when(row.getLong("id")).thenReturn(id);
         Mockito.when(row.getLong("prosumerId")).thenReturn(prosumerId);
-        Mockito.when(row.getDouble("totalEnergyGeneratedKw")).thenReturn(totalEnergyGeneratedKw);
+        Mockito.when(row.getDouble("totalEnergyGeneratedKwh")).thenReturn(totalEnergyGeneratedKwh);
         Mockito.when(row.getInteger("solarAssetCount")).thenReturn(solarAssetCount);
         Mockito.when(row.getLocalDateTime("timestamp")).thenReturn(timestamp);
         Mockito.when(row.getString("aggregationPeriod")).thenReturn(aggregationPeriod);
         return row;
     }
 
-    private Row consumedProsumerRow(Long id, Long prosumerId, Double totalEnergyConsumedKw,
+    private Row consumedProsumerRow(Long id, Long prosumerId, Double totalEnergyConsumedKwh,
                                     Integer evChargerCount, LocalDateTime timestamp, String aggregationPeriod) {
         Row row = Mockito.mock(Row.class);
         Mockito.when(row.getLong("id")).thenReturn(id);
         Mockito.when(row.getLong("prosumerId")).thenReturn(prosumerId);
-        Mockito.when(row.getDouble("totalEnergyConsumedKw")).thenReturn(totalEnergyConsumedKw);
+        Mockito.when(row.getDouble("totalEnergyConsumedKwh")).thenReturn(totalEnergyConsumedKwh);
         Mockito.when(row.getInteger("evChargerCount")).thenReturn(evChargerCount);
         Mockito.when(row.getLocalDateTime("timestamp")).thenReturn(timestamp);
         Mockito.when(row.getString("aggregationPeriod")).thenReturn(aggregationPeriod);
@@ -346,8 +346,8 @@ class EnergyAnalyticsResourceTest {
         return new AssetDTO(assetId, prosumerId);
     }
 
-    private ZoneDTO createZoneDTO(String gridCellId) {
-        return new ZoneDTO(gridCellId, 1L, 50.0, "Test Area");
+    private GridCellDTO createGridCellDTO(String gridCellId) {
+        return new GridCellDTO(gridCellId, 1L, 50.0, "Test Area");
     }
 
     private static final class ListRowIterator implements RowIterator<Row> {

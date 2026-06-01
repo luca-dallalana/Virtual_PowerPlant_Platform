@@ -12,6 +12,7 @@ import jakarta.ws.rs.core.Response.ResponseBuilder;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.acme.dto.BatteryAssetDTO;
+import org.acme.dto.TelemetryDTO;
 import org.acme.dto.BatchEvaluateRequest;
 import org.acme.dto.BatchEvaluateResponse;
 import org.acme.dto.ForecastResultRequest;
@@ -147,40 +148,6 @@ public class FlexibilityEventResource {
         return Response.ok(new BatchEvaluateResponse(suggestions)).build();
     }
 
-    @POST
-    @Path("evaluate/{prosumerId}")
-    public Uni<Response> evaluateTelemetry(TelemetryDTO telemetry, Long prosumerId) {
-        FlexibilityEvent event = null;
-
-        if (telemetry.State_of_Charge != null && telemetry.State_of_Charge > 90.0) {
-            event = new FlexibilityEvent();
-            event.assetId = telemetry.asset_id;
-            event.prosumerId = prosumerId;
-            event.eventType = "ARBITRAGE_SELL";
-            event.soc_percent = telemetry.State_of_Charge;
-            event.recommendedAction = "DISCHARGE";
-            event.marketPrice = getCurrentMarketPrice();
-            event.incentiveAmount = calculateIncentive(telemetry.State_of_Charge);
-            event.gridCellId = telemetry.grid_cell_id;
-            event.timestamp = LocalDateTime.now();
-        } else if (telemetry.State_of_Charge != null && telemetry.State_of_Charge < 20.0) {
-            event = new FlexibilityEvent();
-            event.assetId = telemetry.asset_id;
-            event.prosumerId = prosumerId;
-            event.eventType = "BALANCING_UNAVAILABLE";
-            event.soc_percent = telemetry.State_of_Charge;
-            event.recommendedAction = "UNAVAILABLE";
-            event.gridCellId = telemetry.grid_cell_id;
-            event.timestamp = LocalDateTime.now();
-        }
-
-        if (event != null) {
-            return Uni.createFrom().item(Response.ok(event).build());
-        } else {
-            return Uni.createFrom().item(Response.status(204).build());
-        }
-    }
-
     @GET
     @Path("logs")
     public Multi<FlexibilityEvent> getLogs(@QueryParam("from") String from, @QueryParam("to") String to) {
@@ -243,6 +210,7 @@ public class FlexibilityEventResource {
                 events.get(i).id = (Long) ids.get(i);
             }
             for (FlexibilityEvent event : events) {
+                if (!"ARBITRAGE_SELL".equals(event.eventType)) continue;
                 String kafkaMessage = String.format(
                     "{\"eventId\":%d,\"assetId\":%d,\"prosumerId\":%d,\"eventType\":\"%s\",\"recommendedAction\":\"%s\",\"timestamp\":\"%s\"}",
                     event.id, event.assetId, event.prosumerId, event.eventType, event.recommendedAction, event.timestamp

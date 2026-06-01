@@ -1,15 +1,15 @@
 package org.acme.dto;
 
-public class ZoneDTO {
+public class GridCellDTO {
     public String gridCellId;
     public Long utilityOperatorId;
     public Double maxCapacity;
     public String geographicBoundaries;
 
-    public ZoneDTO() {
+    public GridCellDTO() {
     }
 
-    public ZoneDTO(String gridCellId, Long utilityOperatorId, Double maxCapacity, String geographicBoundaries) {
+    public GridCellDTO(String gridCellId, Long utilityOperatorId, Double maxCapacity, String geographicBoundaries) {
         this.gridCellId = gridCellId;
         this.utilityOperatorId = utilityOperatorId;
         this.maxCapacity = maxCapacity;

@@ -15,7 +15,7 @@ import io.vertx.mutiny.sqlclient.Tuple;
 import jakarta.enterprise.inject.Any;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
-import org.acme.TelemetryDTO;
+import org.acme.dto.TelemetryDTO;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;

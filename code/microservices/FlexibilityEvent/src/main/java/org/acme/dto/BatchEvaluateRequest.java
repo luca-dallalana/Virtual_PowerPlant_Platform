@@ -1,6 +1,6 @@
 package org.acme.dto;
 
-import org.acme.TelemetryDTO;
+import org.acme.dto.TelemetryDTO;
 import java.util.List;
 
 public class BatchEvaluateRequest {

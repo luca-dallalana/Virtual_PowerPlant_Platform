@@ -48,7 +48,7 @@ public class EnergyAnalyticsResource {
             .flatMap(r -> client.query("CREATE TABLE EnergyDischargedByZone (" +
                 "id SERIAL PRIMARY KEY, " +
                 "gridCellId VARCHAR(100) NOT NULL, " +
-                "totalEnergyDischargedKw DOUBLE NOT NULL, " +
+                "totalEnergyDischargedKwh DOUBLE NOT NULL, " +
                 "batteryCount INT NOT NULL, " +
                 "timestamp DATETIME NOT NULL, " +
                 "aggregationPeriod VARCHAR(20) NOT NULL" +
@@ -56,7 +56,7 @@ public class EnergyAnalyticsResource {
             .flatMap(r -> client.query("CREATE TABLE GeneratedEnergyByProsumer (" +
                 "id SERIAL PRIMARY KEY, " +
                 "prosumerId BIGINT NOT NULL, " +
-                "totalEnergyGeneratedKw DOUBLE NOT NULL, " +
+                "totalEnergyGeneratedKwh DOUBLE NOT NULL, " +
                 "solarAssetCount INT NOT NULL, " +
                 "timestamp DATETIME NOT NULL, " +
                 "aggregationPeriod VARCHAR(20) NOT NULL" +
@@ -64,7 +64,7 @@ public class EnergyAnalyticsResource {
             .flatMap(r -> client.query("CREATE TABLE ConsumedEnergyByProsumer (" +
                 "id SERIAL PRIMARY KEY, " +
                 "prosumerId BIGINT NOT NULL, " +
-                "totalEnergyConsumedKw DOUBLE NOT NULL, " +
+                "totalEnergyConsumedKwh DOUBLE NOT NULL, " +
                 "evChargerCount INT NOT NULL, " +
                 "timestamp DATETIME NOT NULL, " +
                 "aggregationPeriod VARCHAR(20) NOT NULL" +

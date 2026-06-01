@@ -126,6 +126,15 @@ public class Telemetry
                 .onItem().transform(iterator -> iterator.hasNext() ? from(iterator.next()) : null);
     }
 
+    public static Multi<Telemetry> findWindowByAssetType(MySQLPool client, String assetType, int minutes) {
+        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(minutes);
+        return client.preparedQuery(
+                "SELECT * FROM Telemetry WHERE asset_type = ? AND timeStamp >= ? ORDER BY asset_id ASC, timeStamp ASC")
+                .execute(Tuple.of(assetType, cutoff))
+                .onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
+                .onItem().transform(Telemetry::from);
+    }
+
     public static Multi<Telemetry> findLatestByAssetType(MySQLPool client, String assetType, int minutes) {
         LocalDateTime cutoff = LocalDateTime.now().minusMinutes(minutes);
         return client.preparedQuery(
@@ -139,16 +148,29 @@ public class Telemetry
     }
 
     public static Multi<Telemetry> findLatestByAssetIds(MySQLPool client, List<Long> assetIds) {
+        return findLatestByAssetIds(client, assetIds, null);
+    }
+
+    public static Multi<Telemetry> findLatestByAssetIds(MySQLPool client, List<Long> assetIds, Integer maxAgeMinutes) {
         if (assetIds == null || assetIds.isEmpty()) {
             return Multi.createFrom().empty();
         }
         String placeholders = assetIds.stream().map(id -> "?").collect(Collectors.joining(", "));
         Tuple params = Tuple.tuple();
+
+        StringBuilder innerWhere = new StringBuilder("WHERE asset_id IN (").append(placeholders).append(")");
         assetIds.forEach(params::addLong);
+
+        if (maxAgeMinutes != null) {
+            LocalDateTime cutoff = LocalDateTime.now().minusMinutes(maxAgeMinutes);
+            innerWhere.append(" AND timeStamp >= ?");
+            params.addValue(cutoff);
+        }
+
         return client.preparedQuery(
                 "SELECT t.* FROM Telemetry t " +
                 "INNER JOIN (SELECT asset_id, MAX(timeStamp) as maxTs FROM Telemetry " +
-                "WHERE asset_id IN (" + placeholders + ") GROUP BY asset_id) latest " +
+                innerWhere + " GROUP BY asset_id) latest " +
                 "ON t.asset_id = latest.asset_id AND t.timeStamp = latest.maxTs")
                 .execute(params)
                 .onItem().transformToMulti(set -> Multi.createFrom().iterable(set))

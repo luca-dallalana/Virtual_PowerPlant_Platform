@@ -15,6 +15,7 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import jakarta.enterprise.inject.Any;
 import jakarta.inject.Inject;
+import org.acme.dto.GridBalancingEvaluateRequest;
 import org.acme.dto.GridCellDTO;
 import org.acme.dto.TelemetryDTO;
 import org.acme.services.GridBalancingRecommendationService;
@@ -59,16 +60,15 @@ class GridBalancingRecommendationKafkaTest {
         InMemorySink<String> sink = connector.sink("grid-balancing-recommendation");
         int sizeBefore = sink.received().size();
 
-        List<GridCellDTO> gridCells = List.of(
-                gridCell("GRID_A", 100.0),
-                gridCell("GRID_B", 100.0)
-        );
-        List<TelemetryDTO> telemetry = List.of(
+        GridBalancingEvaluateRequest request = new GridBalancingEvaluateRequest();
+        request.sourceCell = gridCell("GRID_A", 100.0);
+        request.neighbourCells = List.of(gridCell("GRID_B", 100.0));
+        request.allTelemetry = List.of(
                 evTelemetry(1L, "GRID_A", 95.0f),
                 evTelemetry(2L, "GRID_B", 50.0f)
         );
 
-        recommendationService.evaluateRecommendations(telemetry, gridCells);
+        recommendationService.evaluateRecommendations(request);
 
         Assertions.assertEquals(sizeBefore, sink.received().size(), "evaluate should not publish to Kafka");
     }

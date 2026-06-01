@@ -94,14 +94,21 @@ public class KafkaProvisioningResource {
 
     @GET
     @Path("latest/{assetType}/{minutes}")
-    public Multi<Telemetry> getLatestByAssetType(String assetType, int minutes) {
+    public Multi<Telemetry> getLatestByAssetType(@PathParam("assetType") String assetType, @PathParam("minutes") int minutes) {
         return Telemetry.findLatestByAssetType(client, assetType, minutes);
+    }
+
+    @GET
+    @Path("window/{assetType}/{minutes}")
+    public Multi<Telemetry> getWindowByAssetType(@PathParam("assetType") String assetType, @PathParam("minutes") int minutes) {
+        return Telemetry.findWindowByAssetType(client, assetType, minutes);
     }
 
     @POST
     @Path("latest/bulk")
-    public Multi<Telemetry> getLatestByAssetIds(List<Long> assetIds) {
-        return Telemetry.findLatestByAssetIds(client, assetIds);
+    public Multi<Telemetry> getLatestByAssetIds(List<Long> assetIds,
+            @QueryParam("maxAgeMinutes") Integer maxAgeMinutes) {
+        return Telemetry.findLatestByAssetIds(client, assetIds, maxAgeMinutes);
     }
 
 }

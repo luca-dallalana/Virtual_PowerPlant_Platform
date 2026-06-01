@@ -119,6 +119,12 @@ public class ProsumerResource {
     }
 
     @GET
+    @Path("assets/active")
+    public Multi<ActiveAssetDTO> getAllActiveAssets() {
+        return Asset.findAllActive(client);
+    }
+
+    @GET
     @Path("assets/batteries/active")
     public Multi<BatteryAssetDTO> getActiveBatteries() {
         return Asset.findActiveBatteries(client);

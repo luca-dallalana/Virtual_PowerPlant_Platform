@@ -11,10 +11,11 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
 import org.acme.dto.GridCellEvaluationResult;
+import org.acme.dto.SingleCellEvaluationRequest;
 import org.acme.entities.BalancingRecommendation;
 import org.acme.services.GridBalancingRecommendationService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.acme.dto.GridBalancingRequest;
+import org.acme.dto.GridBalancingEvaluateRequest;
 
 import java.net.URI;
 import java.time.LocalDateTime;
@@ -66,17 +67,14 @@ public class GridBalancingRecommendationResource {
 
     @POST
     @Path("/evaluate")
-    public Response evaluate(GridBalancingRequest request) {
-        List<BalancingRecommendation> recommendations = recommendationService.evaluateRecommendations(
-            request.telemetryData,
-            request.gridCells
-        );
+    public Response evaluate(GridBalancingEvaluateRequest request) {
+        List<BalancingRecommendation> recommendations = recommendationService.evaluateRecommendations(request);
         return Response.ok(recommendations).build();
     }
 
     @POST
     @Path("/evaluateCell")
-    public Response evaluateCell(GridBalancingRequest request) {
+    public Response evaluateCell(SingleCellEvaluationRequest request) {
         GridCellEvaluationResult result = recommendationService.evaluateCell(request);
         return Response.ok(result).build();
     }

@@ -71,9 +71,9 @@ class EnergyAnalyticsKafkaTest {
         );
         AverageSoC avgSoC = new AverageSoC(null, 92.0, 1, timestamp, "LAST_30_MIN");
 
-        stubInsert("INSERT INTO GeneratedEnergyByProsumer(prosumerId, totalEnergyGeneratedKw, solarAssetCount, timestamp, aggregationPeriod) VALUES (?,?,?,?,?)", 1L);
-        stubInsert("INSERT INTO ConsumedEnergyByProsumer(prosumerId, totalEnergyConsumedKw, evChargerCount, timestamp, aggregationPeriod) VALUES (?,?,?,?,?)", 2L);
-        stubInsert("INSERT INTO EnergyDischargedByZone(gridCellId, totalEnergyDischargedKw, batteryCount, timestamp, aggregationPeriod) VALUES (?,?,?,?,?)", 3L);
+        stubInsert("INSERT INTO GeneratedEnergyByProsumer(prosumerId, totalEnergyGeneratedKwh, solarAssetCount, timestamp, aggregationPeriod) VALUES (?,?,?,?,?)", 1L);
+        stubInsert("INSERT INTO ConsumedEnergyByProsumer(prosumerId, totalEnergyConsumedKwh, evChargerCount, timestamp, aggregationPeriod) VALUES (?,?,?,?,?)", 2L);
+        stubInsert("INSERT INTO EnergyDischargedByZone(gridCellId, totalEnergyDischargedKwh, batteryCount, timestamp, aggregationPeriod) VALUES (?,?,?,?,?)", 3L);
         stubInsert("INSERT INTO AverageSoC(averageSocPercent, batteryCount, timestamp, aggregationPeriod) VALUES (?,?,?,?)", 4L);
 
         analyticsService.emitAnalytics(generated, consumed, discharged, avgSoC)

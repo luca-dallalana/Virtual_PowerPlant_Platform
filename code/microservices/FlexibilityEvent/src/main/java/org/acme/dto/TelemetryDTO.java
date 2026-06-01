@@ -1,4 +1,4 @@
-package org.acme;
+package org.acme.dto;
 
 import java.time.LocalDateTime;
 

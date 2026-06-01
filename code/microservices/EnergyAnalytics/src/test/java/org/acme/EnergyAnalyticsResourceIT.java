@@ -53,7 +53,7 @@ class EnergyAnalyticsResourceIT {
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
         Row row1 = dischargedZoneRow(1L, "GRID_A", 100.5, 5, timestamp1, "CURRENT");
         Row row2 = dischargedZoneRow(2L, "GRID_B", 75.3, 3, timestamp2, "CURRENT");
-        stubQuery("SELECT id, gridCellId, totalEnergyDischargedKw, batteryCount, timestamp, aggregationPeriod FROM EnergyDischargedByZone ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
+        stubQuery("SELECT id, gridCellId, totalEnergyDischargedKwh, batteryCount, timestamp, aggregationPeriod FROM EnergyDischargedByZone ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
 
         given()
             .when()
@@ -63,7 +63,7 @@ class EnergyAnalyticsResourceIT {
             .body("", hasSize(2))
             .body("[0].id", is(1))
             .body("[0].gridCellId", is("GRID_A"))
-            .body("[0].totalEnergyDischargedKw", is(100.5f))
+            .body("[0].totalEnergyDischargedKwh", is(100.5f))
             .body("[0].batteryCount", is(5));
     }
 
@@ -71,7 +71,7 @@ class EnergyAnalyticsResourceIT {
     void getDischargedByGridCell_returnsFiltered() {
         LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
         Row row = dischargedZoneRow(1L, "GRID_A", 100.5, 5, timestamp, "CURRENT");
-        stubPreparedQuery("SELECT id, gridCellId, totalEnergyDischargedKw, batteryCount, timestamp, aggregationPeriod FROM EnergyDischargedByZone WHERE gridCellId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
+        stubPreparedQuery("SELECT id, gridCellId, totalEnergyDischargedKwh, batteryCount, timestamp, aggregationPeriod FROM EnergyDischargedByZone WHERE gridCellId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
 
         given()
             .when()
@@ -88,7 +88,7 @@ class EnergyAnalyticsResourceIT {
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
         Row row1 = generatedProsumerRow(1L, 1L, 50.5, 2, timestamp1, "CURRENT");
         Row row2 = generatedProsumerRow(2L, 2L, 75.3, 3, timestamp2, "CURRENT");
-        stubQuery("SELECT id, prosumerId, totalEnergyGeneratedKw, solarAssetCount, timestamp, aggregationPeriod FROM GeneratedEnergyByProsumer ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
+        stubQuery("SELECT id, prosumerId, totalEnergyGeneratedKwh, solarAssetCount, timestamp, aggregationPeriod FROM GeneratedEnergyByProsumer ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
 
         given()
             .when()
@@ -98,7 +98,7 @@ class EnergyAnalyticsResourceIT {
             .body("", hasSize(2))
             .body("[0].id", is(1))
             .body("[0].prosumerId", is(1))
-            .body("[0].totalEnergyGeneratedKw", is(50.5f))
+            .body("[0].totalEnergyGeneratedKwh", is(50.5f))
             .body("[0].solarAssetCount", is(2));
     }
 
@@ -106,7 +106,7 @@ class EnergyAnalyticsResourceIT {
     void getGeneratedByProsumerId_returnsFiltered() {
         LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
         Row row = generatedProsumerRow(1L, 1L, 50.5, 2, timestamp, "CURRENT");
-        stubPreparedQuery("SELECT id, prosumerId, totalEnergyGeneratedKw, solarAssetCount, timestamp, aggregationPeriod FROM GeneratedEnergyByProsumer WHERE prosumerId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
+        stubPreparedQuery("SELECT id, prosumerId, totalEnergyGeneratedKwh, solarAssetCount, timestamp, aggregationPeriod FROM GeneratedEnergyByProsumer WHERE prosumerId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
 
         given()
             .when()
@@ -123,7 +123,7 @@ class EnergyAnalyticsResourceIT {
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
         Row row1 = consumedProsumerRow(1L, 1L, 25.5, 1, timestamp1, "CURRENT");
         Row row2 = consumedProsumerRow(2L, 2L, 35.3, 2, timestamp2, "CURRENT");
-        stubQuery("SELECT id, prosumerId, totalEnergyConsumedKw, evChargerCount, timestamp, aggregationPeriod FROM ConsumedEnergyByProsumer ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
+        stubQuery("SELECT id, prosumerId, totalEnergyConsumedKwh, evChargerCount, timestamp, aggregationPeriod FROM ConsumedEnergyByProsumer ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
 
         given()
             .when()
@@ -133,7 +133,7 @@ class EnergyAnalyticsResourceIT {
             .body("", hasSize(2))
             .body("[0].id", is(1))
             .body("[0].prosumerId", is(1))
-            .body("[0].totalEnergyConsumedKw", is(25.5f))
+            .body("[0].totalEnergyConsumedKwh", is(25.5f))
             .body("[0].evChargerCount", is(1));
     }
 
@@ -141,7 +141,7 @@ class EnergyAnalyticsResourceIT {
     void getConsumedByProsumerId_returnsFiltered() {
         LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
         Row row = consumedProsumerRow(1L, 2L, 25.5, 1, timestamp, "CURRENT");
-        stubPreparedQuery("SELECT id, prosumerId, totalEnergyConsumedKw, evChargerCount, timestamp, aggregationPeriod FROM ConsumedEnergyByProsumer WHERE prosumerId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
+        stubPreparedQuery("SELECT id, prosumerId, totalEnergyConsumedKwh, evChargerCount, timestamp, aggregationPeriod FROM ConsumedEnergyByProsumer WHERE prosumerId = ? ORDER BY timestamp DESC", rowSetWithRows(row));
 
         given()
             .when()
@@ -192,7 +192,7 @@ class EnergyAnalyticsResourceIT {
             .statusCode(200)
             .body("", hasSize(1))
             .body("[0].prosumerId", is(1))
-            .body("[0].totalEnergyGeneratedKw", is(100.0f));
+            .body("[0].totalEnergyGeneratedKwh", is(100.0f));
     }
 
     @Test
@@ -216,7 +216,7 @@ class EnergyAnalyticsResourceIT {
             .statusCode(200)
             .body("", hasSize(1))
             .body("[0].prosumerId", is(2))
-            .body("[0].totalEnergyConsumedKw", is(25.0f));
+            .body("[0].totalEnergyConsumedKwh", is(25.0f));
     }
 
     @Test
@@ -240,7 +240,7 @@ class EnergyAnalyticsResourceIT {
             .statusCode(200)
             .body("", hasSize(1))
             .body("[0].gridCellId", is("GRID_A"))
-            .body("[0].totalEnergyDischargedKw", is(50.0f));
+            .body("[0].totalEnergyDischargedKwh", is(50.0f));
     }
 
     @Test
@@ -309,36 +309,36 @@ class EnergyAnalyticsResourceIT {
         return rowSet;
     }
 
-    private Row dischargedZoneRow(Long id, String gridCellId, Double totalEnergyDischargedKw,
+    private Row dischargedZoneRow(Long id, String gridCellId, Double totalEnergyDischargedKwh,
                                   Integer batteryCount, LocalDateTime timestamp, String aggregationPeriod) {
         Row row = Mockito.mock(Row.class);
         Mockito.when(row.getLong("id")).thenReturn(id);
         Mockito.when(row.getString("gridCellId")).thenReturn(gridCellId);
-        Mockito.when(row.getDouble("totalEnergyDischargedKw")).thenReturn(totalEnergyDischargedKw);
+        Mockito.when(row.getDouble("totalEnergyDischargedKwh")).thenReturn(totalEnergyDischargedKwh);
         Mockito.when(row.getInteger("batteryCount")).thenReturn(batteryCount);
         Mockito.when(row.getLocalDateTime("timestamp")).thenReturn(timestamp);
         Mockito.when(row.getString("aggregationPeriod")).thenReturn(aggregationPeriod);
         return row;
     }
 
-    private Row generatedProsumerRow(Long id, Long prosumerId, Double totalEnergyGeneratedKw,
+    private Row generatedProsumerRow(Long id, Long prosumerId, Double totalEnergyGeneratedKwh,
                                      Integer solarAssetCount, LocalDateTime timestamp, String aggregationPeriod) {
         Row row = Mockito.mock(Row.class);
         Mockito.when(row.getLong("id")).thenReturn(id);
         Mockito.when(row.getLong("prosumerId")).thenReturn(prosumerId);
-        Mockito.when(row.getDouble("totalEnergyGeneratedKw")).thenReturn(totalEnergyGeneratedKw);
+        Mockito.when(row.getDouble("totalEnergyGeneratedKwh")).thenReturn(totalEnergyGeneratedKwh);
         Mockito.when(row.getInteger("solarAssetCount")).thenReturn(solarAssetCount);
         Mockito.when(row.getLocalDateTime("timestamp")).thenReturn(timestamp);
         Mockito.when(row.getString("aggregationPeriod")).thenReturn(aggregationPeriod);
         return row;
     }
 
-    private Row consumedProsumerRow(Long id, Long prosumerId, Double totalEnergyConsumedKw,
+    private Row consumedProsumerRow(Long id, Long prosumerId, Double totalEnergyConsumedKwh,
                                     Integer evChargerCount, LocalDateTime timestamp, String aggregationPeriod) {
         Row row = Mockito.mock(Row.class);
         Mockito.when(row.getLong("id")).thenReturn(id);
         Mockito.when(row.getLong("prosumerId")).thenReturn(prosumerId);
-        Mockito.when(row.getDouble("totalEnergyConsumedKw")).thenReturn(totalEnergyConsumedKw);
+        Mockito.when(row.getDouble("totalEnergyConsumedKwh")).thenReturn(totalEnergyConsumedKwh);
         Mockito.when(row.getInteger("evChargerCount")).thenReturn(evChargerCount);
         Mockito.when(row.getLocalDateTime("timestamp")).thenReturn(timestamp);
         Mockito.when(row.getString("aggregationPeriod")).thenReturn(aggregationPeriod);

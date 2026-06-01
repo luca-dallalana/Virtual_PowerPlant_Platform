@@ -10,6 +10,7 @@ import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
 import jakarta.ws.rs.core.Response;
 import org.acme.dto.BatchEvaluateRequest;
+import org.acme.dto.TelemetryDTO;
 import org.acme.dto.BatchEvaluateResponse;
 import org.acme.dto.ForecastResultRequest;
 import org.acme.dto.ForecastResultResponse;

@@ -5,9 +5,10 @@ import io.smallrye.reactive.messaging.kafka.api.OutgoingKafkaRecordMetadata;
 import io.vertx.mutiny.mysqlclient.MySQLPool;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.acme.dto.GridBalancingRequest;
+import org.acme.dto.GridBalancingEvaluateRequest;
 import org.acme.dto.GridCellDTO;
 import org.acme.dto.GridCellEvaluationResult;
+import org.acme.dto.SingleCellEvaluationRequest;
 import org.acme.dto.TelemetryDTO;
 import org.acme.entities.BalancingRecommendation;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -17,8 +18,8 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -42,18 +43,46 @@ public class GridBalancingRecommendationService {
     @ConfigProperty(name = "gridbalancing.threshold.percent", defaultValue = "0.9")
     double thresholdPercent;
 
-    public List<BalancingRecommendation> evaluateRecommendations(List<TelemetryDTO> telemetryList, List<GridCellDTO> gridCells) {
-        return buildRecommendations(telemetryList, gridCells, LocalDateTime.now(), thresholdPercent);
+    public List<BalancingRecommendation> evaluateRecommendations(GridBalancingEvaluateRequest request) {
+        if (request.sourceCell == null || request.sourceCell.gridCellId == null
+                || request.sourceCell.maxCapacity == null) {
+            return Collections.emptyList();
+        }
+
+        LocalDateTime timestamp = LocalDateTime.now();
+        List<TelemetryDTO> telemetry = request.allTelemetry != null ? request.allTelemetry : Collections.emptyList();
+
+        Map<String, List<TelemetryDTO>> byZone = telemetry.stream()
+                .filter(t -> t.grid_cell_id != null)
+                .collect(Collectors.groupingBy(t -> t.grid_cell_id));
+
+        ZoneMetrics source = new ZoneMetrics(request.sourceCell.gridCellId, request.sourceCell.maxCapacity);
+        accumulate(source, byZone.getOrDefault(source.gridCellId, Collections.emptyList()));
+        source.compute(thresholdPercent);
+
+        if (source.netLoadKw <= source.thresholdLimitKw) {
+            return Collections.emptyList();
+        }
+
+        List<ZoneMetrics> neighbours = new ArrayList<>();
+        if (request.neighbourCells != null) {
+            for (GridCellDTO cell : request.neighbourCells) {
+                if (cell.gridCellId == null || cell.maxCapacity == null) continue;
+                ZoneMetrics m = new ZoneMetrics(cell.gridCellId, cell.maxCapacity);
+                accumulate(m, byZone.getOrDefault(cell.gridCellId, Collections.emptyList()));
+                m.compute(thresholdPercent);
+                neighbours.add(m);
+            }
+        }
+
+        return Collections.singletonList(createRecommendation(source, neighbours, timestamp, thresholdPercent));
     }
 
-    public GridCellEvaluationResult evaluateCell(GridBalancingRequest request) {
-        if (request.gridCells == null || request.gridCells.isEmpty()) {
+    public GridCellEvaluationResult evaluateCell(SingleCellEvaluationRequest request) {
+        if (request.gridCell == null || request.gridCell.maxCapacity == null) {
             return new GridCellEvaluationResult(false);
         }
-        GridCellDTO cell = request.gridCells.get(0);
-        if (cell.maxCapacity == null) {
-            return new GridCellEvaluationResult(false);
-        }
+        GridCellDTO cell = request.gridCell;
 
         double demandKw = 0;
         double supplyKw = 0;
@@ -82,52 +111,18 @@ public class GridBalancingRecommendationService {
         return persistAll(recommendations);
     }
 
-    /** Grid cells missing gridCellId or maxCapacity are skipped; unrecognized telemetry zones are ignored. */
-    private List<BalancingRecommendation> buildRecommendations(List<TelemetryDTO> telemetryList,
-                                                               List<GridCellDTO> gridCells,
-                                                               LocalDateTime timestamp,
-                                                               double threshold) {
-        Map<String, ZoneMetrics> metricsByZone = new HashMap<>();
-        for (GridCellDTO cell : gridCells) {
-            if (cell.gridCellId == null || cell.maxCapacity == null) {
-                continue;
-            }
-            metricsByZone.put(cell.gridCellId, new ZoneMetrics(cell.gridCellId, cell.maxCapacity));
-        }
-
-        for (TelemetryDTO telemetry : telemetryList) {
-            if (telemetry.grid_cell_id == null) {
-                continue;
-            }
-            ZoneMetrics metrics = metricsByZone.get(telemetry.grid_cell_id);
-            if (metrics == null) {
-                continue;
-            }
-
-            String type = telemetry.asset_type;
-            if ("EV_CHARGER".equals(type)) {
-                metrics.demandKw += valueOrZero(telemetry.Charging_Rate);
-            } else if ("SOLAR".equals(type)) {
-                metrics.supplyKw += valueOrZero(telemetry.Current_Generation);
-            } else if ("BATTERY".equals(type)) {
-                double output = valueOrZero(telemetry.Current_Output);
-                if (output > 0) {
-                    metrics.supplyKw += output;
-                } else {
-                    metrics.demandKw += Math.abs(output);
-                }
+    private void accumulate(ZoneMetrics metrics, List<TelemetryDTO> telemetry) {
+        for (TelemetryDTO t : telemetry) {
+            if ("EV_CHARGER".equals(t.asset_type)) {
+                metrics.demandKw += valueOrZero(t.Charging_Rate);
+            } else if ("SOLAR".equals(t.asset_type)) {
+                metrics.supplyKw += valueOrZero(t.Current_Generation);
+            } else if ("BATTERY".equals(t.asset_type)) {
+                double output = valueOrZero(t.Current_Output);
+                if (output > 0) metrics.supplyKw += output;
+                else metrics.demandKw += Math.abs(output);
             }
         }
-
-        for (ZoneMetrics metrics : metricsByZone.values()) {
-            metrics.compute(threshold);
-        }
-
-        List<ZoneMetrics> zones = new ArrayList<>(metricsByZone.values());
-        return zones.stream()
-                .filter(metrics -> metrics.netLoadKw > metrics.thresholdLimitKw)
-                .map(metrics -> createRecommendation(metrics, zones, timestamp, threshold))
-                .collect(Collectors.toList());
     }
 
     private Uni<List<BalancingRecommendation>> persistAll(List<BalancingRecommendation> recommendations) {
