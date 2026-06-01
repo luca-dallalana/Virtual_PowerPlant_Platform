@@ -11,11 +11,19 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.acme.dto.BatteryAssetDTO;
+import org.acme.dto.BatchEvaluateRequest;
+import org.acme.dto.BatchEvaluateResponse;
 import org.acme.dto.ForecastResultRequest;
 import org.acme.dto.ForecastResultResponse;
 import org.acme.dto.OllamaPromptDTO;
 import org.acme.entities.FlexibilityForecastResult;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Path("FlexibilityEvent")
 public class FlexibilityEventResource {
@@ -89,6 +97,54 @@ public class FlexibilityEventResource {
     @Path("type/{eventType}")
     public Multi<FlexibilityEvent> getByType(String eventType) {
         return FlexibilityEvent.findByEventType(client, eventType);
+    }
+
+    @POST
+    @Path("evaluate")
+    public Response evaluateBatch(BatchEvaluateRequest request) {
+        Map<Long, Long> assetToProsumerMap = new HashMap<>();
+        if (request.batteryAssets != null) {
+            for (BatteryAssetDTO asset : request.batteryAssets) {
+                assetToProsumerMap.put(asset.assetId, asset.prosumerId);
+            }
+        }
+
+        List<FlexibilityEvent> suggestions = new ArrayList<>();
+        if (request.telemetryList != null) {
+            for (TelemetryDTO telemetry : request.telemetryList) {
+                Long prosumerId = assetToProsumerMap.get(telemetry.asset_id);
+                if (prosumerId == null) continue;
+
+                FlexibilityEvent event = null;
+                if (telemetry.State_of_Charge != null && telemetry.State_of_Charge > 90.0f) {
+                    event = new FlexibilityEvent();
+                    event.assetId = telemetry.asset_id;
+                    event.prosumerId = prosumerId;
+                    event.eventType = "ARBITRAGE_SELL";
+                    event.soc_percent = telemetry.State_of_Charge;
+                    event.recommendedAction = "DISCHARGE";
+                    event.marketPrice = getCurrentMarketPrice();
+                    event.incentiveAmount = calculateIncentive(telemetry.State_of_Charge);
+                    event.gridCellId = telemetry.grid_cell_id;
+                    event.timestamp = LocalDateTime.now();
+                } else if (telemetry.State_of_Charge != null && telemetry.State_of_Charge < 20.0f) {
+                    event = new FlexibilityEvent();
+                    event.assetId = telemetry.asset_id;
+                    event.prosumerId = prosumerId;
+                    event.eventType = "BALANCING_UNAVAILABLE";
+                    event.soc_percent = telemetry.State_of_Charge;
+                    event.recommendedAction = "UNAVAILABLE";
+                    event.gridCellId = telemetry.grid_cell_id;
+                    event.timestamp = LocalDateTime.now();
+                }
+
+                if (event != null) {
+                    suggestions.add(event);
+                }
+            }
+        }
+
+        return Response.ok(new BatchEvaluateResponse(suggestions)).build();
     }
 
     @POST
@@ -166,17 +222,35 @@ public class FlexibilityEventResource {
 
     @POST
     @Path("emit")
-    public Uni<Response> emitFlexibilityOffer(FlexibilityEvent event) {
-        return event.save(client)
-                .onItem().transform(eventId -> {
-                    event.id = eventId;
-                    String kafkaMessage = String.format(
-                        "{\"eventId\":%d,\"assetId\":%d,\"prosumerId\":%d,\"eventType\":\"%s\",\"recommendedAction\":\"%s\",\"timestamp\":\"%s\"}",
-                        event.id, event.assetId, event.prosumerId, event.eventType, event.recommendedAction, event.timestamp
-                    );
-                    flexibilityEmitter.send(kafkaMessage);
-                    return Response.ok(event).build();
-                });
+    public Uni<Response> emitFlexibilityOffers(BatchEvaluateResponse request) {
+        if (request.eventCreated == null || request.eventCreated.isEmpty()) {
+            return Uni.createFrom().item(Response.ok(new BatchEvaluateResponse(new ArrayList<>())).build());
+        }
+
+        List<FlexibilityEvent> events = request.eventCreated;
+        for (FlexibilityEvent event : events) {
+            if (event.timestamp == null) {
+                event.timestamp = LocalDateTime.now();
+            }
+        }
+
+        List<Uni<Long>> saveUnis = events.stream()
+            .map(event -> event.save(client))
+            .collect(Collectors.toList());
+
+        return Uni.combine().all().unis(saveUnis).combinedWith(ids -> {
+            for (int i = 0; i < events.size(); i++) {
+                events.get(i).id = (Long) ids.get(i);
+            }
+            for (FlexibilityEvent event : events) {
+                String kafkaMessage = String.format(
+                    "{\"eventId\":%d,\"assetId\":%d,\"prosumerId\":%d,\"eventType\":\"%s\",\"recommendedAction\":\"%s\",\"timestamp\":\"%s\"}",
+                    event.id, event.assetId, event.prosumerId, event.eventType, event.recommendedAction, event.timestamp
+                );
+                flexibilityEmitter.send(kafkaMessage);
+            }
+            return Response.ok(new BatchEvaluateResponse(events)).build();
+        });
     }
 
     private Float getCurrentMarketPrice() { // In production this SHOULD NOT be hardcoded, but for demo purposes we return a fixed value

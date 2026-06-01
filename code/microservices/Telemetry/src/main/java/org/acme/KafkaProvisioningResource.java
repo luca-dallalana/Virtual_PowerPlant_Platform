@@ -95,4 +95,10 @@ public class KafkaProvisioningResource {
                 .onItem().transform(ResponseBuilder::build);
     }
 
+    @GET
+    @Path("latest/{assetType}/{minutes}")
+    public Multi<Telemetry> getLatestByAssetType(String assetType, int minutes) {
+        return Telemetry.findLatestByAssetType(client, assetType, minutes);
+    }
+
 }

@@ -6,11 +6,14 @@
       "id": "Field_GridCellSelect",
       "key": "selectedGridCell",
       "description": "Choose a cell from the grid list",
-      "valuesExpression": "=for cell in GridCells return {\"label\": cell.name, \"value\": cell}"
+      "valuesExpression": "=for cell in GridCells return {\"label\": cell.name, \"value\": cell}",
+      "layout": {
+        "row": "Row_1lcp09f"
+      }
     }
   ],
   "type": "default",
-  "id": "Form_GridCellSelection",
+  "id": "Form_Select_GridCell",
   "executionPlatform": "Camunda Cloud",
   "executionPlatformVersion": "8.9.0",
   "exporter": {

@@ -9,6 +9,8 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
 import jakarta.ws.rs.core.Response;
+import org.acme.dto.BatchEvaluateRequest;
+import org.acme.dto.BatchEvaluateResponse;
 import org.acme.dto.ForecastResultRequest;
 import org.acme.dto.ForecastResultResponse;
 import org.acme.dto.OllamaPromptDTO;
@@ -21,9 +23,11 @@ import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.acme.dto.BatteryAssetDTO;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -189,7 +193,72 @@ class FlexibilityEventResourceTest {
     }
 
     @Test
-    void emitFlexibilityOffer_savesAndPublishesToKafka() {
+    void evaluateBatch_highSoC_returnsSellOffer() {
+        BatchEvaluateRequest request = new BatchEvaluateRequest();
+        request.batteryAssets = List.of(new BatteryAssetDTO(1L, 1001L));
+        request.telemetryList = List.of(createTelemetryDTO(1001L, 95.0f, "GRID_A"));
+
+        Response response = resource.evaluateBatch(request);
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
+        MatcherAssert.assertThat(body.eventCreated, hasSize(1));
+        MatcherAssert.assertThat(body.eventCreated.get(0).eventType, is("ARBITRAGE_SELL"));
+        MatcherAssert.assertThat(body.eventCreated.get(0).assetId, is(1001L));
+        MatcherAssert.assertThat(body.eventCreated.get(0).prosumerId, is(1L));
+        MatcherAssert.assertThat(body.eventCreated.get(0).id, is((Long) null));
+        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
+    }
+
+    @Test
+    void evaluateBatch_lowSoC_returnsUnavailableOffer() {
+        BatchEvaluateRequest request = new BatchEvaluateRequest();
+        request.batteryAssets = List.of(new BatteryAssetDTO(2L, 1003L));
+        request.telemetryList = List.of(createTelemetryDTO(1003L, 10.0f, "GRID_B"));
+
+        Response response = resource.evaluateBatch(request);
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
+        MatcherAssert.assertThat(body.eventCreated, hasSize(1));
+        MatcherAssert.assertThat(body.eventCreated.get(0).eventType, is("BALANCING_UNAVAILABLE"));
+        MatcherAssert.assertThat(body.eventCreated.get(0).prosumerId, is(2L));
+        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
+    }
+
+    @Test
+    void evaluateBatch_normalSoC_returnsEmptyOffers() {
+        BatchEvaluateRequest request = new BatchEvaluateRequest();
+        request.batteryAssets = List.of(new BatteryAssetDTO(1L, 1001L));
+        request.telemetryList = List.of(createTelemetryDTO(1001L, 50.0f, "GRID_A"));
+
+        Response response = resource.evaluateBatch(request);
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
+        MatcherAssert.assertThat(body.eventCreated, hasSize(0));
+        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
+    }
+
+    @Test
+    void evaluateBatch_multipleAssets_returnsCorrectOffers() {
+        BatchEvaluateRequest request = new BatchEvaluateRequest();
+        request.batteryAssets = List.of(
+            new BatteryAssetDTO(1L, 1001L),
+            new BatteryAssetDTO(1L, 1002L),
+            new BatteryAssetDTO(2L, 1003L)
+        );
+        request.telemetryList = List.of(
+            createTelemetryDTO(1001L, 95.0f, "GRID_A"),
+            createTelemetryDTO(1002L, 50.0f, "GRID_A"),
+            createTelemetryDTO(1003L, 10.0f, "GRID_B")
+        );
+
+        Response response = resource.evaluateBatch(request);
+        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
+        MatcherAssert.assertThat(body.eventCreated, hasSize(2));
+        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
+    }
+
+    @Test
+    void emitFlexibilityOffers_savesAndPublishesToKafka() {
         FlexibilityEvent event = new FlexibilityEvent();
         event.assetId = 1L;
         event.prosumerId = 1L;
@@ -201,16 +270,17 @@ class FlexibilityEventResourceTest {
         Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(42L);
         stubPreparedQuery("INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)", insertResult);
 
-        Response response = resource.emitFlexibilityOffer(event).await().indefinitely();
+        BatchEvaluateResponse request = new BatchEvaluateResponse(List.of(event));
+        Response response = resource.emitFlexibilityOffers(request).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
-        FlexibilityEvent saved = (FlexibilityEvent) response.getEntity();
-        MatcherAssert.assertThat(saved.id, is(42L));
-
+        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
+        MatcherAssert.assertThat(body.eventCreated, hasSize(1));
+        MatcherAssert.assertThat(body.eventCreated.get(0).id, is(42L));
         Mockito.verify(flexibilityEmitter, Mockito.times(1)).send(Mockito.anyString());
     }
 
     @Test
-    void emitFlexibilityOffer_publishesCorrectKafkaMessage() {
+    void emitFlexibilityOffers_publishesCorrectKafkaMessage() {
         FlexibilityEvent event = new FlexibilityEvent();
         event.assetId = 1L;
         event.prosumerId = 1L;
@@ -222,7 +292,7 @@ class FlexibilityEventResourceTest {
         Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(42L);
         stubPreparedQuery("INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)", insertResult);
 
-        resource.emitFlexibilityOffer(event).await().indefinitely();
+        resource.emitFlexibilityOffers(new BatchEvaluateResponse(List.of(event))).await().indefinitely();
 
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
         Mockito.verify(flexibilityEmitter).send(captor.capture());
@@ -233,6 +303,16 @@ class FlexibilityEventResourceTest {
         MatcherAssert.assertThat(message.contains("\"eventType\":\"ARBITRAGE_SELL\""), is(true));
         MatcherAssert.assertThat(message.contains("\"recommendedAction\":\"DISCHARGE\""), is(true));
         MatcherAssert.assertThat(message.contains("\"timestamp\":"), is(true));
+    }
+
+    @Test
+    void emitFlexibilityOffers_emptyList_returnsEmptyResponse() {
+        BatchEvaluateResponse request = new BatchEvaluateResponse(new ArrayList<>());
+        Response response = resource.emitFlexibilityOffers(request).await().indefinitely();
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
+        MatcherAssert.assertThat(body.eventCreated, hasSize(0));
+        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
     }
 
     @Test

@@ -124,4 +124,16 @@ public class Telemetry
                 .onItem().transform(iterator -> iterator.hasNext() ? from(iterator.next()) : null);
     }
 
+    public static Multi<Telemetry> findLatestByAssetType(MySQLPool client, String assetType, int minutes) {
+        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(minutes);
+        return client.preparedQuery(
+                "SELECT t.* FROM Telemetry t " +
+                "INNER JOIN (SELECT asset_id, MAX(timeStamp) as maxTs FROM Telemetry " +
+                "WHERE asset_type = ? AND timeStamp >= ? GROUP BY asset_id) latest " +
+                "ON t.asset_id = latest.asset_id AND t.timeStamp = latest.maxTs")
+                .execute(Tuple.of(assetType, cutoff))
+                .onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
+                .onItem().transform(Telemetry::from);
+    }
+
 }
