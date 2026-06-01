@@ -9,11 +9,7 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
 import jakarta.ws.rs.core.Response;
-import org.acme.dto.AnalyticsRequest;
-import org.acme.dto.AnalyticsResult;
-import org.acme.dto.AssetDTO;
-import org.acme.dto.TelemetryDTO;
-import org.acme.dto.ZoneDTO;
+import org.acme.dto.*;
 import org.acme.entities.AverageSoC;
 import org.acme.entities.ConsumedEnergyByProsumer;
 import org.acme.entities.EnergyDischargedByZone;
@@ -154,130 +150,71 @@ class EnergyAnalyticsResourceTest {
     }
 
     @Test
-    void evaluate_withAllAssetTypes_createsRecords() {
-        List<TelemetryDTO> telemetry = Arrays.asList(
-            createBatteryTelemetry(1L, 50.0f, 75.0f),
-            createSolarTelemetry(2L, 100.0f),
-            createEVChargerTelemetry(3L, 25.0f)
-        );
-        List<AssetDTO> assets = Arrays.asList(
-            createAssetDTO(1L, 1L),
-            createAssetDTO(2L, 1L),
-            createAssetDTO(3L, 2L)
-        );
-        List<ZoneDTO> zones = Arrays.asList(
-            createZoneDTO("GRID_A"),
-            createZoneDTO("GRID_B")
-        );
+    void computeGeneratedByProsumer_returnsList() {
+        List<AssetDTO> assets = Arrays.asList(createAssetDTO(2L, 1L));
+        List<TelemetryDTO> telemetry = Arrays.asList(createSolarTelemetry(2L, 100.0f));
+        GeneratedEnergyByProsumer expected = new GeneratedEnergyByProsumer(null, 1L, 100.0, 1, LocalDateTime.now(), "LAST_30_MIN");
 
-        AnalyticsResult expectedResult = new AnalyticsResult();
-        expectedResult.status = "SUCCESS";
-        expectedResult.recordsProcessed = 3;
-        expectedResult.timestamp = LocalDateTime.now();
+        Mockito.when(analyticsService.computeGeneratedByProsumer(assets, telemetry))
+               .thenReturn(Arrays.asList(expected));
 
-        Mockito.when(analyticsService.calculateMetricsFromEvents(telemetry, assets, zones))
-               .thenReturn(Uni.createFrom().item(expectedResult));
-
-        AnalyticsRequest request = new AnalyticsRequest(telemetry, assets, zones);
-
-        Response response = resource.evaluate(request).await().indefinitely();
+        Response response = resource.computeGeneratedByProsumer(new ComputeGeneratedRequest(assets, telemetry));
         MatcherAssert.assertThat(response.getStatus(), is(200));
-        AnalyticsResult result = (AnalyticsResult) response.getEntity();
-        MatcherAssert.assertThat(result.status, is("SUCCESS"));
-        MatcherAssert.assertThat(result.recordsProcessed, is(3));
     }
 
     @Test
-    void evaluate_withPartialData_createsRecords() {
-        List<TelemetryDTO> telemetry = Arrays.asList(
-            createBatteryTelemetry(1L, 50.0f, 75.0f)
-        );
-        List<AssetDTO> assets = Arrays.asList(
-            createAssetDTO(1L, 1L)
-        );
-        List<ZoneDTO> zones = Arrays.asList(
-            createZoneDTO("GRID_A")
-        );
+    void computeConsumedByProsumer_returnsList() {
+        List<AssetDTO> assets = Arrays.asList(createAssetDTO(3L, 2L));
+        List<TelemetryDTO> telemetry = Arrays.asList(createEVChargerTelemetry(3L, 25.0f));
+        ConsumedEnergyByProsumer expected = new ConsumedEnergyByProsumer(null, 2L, 25.0, 1, LocalDateTime.now(), "LAST_30_MIN");
 
-        AnalyticsResult expectedResult = new AnalyticsResult();
-        expectedResult.status = "SUCCESS";
-        expectedResult.recordsProcessed = 1;
-        expectedResult.timestamp = LocalDateTime.now();
+        Mockito.when(analyticsService.computeConsumedByProsumer(assets, telemetry))
+               .thenReturn(Arrays.asList(expected));
 
-        Mockito.when(analyticsService.calculateMetricsFromEvents(telemetry, assets, zones))
+        Response response = resource.computeConsumedByProsumer(new ComputeConsumedRequest(assets, telemetry));
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+    }
+
+    @Test
+    void computeDischargedByZone_returnsList() {
+        List<ZoneDTO> zones = Arrays.asList(createZoneDTO("GRID_A"));
+        List<TelemetryDTO> telemetry = Arrays.asList(createBatteryTelemetry(1L, 50.0f, 75.0f));
+        EnergyDischargedByZone expected = new EnergyDischargedByZone(null, "GRID_A", 50.0, 1, LocalDateTime.now(), "LAST_30_MIN");
+
+        Mockito.when(analyticsService.computeDischargedByZone(zones, telemetry))
+               .thenReturn(Arrays.asList(expected));
+
+        Response response = resource.computeDischargedByZone(new ComputeDischargedRequest(zones, telemetry));
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+    }
+
+    @Test
+    void computeAverageSoC_returnsResult() {
+        List<TelemetryDTO> telemetry = Arrays.asList(createBatteryTelemetry(1L, 50.0f, 75.0f));
+        AverageSoC expected = new AverageSoC(null, 75.0, 1, LocalDateTime.now(), "LAST_30_MIN");
+
+        Mockito.when(analyticsService.computeAverageSoC(telemetry)).thenReturn(expected);
+
+        Response response = resource.computeAverageSoC(new ComputeAverageSoCRequest(telemetry));
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+    }
+
+    @Test
+    void emit_withAllData_returnsSuccess() {
+        AverageSoC avgSoC = new AverageSoC(null, 80.0, 5, LocalDateTime.now(), "LAST_30_MIN");
+        EmitAnalyticsRequest request = new EmitAnalyticsRequest(
+            Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), avgSoC);
+
+        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
+        Mockito.when(analyticsService.emitAnalytics(
+            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
                .thenReturn(Uni.createFrom().item(expectedResult));
 
-        AnalyticsRequest request = new AnalyticsRequest(telemetry, assets, zones);
-
-        Response response = resource.evaluate(request).await().indefinitely();
+        Response response = resource.emit(request).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
         AnalyticsResult result = (AnalyticsResult) response.getEntity();
         MatcherAssert.assertThat(result.status, is("SUCCESS"));
         MatcherAssert.assertThat(result.recordsProcessed, is(1));
-    }
-
-    @Test
-    void evaluate_withEmptyData_returnsZeroRecords() {
-        List<TelemetryDTO> telemetry = Collections.emptyList();
-        List<AssetDTO> assets = Collections.emptyList();
-        List<ZoneDTO> zones = Collections.emptyList();
-
-        AnalyticsResult expectedResult = new AnalyticsResult();
-        expectedResult.status = "SUCCESS";
-        expectedResult.recordsProcessed = 0;
-        expectedResult.timestamp = LocalDateTime.now();
-
-        Mockito.when(analyticsService.calculateMetricsFromEvents(telemetry, assets, zones))
-               .thenReturn(Uni.createFrom().item(expectedResult));
-
-        AnalyticsRequest request = new AnalyticsRequest(telemetry, assets, zones);
-
-        Response response = resource.evaluate(request).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        AnalyticsResult result = (AnalyticsResult) response.getEntity();
-        MatcherAssert.assertThat(result.recordsProcessed, is(0));
-    }
-
-    @Test
-    void evaluate_withNullFieldsInTelemetry_handlesGracefully() {
-        TelemetryDTO telemetry = createBatteryTelemetry(1L, null, 75.0f);
-        List<AssetDTO> assets = Arrays.asList(createAssetDTO(1L, 1L));
-        List<ZoneDTO> zones = Arrays.asList(createZoneDTO("GRID_A"));
-
-        AnalyticsResult expectedResult = new AnalyticsResult();
-        expectedResult.status = "SUCCESS";
-        expectedResult.recordsProcessed = 0;
-        expectedResult.timestamp = LocalDateTime.now();
-
-        Mockito.when(analyticsService.calculateMetricsFromEvents(Arrays.asList(telemetry), assets, zones))
-               .thenReturn(Uni.createFrom().item(expectedResult));
-
-        AnalyticsRequest request = new AnalyticsRequest(Arrays.asList(telemetry), assets, zones);
-
-        Response response = resource.evaluate(request).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        Mockito.verify(analyticsService, Mockito.times(1)).calculateMetricsFromEvents(Arrays.asList(telemetry), assets, zones);
-    }
-
-    @Test
-    void evaluate_withUnlinkedAssets_filtersCorrectly() {
-        TelemetryDTO telemetry = createBatteryTelemetry(99L, 50.0f, 75.0f);
-        List<AssetDTO> assets = Arrays.asList(createAssetDTO(1L, 1L));
-        List<ZoneDTO> zones = Arrays.asList(createZoneDTO("GRID_A"));
-
-        AnalyticsResult expectedResult = new AnalyticsResult();
-        expectedResult.status = "SUCCESS";
-        expectedResult.recordsProcessed = 0;
-        expectedResult.timestamp = LocalDateTime.now();
-
-        Mockito.when(analyticsService.calculateMetricsFromEvents(Arrays.asList(telemetry), assets, zones))
-               .thenReturn(Uni.createFrom().item(expectedResult));
-
-        AnalyticsRequest request = new AnalyticsRequest(Arrays.asList(telemetry), assets, zones);
-
-        Response response = resource.evaluate(request).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        Mockito.verify(analyticsService, Mockito.times(1)).calculateMetricsFromEvents(Arrays.asList(telemetry), assets, zones);
     }
 
     private void injectClient(EnergyAnalyticsResource target, MySQLPool pool) {
@@ -410,7 +347,7 @@ class EnergyAnalyticsResourceTest {
     }
 
     private ZoneDTO createZoneDTO(String gridCellId) {
-        return new ZoneDTO(gridCellId, "Operator-" + gridCellId, "Location-" + gridCellId);
+        return new ZoneDTO(gridCellId, 1L, 50.0, "Test Area");
     }
 
     private static final class ListRowIterator implements RowIterator<Row> {

@@ -43,162 +43,133 @@ public class AnalyticsCalculationService {
     @Channel("average-soc")
     Emitter<String> averageSocEmitter;
 
-    public Uni<AnalyticsResult> calculateMetricsFromEvents(List<TelemetryDTO> telemetryList, List<AssetDTO> assets, List<ZoneDTO> zones) {
+    public List<GeneratedEnergyByProsumer> computeGeneratedByProsumer(List<AssetDTO> assets, List<TelemetryDTO> telemetry) {
         LocalDateTime timestamp = LocalDateTime.now();
-        String aggregationPeriod = "CURRENT";
+        Map<Long, Long> assetToProsumerMap = buildAssetToProsumerMap(assets);
 
-        Map<Long, Long> assetToProsumerMap = assets.stream()
-            .collect(Collectors.toMap(a -> a.assetId, a -> a.prosumerId, (a, b) -> a));
-
-        Map<String, ZoneDTO> zoneMap = zones.stream()
-            .collect(Collectors.toMap(z -> z.gridCellId, z -> z, (a, b) -> a));
-
-        return calculateAndSave(telemetryList, assetToProsumerMap, zoneMap, timestamp, aggregationPeriod);
+        return telemetry.stream()
+            .filter(t -> "SOLAR".equals(t.asset_type))
+            .filter(t -> assetToProsumerMap.containsKey(t.asset_id))
+            .collect(Collectors.groupingBy(t -> assetToProsumerMap.get(t.asset_id)))
+            .entrySet().stream()
+            .map(entry -> {
+                List<TelemetryDTO> solar = entry.getValue();
+                double total = solar.stream()
+                    .mapToDouble(t -> t.Current_Generation != null ? t.Current_Generation : 0.0)
+                    .sum();
+                return new GeneratedEnergyByProsumer(null, entry.getKey(), total, solar.size(), timestamp, "LAST_30_MIN");
+            })
+            .collect(Collectors.toList());
     }
 
-    private Uni<AnalyticsResult> calculateAndSave(List<TelemetryDTO> telemetryList,
-                                                  Map<Long, Long> assetToProsumerMap,
-                                                  Map<String, ZoneDTO> zoneMap,
-                                                  LocalDateTime timestamp,
-                                                  String aggregationPeriod) {
-        return Uni.combine().all().unis(
-            calculateEnergyDischargedByZone(telemetryList, zoneMap, timestamp, aggregationPeriod),
-            calculateGeneratedEnergyByProsumer(telemetryList, assetToProsumerMap, timestamp, aggregationPeriod),
-            calculateConsumedEnergyByProsumer(telemetryList, assetToProsumerMap, timestamp, aggregationPeriod),
-            calculateAverageSoC(telemetryList, timestamp, aggregationPeriod)
-        ).combinedWith((discharged, generated, consumed, avgSoc) -> {
-            int totalRecords = discharged + generated + consumed + (avgSoc > 0 ? 1 : 0);
-            return new AnalyticsResult("SUCCESS", timestamp, totalRecords);
-        });
+    public List<ConsumedEnergyByProsumer> computeConsumedByProsumer(List<AssetDTO> assets, List<TelemetryDTO> telemetry) {
+        LocalDateTime timestamp = LocalDateTime.now();
+        Map<Long, Long> assetToProsumerMap = buildAssetToProsumerMap(assets);
+
+        return telemetry.stream()
+            .filter(t -> "EV_CHARGER".equals(t.asset_type))
+            .filter(t -> assetToProsumerMap.containsKey(t.asset_id))
+            .collect(Collectors.groupingBy(t -> assetToProsumerMap.get(t.asset_id)))
+            .entrySet().stream()
+            .map(entry -> {
+                List<TelemetryDTO> evs = entry.getValue();
+                double total = evs.stream()
+                    .mapToDouble(t -> t.Charging_Rate != null ? t.Charging_Rate : 0.0)
+                    .sum();
+                return new ConsumedEnergyByProsumer(null, entry.getKey(), total, evs.size(), timestamp, "LAST_30_MIN");
+            })
+            .collect(Collectors.toList());
     }
 
-    private Uni<Integer> calculateEnergyDischargedByZone(List<TelemetryDTO> telemetryList,
-                                                         Map<String, ZoneDTO> zoneMap,
-                                                         LocalDateTime timestamp,
-                                                         String aggregationPeriod) {
-        Map<String, List<TelemetryDTO>> groupedByZone = telemetryList.stream()
+    public List<EnergyDischargedByZone> computeDischargedByZone(List<ZoneDTO> zones, List<TelemetryDTO> telemetry) {
+        LocalDateTime timestamp = LocalDateTime.now();
+
+        return telemetry.stream()
             .filter(t -> "BATTERY".equals(t.asset_type))
             .filter(t -> t.Current_Output != null && t.Current_Output > 0)
             .filter(t -> t.grid_cell_id != null)
-            .collect(Collectors.groupingBy(t -> t.grid_cell_id));
-
-        List<Uni<Long>> saveOperations = new ArrayList<>();
-
-        for (Map.Entry<String, List<TelemetryDTO>> entry : groupedByZone.entrySet()) {
-            String gridCellId = entry.getKey();
-            List<TelemetryDTO> batteries = entry.getValue();
-
-            double totalDischarged = batteries.stream()
-                .mapToDouble(t -> t.Current_Output != null ? t.Current_Output : 0.0)
-                .sum();
-
-            ZoneDTO zone = zoneMap.get(gridCellId);
-            String operatorName = zone != null ? zone.operatorName : "Unknown";
-            String operatorLocation = zone != null ? zone.operatorLocation : "Unknown";
-
-            EnergyDischargedByZone record = new EnergyDischargedByZone(
-                null, gridCellId, totalDischarged, batteries.size(), timestamp, aggregationPeriod
-            );
-
-            Uni<Long> saveUni = record.save(client)
-                .invoke(() -> publishDischargedZoneEvent(gridCellId, operatorName, operatorLocation, totalDischarged, batteries.size(), timestamp));
-
-            saveOperations.add(saveUni);
-        }
-
-        return Uni.combine().all().unis(saveOperations).combinedWith(results -> results.size());
+            .collect(Collectors.groupingBy(t -> t.grid_cell_id))
+            .entrySet().stream()
+            .map(entry -> {
+                List<TelemetryDTO> batteries = entry.getValue();
+                double total = batteries.stream()
+                    .mapToDouble(t -> t.Current_Output != null ? t.Current_Output : 0.0)
+                    .sum();
+                return new EnergyDischargedByZone(null, entry.getKey(), total, batteries.size(), timestamp, "LAST_30_MIN");
+            })
+            .collect(Collectors.toList());
     }
 
-    private Uni<Integer> calculateGeneratedEnergyByProsumer(List<TelemetryDTO> telemetryList,
-                                                            Map<Long, Long> assetToProsumerMap,
-                                                            LocalDateTime timestamp,
-                                                            String aggregationPeriod) {
-        Map<Long, List<TelemetryDTO>> groupedByProsumer = telemetryList.stream()
-            .filter(t -> "SOLAR".equals(t.asset_type))
-            .filter(t -> assetToProsumerMap.containsKey(t.asset_id))
-            .collect(Collectors.groupingBy(t -> assetToProsumerMap.get(t.asset_id)));
-
-        List<Uni<Long>> saveOperations = new ArrayList<>();
-
-        for (Map.Entry<Long, List<TelemetryDTO>> entry : groupedByProsumer.entrySet()) {
-            Long prosumerId = entry.getKey();
-            List<TelemetryDTO> solarAssets = entry.getValue();
-
-            double totalGenerated = solarAssets.stream()
-                .mapToDouble(t -> t.Current_Generation != null ? t.Current_Generation : 0.0)
-                .sum();
-
-            GeneratedEnergyByProsumer record = new GeneratedEnergyByProsumer(
-                null, prosumerId, totalGenerated, solarAssets.size(), timestamp, aggregationPeriod
-            );
-
-            Uni<Long> saveUni = record.save(client)
-                .invoke(() -> publishGeneratedProsumerEvent(prosumerId, totalGenerated, solarAssets.size(), timestamp));
-
-            saveOperations.add(saveUni);
-        }
-
-        return Uni.combine().all().unis(saveOperations).combinedWith(results -> results.size());
-    }
-
-    private Uni<Integer> calculateConsumedEnergyByProsumer(List<TelemetryDTO> telemetryList,
-                                                           Map<Long, Long> assetToProsumerMap,
-                                                           LocalDateTime timestamp,
-                                                           String aggregationPeriod) {
-        Map<Long, List<TelemetryDTO>> groupedByProsumer = telemetryList.stream()
-            .filter(t -> "EV_CHARGER".equals(t.asset_type))
-            .filter(t -> assetToProsumerMap.containsKey(t.asset_id))
-            .collect(Collectors.groupingBy(t -> assetToProsumerMap.get(t.asset_id)));
-
-        List<Uni<Long>> saveOperations = new ArrayList<>();
-
-        for (Map.Entry<Long, List<TelemetryDTO>> entry : groupedByProsumer.entrySet()) {
-            Long prosumerId = entry.getKey();
-            List<TelemetryDTO> evChargers = entry.getValue();
-
-            double totalConsumed = evChargers.stream()
-                .mapToDouble(t -> t.Charging_Rate != null ? t.Charging_Rate : 0.0)
-                .sum();
-
-            ConsumedEnergyByProsumer record = new ConsumedEnergyByProsumer(
-                null, prosumerId, totalConsumed, evChargers.size(), timestamp, aggregationPeriod
-            );
-
-            Uni<Long> saveUni = record.save(client)
-                .invoke(() -> publishConsumedProsumerEvent(prosumerId, totalConsumed, evChargers.size(), timestamp));
-
-            saveOperations.add(saveUni);
-        }
-
-        return Uni.combine().all().unis(saveOperations).combinedWith(results -> results.size());
-    }
-
-    private Uni<Integer> calculateAverageSoC(List<TelemetryDTO> telemetryList,
-                                             LocalDateTime timestamp,
-                                             String aggregationPeriod) {
-        List<TelemetryDTO> batteries = telemetryList.stream()
+    public AverageSoC computeAverageSoC(List<TelemetryDTO> telemetry) {
+        LocalDateTime timestamp = LocalDateTime.now();
+        List<TelemetryDTO> batteries = telemetry.stream()
             .filter(t -> "BATTERY".equals(t.asset_type))
             .filter(t -> t.State_of_Charge != null)
             .collect(Collectors.toList());
 
-        double avgSoc = batteries.stream()
+        double avg = batteries.stream()
             .mapToDouble(t -> t.State_of_Charge)
             .average()
             .orElse(0.0);
 
-        AverageSoC record = new AverageSoC(
-            null, avgSoc, batteries.size(), timestamp, aggregationPeriod
-        );
-
-        return record.save(client)
-            .invoke(() -> publishAverageSocEvent(avgSoc, batteries.size(), timestamp))
-            .map(id -> 1);
+        return new AverageSoC(null, avg, batteries.size(), timestamp, "LAST_30_MIN");
     }
 
-    private void publishDischargedZoneEvent(String gridCellId, String operatorName, String operatorLocation, double totalDischarge, int batteryCount, LocalDateTime timestamp) {
+    public Uni<AnalyticsResult> emitAnalytics(
+            List<GeneratedEnergyByProsumer> generated,
+            List<ConsumedEnergyByProsumer> consumed,
+            List<EnergyDischargedByZone> discharged,
+            AverageSoC averageSoC) {
+
+        LocalDateTime timestamp = LocalDateTime.now();
+        List<Uni<Long>> saveOps = new ArrayList<>();
+
+        if (generated != null) {
+            for (GeneratedEnergyByProsumer g : generated) {
+                saveOps.add(g.save(client).invoke(() ->
+                    publishGeneratedProsumerEvent(g.prosumerId, g.totalEnergyGeneratedKw, g.solarAssetCount, g.timestamp)));
+            }
+        }
+        if (consumed != null) {
+            for (ConsumedEnergyByProsumer c : consumed) {
+                saveOps.add(c.save(client).invoke(() ->
+                    publishConsumedProsumerEvent(c.prosumerId, c.totalEnergyConsumedKw, c.evChargerCount, c.timestamp)));
+            }
+        }
+        if (discharged != null) {
+            for (EnergyDischargedByZone d : discharged) {
+                saveOps.add(d.save(client).invoke(() ->
+                    publishDischargedZoneEvent(d.gridCellId, d.totalEnergyDischargedKw, d.batteryCount, d.timestamp)));
+            }
+        }
+        if (averageSoC != null) {
+            saveOps.add(averageSoC.save(client).invoke(() ->
+                publishAverageSocEvent(averageSoC.averageSocPercent, averageSoC.batteryCount, averageSoC.timestamp)));
+        }
+
+        if (saveOps.isEmpty()) {
+            return Uni.createFrom().item(new AnalyticsResult("SUCCESS", timestamp, 0));
+        }
+
+        int totalRecords = (generated != null ? generated.size() : 0)
+            + (consumed != null ? consumed.size() : 0)
+            + (discharged != null ? discharged.size() : 0)
+            + (averageSoC != null ? 1 : 0);
+
+        return Uni.combine().all().unis(saveOps).combinedWith(results ->
+            new AnalyticsResult("SUCCESS", timestamp, totalRecords));
+    }
+
+    private Map<Long, Long> buildAssetToProsumerMap(List<AssetDTO> assets) {
+        if (assets == null) return Collections.emptyMap();
+        return assets.stream()
+            .collect(Collectors.toMap(a -> a.assetId, a -> a.prosumerId, (a, b) -> a));
+    }
+
+    private void publishDischargedZoneEvent(String gridCellId, double totalDischarge, int batteryCount, LocalDateTime timestamp) {
         String json = String.format(
-            "{\"gridCellId\":\"%s\",\"operatorName\":\"%s\",\"operatorLocation\":\"%s\",\"totalDischarge\":%.2f,\"batteryCount\":%d,\"timestamp\":\"%s\"}",
-            gridCellId, operatorName, operatorLocation, totalDischarge, batteryCount, timestamp.toString()
+            "{\"gridCellId\":\"%s\",\"totalDischarge\":%.2f,\"batteryCount\":%d,\"timestamp\":\"%s\"}",
+            gridCellId, totalDischarge, batteryCount, timestamp.toString()
         );
         dischargedZoneEmitter.send(Message.of(json)
             .addMetadata(OutgoingKafkaRecordMetadata.builder().withKey(gridCellId).build()));

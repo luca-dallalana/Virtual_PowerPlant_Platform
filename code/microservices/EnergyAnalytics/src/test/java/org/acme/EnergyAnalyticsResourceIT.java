@@ -12,6 +12,10 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
 import org.acme.dto.AnalyticsResult;
+import org.acme.entities.AverageSoC;
+import org.acme.entities.ConsumedEnergyByProsumer;
+import org.acme.entities.EnergyDischargedByZone;
+import org.acme.entities.GeneratedEnergyByProsumer;
 import org.acme.services.AnalyticsCalculationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -168,89 +172,121 @@ class EnergyAnalyticsResourceIT {
     }
 
     @Test
-    void evaluate_withAllAssetTypes_returnsSuccess() {
-        AnalyticsResult expectedResult = new AnalyticsResult();
-        expectedResult.status = "SUCCESS";
-        expectedResult.recordsProcessed = 3;
-        expectedResult.timestamp = LocalDateTime.now();
+    void computeGeneratedByProsumer_returnsResult() {
+        GeneratedEnergyByProsumer expected = new GeneratedEnergyByProsumer(
+            null, 1L, 100.0, 1, LocalDateTime.of(2024, 1, 15, 10, 30), "LAST_30_MIN");
 
-        Mockito.when(analyticsService.calculateMetricsFromEvents(Mockito.anyList(), Mockito.anyList()))
-               .thenReturn(Uni.createFrom().item(expectedResult));
+        Mockito.when(analyticsService.computeGeneratedByProsumer(Mockito.anyList(), Mockito.anyList()))
+               .thenReturn(Collections.singletonList(expected));
 
         Map<String, Object> body = new HashMap<>();
-        body.put("telemetryData", Arrays.asList(
-            createTelemetryMap(1L, "BATTERY", 50.0f, 75.0f),
-            createTelemetryMap(2L, "SOLAR", 100.0f, null),
-            createTelemetryMap(3L, "EV_CHARGER", 25.0f, null)
-        ));
-        body.put("assetLinks", Arrays.asList(
-            createAssetLinkMap(1L, 1L, "GRID_A"),
-            createAssetLinkMap(2L, 1L, "GRID_A"),
-            createAssetLinkMap(3L, 2L, "GRID_B")
-        ));
+        body.put("assets", Collections.singletonList(createAssetMap(2L, 1L)));
+        body.put("telemetry", Collections.singletonList(createTelemetryMap(2L, "SOLAR", 100.0f, null)));
 
         given()
             .contentType(ContentType.JSON)
             .body(body)
             .when()
-            .post("/EnergyAnalytics/evaluate")
+            .post("/EnergyAnalytics/compute/generated-by-prosumer")
             .then()
             .statusCode(200)
-            .body("status", is("SUCCESS"))
-            .body("recordsProcessed", is(3));
+            .body("", hasSize(1))
+            .body("[0].prosumerId", is(1))
+            .body("[0].totalEnergyGeneratedKw", is(100.0f));
     }
 
     @Test
-    void evaluate_withPartialData_returnsSuccess() {
-        AnalyticsResult expectedResult = new AnalyticsResult();
-        expectedResult.status = "SUCCESS";
-        expectedResult.recordsProcessed = 1;
-        expectedResult.timestamp = LocalDateTime.now();
+    void computeConsumedByProsumer_returnsResult() {
+        ConsumedEnergyByProsumer expected = new ConsumedEnergyByProsumer(
+            null, 2L, 25.0, 1, LocalDateTime.of(2024, 1, 15, 10, 30), "LAST_30_MIN");
 
-        Mockito.when(analyticsService.calculateMetricsFromEvents(Mockito.anyList(), Mockito.anyList()))
-               .thenReturn(Uni.createFrom().item(expectedResult));
+        Mockito.when(analyticsService.computeConsumedByProsumer(Mockito.anyList(), Mockito.anyList()))
+               .thenReturn(Collections.singletonList(expected));
 
         Map<String, Object> body = new HashMap<>();
-        body.put("telemetryData", Arrays.asList(
-            createTelemetryMap(1L, "BATTERY", 50.0f, 75.0f)
-        ));
-        body.put("assetLinks", Arrays.asList(
-            createAssetLinkMap(1L, 1L, "GRID_A")
-        ));
+        body.put("assets", Collections.singletonList(createAssetMap(3L, 2L)));
+        body.put("telemetry", Collections.singletonList(createTelemetryMap(3L, "EV_CHARGER", 25.0f, null)));
 
         given()
             .contentType(ContentType.JSON)
             .body(body)
             .when()
-            .post("/EnergyAnalytics/evaluate")
+            .post("/EnergyAnalytics/compute/consumed-by-prosumer")
             .then()
             .statusCode(200)
-            .body("status", is("SUCCESS"))
-            .body("recordsProcessed", is(1));
+            .body("", hasSize(1))
+            .body("[0].prosumerId", is(2))
+            .body("[0].totalEnergyConsumedKw", is(25.0f));
     }
 
     @Test
-    void evaluate_withEmptyData_returnsZeroRecords() {
-        AnalyticsResult expectedResult = new AnalyticsResult();
-        expectedResult.status = "SUCCESS";
-        expectedResult.recordsProcessed = 0;
-        expectedResult.timestamp = LocalDateTime.now();
+    void computeDischargedByZone_returnsResult() {
+        EnergyDischargedByZone expected = new EnergyDischargedByZone(
+            null, "GRID_A", 50.0, 1, LocalDateTime.of(2024, 1, 15, 10, 30), "LAST_30_MIN");
 
-        Mockito.when(analyticsService.calculateMetricsFromEvents(Mockito.anyList(), Mockito.anyList()))
-               .thenReturn(Uni.createFrom().item(expectedResult));
+        Mockito.when(analyticsService.computeDischargedByZone(Mockito.anyList(), Mockito.anyList()))
+               .thenReturn(Collections.singletonList(expected));
 
         Map<String, Object> body = new HashMap<>();
-        body.put("telemetryData", Collections.emptyList());
-        body.put("assetLinks", Collections.emptyList());
+        body.put("zones", Collections.singletonList(createZoneMap("GRID_A")));
+        body.put("telemetry", Collections.singletonList(createTelemetryMap(1L, "BATTERY", 50.0f, 75.0f)));
 
         given()
             .contentType(ContentType.JSON)
             .body(body)
             .when()
-            .post("/EnergyAnalytics/evaluate")
+            .post("/EnergyAnalytics/compute/discharged-by-zone")
             .then()
             .statusCode(200)
-            .body("recordsProcessed", is(0));
+            .body("", hasSize(1))
+            .body("[0].gridCellId", is("GRID_A"))
+            .body("[0].totalEnergyDischargedKw", is(50.0f));
+    }
+
+    @Test
+    void computeAverageSoC_returnsResult() {
+        AverageSoC expected = new AverageSoC(
+            null, 75.0, 1, LocalDateTime.of(2024, 1, 15, 10, 30), "LAST_30_MIN");
+
+        Mockito.when(analyticsService.computeAverageSoC(Mockito.anyList())).thenReturn(expected);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("telemetry", Collections.singletonList(createTelemetryMap(1L, "BATTERY", 50.0f, 75.0f)));
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(body)
+            .when()
+            .post("/EnergyAnalytics/compute/average-soc")
+            .then()
+            .statusCode(200)
+            .body("averageSocPercent", is(75.0f))
+            .body("batteryCount", is(1));
+    }
+
+    @Test
+    void emit_withAllData_returnsSuccess() {
+        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 4);
+
+        Mockito.when(analyticsService.emitAnalytics(
+            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+               .thenReturn(Uni.createFrom().item(expectedResult));
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("generatedByProsumer", Collections.emptyList());
+        body.put("consumedByProsumer", Collections.emptyList());
+        body.put("dischargedByZone", Collections.emptyList());
+        body.put("averageSoC", createAverageSoCMap(80.0, 5));
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(body)
+            .when()
+            .post("/EnergyAnalytics/emit")
+            .then()
+            .statusCode(200)
+            .body("status", is("SUCCESS"))
+            .body("recordsProcessed", is(4));
     }
 
     private void stubQuery(String sql, RowSet<Row> rowSet) {
@@ -338,12 +374,27 @@ class EnergyAnalyticsResourceIT {
         return map;
     }
 
-    private Map<String, Object> createAssetLinkMap(Long assetId, Long prosumerId, String gridCellId) {
+    private Map<String, Object> createAssetMap(Long assetId, Long prosumerId) {
         Map<String, Object> map = new HashMap<>();
         map.put("assetId", assetId);
         map.put("prosumerId", prosumerId);
+        return map;
+    }
+
+    private Map<String, Object> createZoneMap(String gridCellId) {
+        Map<String, Object> map = new HashMap<>();
         map.put("gridCellId", gridCellId);
-        map.put("status", "ACTIVE");
+        map.put("utilityOperatorId", 1);
+        map.put("maxCapacity", 50.0);
+        map.put("geographicBoundaries", "Test Area");
+        return map;
+    }
+
+    private Map<String, Object> createAverageSoCMap(Double avgSoC, Integer batteryCount) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("averageSocPercent", avgSoC);
+        map.put("batteryCount", batteryCount);
+        map.put("aggregationPeriod", "LAST_30_MIN");
         return map;
     }
 

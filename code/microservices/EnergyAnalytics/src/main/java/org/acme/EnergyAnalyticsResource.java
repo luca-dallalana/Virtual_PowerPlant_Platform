@@ -9,16 +9,13 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.acme.dto.AnalyticsResult;
-import org.acme.dto.AssetDTO;
-import org.acme.dto.ZoneDTO;
+import org.acme.dto.*;
 import org.acme.entities.AverageSoC;
 import org.acme.entities.ConsumedEnergyByProsumer;
 import org.acme.entities.EnergyDischargedByZone;
 import org.acme.entities.GeneratedEnergyByProsumer;
 import org.acme.services.AnalyticsCalculationService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.acme.dto.AnalyticsRequest;
 
 @Path("/EnergyAnalytics")
 @Produces(MediaType.APPLICATION_JSON)
@@ -83,12 +80,37 @@ public class EnergyAnalyticsResource {
     }
 
     @POST
-    @Path("/evaluate")
-    public Uni<Response> evaluate(AnalyticsRequest request) {
-        return analyticsService.calculateMetricsFromEvents(
-            request.telemetryData,
-            request.assets,
-            request.zones
+    @Path("/compute/generated-by-prosumer")
+    public Response computeGeneratedByProsumer(ComputeGeneratedRequest request) {
+        return Response.ok(analyticsService.computeGeneratedByProsumer(request.assets, request.telemetry)).build();
+    }
+
+    @POST
+    @Path("/compute/consumed-by-prosumer")
+    public Response computeConsumedByProsumer(ComputeConsumedRequest request) {
+        return Response.ok(analyticsService.computeConsumedByProsumer(request.assets, request.telemetry)).build();
+    }
+
+    @POST
+    @Path("/compute/discharged-by-zone")
+    public Response computeDischargedByZone(ComputeDischargedRequest request) {
+        return Response.ok(analyticsService.computeDischargedByZone(request.zones, request.telemetry)).build();
+    }
+
+    @POST
+    @Path("/compute/average-soc")
+    public Response computeAverageSoC(ComputeAverageSoCRequest request) {
+        return Response.ok(analyticsService.computeAverageSoC(request.telemetry)).build();
+    }
+
+    @POST
+    @Path("/emit")
+    public Uni<Response> emit(EmitAnalyticsRequest request) {
+        return analyticsService.emitAnalytics(
+            request.generatedByProsumer,
+            request.consumedByProsumer,
+            request.dischargedByZone,
+            request.averageSoC
         ).onItem().transform(result -> Response.ok(result).build());
     }
 
