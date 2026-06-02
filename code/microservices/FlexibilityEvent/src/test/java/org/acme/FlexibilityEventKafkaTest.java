@@ -15,7 +15,11 @@ import io.vertx.mutiny.sqlclient.Tuple;
 import jakarta.enterprise.inject.Any;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
+import org.acme.dto.BatchEvaluateRequest;
+import org.acme.dto.BatchEvaluateResponse;
+import org.acme.dto.BatteryAssetDTO;
 import org.acme.dto.TelemetryDTO;
+import java.util.List;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -53,18 +57,20 @@ class FlexibilityEventKafkaTest {
     }
 
     @Test
-    void evaluateTelemetry_doesNotPublishToKafka() {
-        TelemetryDTO telemetry = telemetry(1L, 95.0f, "GRID_A");
+    void evaluateBatch_doesNotPublishToKafka() {
+        BatchEvaluateRequest request = new BatchEvaluateRequest();
+        request.batteryAssets = List.of(new BatteryAssetDTO(732L, 1L));
+        request.telemetryList = List.of(telemetry(1L, 95.0f, "GRID_A"));
         InMemorySink<String> sink = connector.sink("flexibility-offers");
         int before = sink.received().size();
 
-        Response response = resource.evaluateTelemetry(telemetry, 732L).await().indefinitely();
+        Response response = resource.evaluateBatch(request);
         Assertions.assertEquals(200, response.getStatus());
         Assertions.assertEquals(before, sink.received().size(), "flexibility-offers should not receive a message on evaluate");
     }
 
     @Test
-    void emitFlexibilityOffer_publishesKafkaMessage() {
+    void emitFlexibilityOffers_publishesKafkaMessage() {
         FlexibilityEvent event = new FlexibilityEvent();
         event.assetId = 1L;
         event.prosumerId = 732L;
@@ -76,7 +82,7 @@ class FlexibilityEventKafkaTest {
         InMemorySink<String> sink = connector.sink("flexibility-offers");
         int before = sink.received().size();
 
-        Response response = resource.emitFlexibilityOffer(event).await().indefinitely();
+        Response response = resource.emitFlexibilityOffers(new BatchEvaluateResponse(List.of(event))).await().indefinitely();
         Assertions.assertEquals(200, response.getStatus());
         Assertions.assertEquals(before + 1, sink.received().size(), "flexibility-offers should receive one new message");
 

@@ -15,10 +15,6 @@ import org.acme.dto.BatteryAssetDTO;
 import org.acme.dto.TelemetryDTO;
 import org.acme.dto.BatchEvaluateRequest;
 import org.acme.dto.BatchEvaluateResponse;
-import org.acme.dto.ForecastResultRequest;
-import org.acme.dto.ForecastResultResponse;
-import org.acme.dto.OllamaPromptDTO;
-import org.acme.entities.FlexibilityForecastResult;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,16 +47,7 @@ public class FlexibilityEventResource {
     }
 
     private void initdb() {
-        client.query("DROP TABLE IF EXISTS FlexibilityForecastResult").execute()
-        .flatMap(r -> client.query("DROP TABLE IF EXISTS FlexibilityEvent").execute())
-        .flatMap(r -> client.query("CREATE TABLE FlexibilityForecastResult (" +
-                "id SERIAL PRIMARY KEY, " +
-                "windowStart VARCHAR(50) NOT NULL, " +
-                "windowEnd VARCHAR(50) NOT NULL, " +
-                "flexibilityEventsCount INT NOT NULL, " +
-                "gridBalancingCount INT NOT NULL, " +
-                "forecastResult TEXT NOT NULL, " +
-                "createdAt DATETIME NOT NULL)").execute())
+        client.query("DROP TABLE IF EXISTS FlexibilityEvent").execute()
         .flatMap(r -> client.query("CREATE TABLE FlexibilityEvent (" +
                 "id SERIAL PRIMARY KEY, " +
                 "assetId BIGINT UNSIGNED NOT NULL, " +
@@ -154,39 +141,6 @@ public class FlexibilityEventResource {
         LocalDateTime toTime = (to != null) ? LocalDateTime.parse(to) : LocalDateTime.now();
         LocalDateTime fromTime = (from != null) ? LocalDateTime.parse(from) : toTime.minusMinutes(20);
         return FlexibilityEvent.findByTimeWindow(client, fromTime, toTime);
-    }
-
-    @GET
-    @Path("prompt")
-    public Uni<OllamaPromptDTO> getPrompt() {
-        return FlexibilityEvent.findAll(client)
-            .collect().asList()
-            .onItem().transform(events -> {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Analyze the following past VPPaaS flexibility events and determine: ");
-                sb.append("1) the overall sentiment (Positive, Negative, or Neutral), ");
-                sb.append("2) the success rate of DISCHARGE commands (i.e., how often they resulted in a stable grid state). ");
-                sb.append("Events:\n");
-                for (FlexibilityEvent e : events) {
-                    sb.append(String.format("- [%s] Asset %d: %s -> %s (SoC: %.1f%%)\n",
-                        e.timestamp, e.assetId, e.eventType, e.recommendedAction, e.soc_percent));
-                }
-                return new OllamaPromptDTO(sb.toString());
-            });
-    }
-
-    @POST
-    @Path("forecast")
-    public Uni<Response> persistForecast(ForecastResultRequest request) {
-        FlexibilityForecastResult result = new FlexibilityForecastResult();
-        result.windowStart = request.windowStart;
-        result.windowEnd = request.windowEnd;
-        result.flexibilityEventsCount = request.flexibilityEventsCount;
-        result.gridBalancingCount = request.gridBalancingCount;
-        result.forecastResult = request.forecastResult;
-        result.createdAt = LocalDateTime.now();
-        return result.save(client)
-            .onItem().transform(id -> Response.ok(new ForecastResultResponse(id)).build());
     }
 
     @POST

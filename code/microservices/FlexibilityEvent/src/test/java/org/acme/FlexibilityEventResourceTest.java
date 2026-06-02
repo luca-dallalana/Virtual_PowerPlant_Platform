@@ -12,9 +12,6 @@ import jakarta.ws.rs.core.Response;
 import org.acme.dto.BatchEvaluateRequest;
 import org.acme.dto.TelemetryDTO;
 import org.acme.dto.BatchEvaluateResponse;
-import org.acme.dto.ForecastResultRequest;
-import org.acme.dto.ForecastResultResponse;
-import org.acme.dto.OllamaPromptDTO;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.BeforeEach;
@@ -131,13 +128,16 @@ class FlexibilityEventResourceTest {
     }
 
     @Test
-    void evaluateTelemetry_highSoC_returnsArbitrageSellEvent() {
-        TelemetryDTO telemetry = createTelemetryDTO(1L, 95.0f, "GRID_A");
+    void evaluateBatch_highSoC_returnsArbitrageSellEvent() {
+        BatchEvaluateRequest request = new BatchEvaluateRequest();
+        request.batteryAssets = List.of(new BatteryAssetDTO(1L, 1L));
+        request.telemetryList = List.of(createTelemetryDTO(1L, 95.0f, "GRID_A"));
 
-        Response response = resource.evaluateTelemetry(telemetry, 1L).await().indefinitely();
+        Response response = resource.evaluateBatch(request);
         MatcherAssert.assertThat(response.getStatus(), is(200));
-        FlexibilityEvent event = (FlexibilityEvent) response.getEntity();
-        MatcherAssert.assertThat(event, notNullValue());
+        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
+        MatcherAssert.assertThat(body.eventCreated, hasSize(1));
+        FlexibilityEvent event = body.eventCreated.get(0);
         MatcherAssert.assertThat(event.id, is((Long) null));
         MatcherAssert.assertThat(event.eventType, is("ARBITRAGE_SELL"));
         MatcherAssert.assertThat(event.recommendedAction, is("DISCHARGE"));
@@ -148,13 +148,16 @@ class FlexibilityEventResourceTest {
     }
 
     @Test
-    void evaluateTelemetry_lowSoC_returnsBalancingUnavailableEvent() {
-        TelemetryDTO telemetry = createTelemetryDTO(1L, 15.0f, "GRID_A");
+    void evaluateBatch_lowSoC_returnsBalancingUnavailableEvent() {
+        BatchEvaluateRequest request = new BatchEvaluateRequest();
+        request.batteryAssets = List.of(new BatteryAssetDTO(1L, 1L));
+        request.telemetryList = List.of(createTelemetryDTO(1L, 15.0f, "GRID_A"));
 
-        Response response = resource.evaluateTelemetry(telemetry, 1L).await().indefinitely();
+        Response response = resource.evaluateBatch(request);
         MatcherAssert.assertThat(response.getStatus(), is(200));
-        FlexibilityEvent event = (FlexibilityEvent) response.getEntity();
-        MatcherAssert.assertThat(event, notNullValue());
+        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
+        MatcherAssert.assertThat(body.eventCreated, hasSize(1));
+        FlexibilityEvent event = body.eventCreated.get(0);
         MatcherAssert.assertThat(event.id, is((Long) null));
         MatcherAssert.assertThat(event.eventType, is("BALANCING_UNAVAILABLE"));
         MatcherAssert.assertThat(event.recommendedAction, is("UNAVAILABLE"));
@@ -165,30 +168,40 @@ class FlexibilityEventResourceTest {
     }
 
     @Test
-    void evaluateTelemetry_normalSoC_returnsNoContent() {
-        TelemetryDTO telemetry = createTelemetryDTO(1L, 50.0f, "GRID_A");
+    void evaluateBatch_normalSoC_returnsEmptyList() {
+        BatchEvaluateRequest request = new BatchEvaluateRequest();
+        request.batteryAssets = List.of(new BatteryAssetDTO(1L, 1L));
+        request.telemetryList = List.of(createTelemetryDTO(1L, 50.0f, "GRID_A"));
 
-        Response response = resource.evaluateTelemetry(telemetry, 1L).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(204));
-
-        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
-    }
-
-    @Test
-    void evaluateTelemetry_nullSoC_returnsNoContent() {
-        TelemetryDTO telemetry = createTelemetryDTO(1L, null, "GRID_A");
-
-        Response response = resource.evaluateTelemetry(telemetry, 1L).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(204));
+        Response response = resource.evaluateBatch(request);
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
+        MatcherAssert.assertThat(body.eventCreated, hasSize(0));
 
         Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
     }
 
     @Test
-    void evaluateTelemetry_doesNotSaveOrPublishToKafka() {
-        TelemetryDTO telemetry = createTelemetryDTO(1L, 95.0f, "GRID_A");
+    void evaluateBatch_nullSoC_returnsEmptyList() {
+        BatchEvaluateRequest request = new BatchEvaluateRequest();
+        request.batteryAssets = List.of(new BatteryAssetDTO(1L, 1L));
+        request.telemetryList = List.of(createTelemetryDTO(1L, null, "GRID_A"));
 
-        resource.evaluateTelemetry(telemetry, 1L).await().indefinitely();
+        Response response = resource.evaluateBatch(request);
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
+        MatcherAssert.assertThat(body.eventCreated, hasSize(0));
+
+        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
+    }
+
+    @Test
+    void evaluateBatch_doesNotSaveOrPublishToKafka() {
+        BatchEvaluateRequest request = new BatchEvaluateRequest();
+        request.batteryAssets = List.of(new BatteryAssetDTO(1L, 1L));
+        request.telemetryList = List.of(createTelemetryDTO(1L, 95.0f, "GRID_A"));
+
+        resource.evaluateBatch(request);
 
         Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
     }
@@ -342,47 +355,6 @@ class FlexibilityEventResourceTest {
 
         List<FlexibilityEvent> result = resource.getLogs(from.toString(), to.toString()).collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(0));
-    }
-
-    @Test
-    void getPrompt_withEvents_returnsPromptString() {
-        LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-        Row row = flexibilityEventRow(1L, 1L, 1L, "ARBITRAGE_SELL", 95.0f, "DISCHARGE", 150.0f, 10.0f, "GRID_A", timestamp);
-        stubQuery("SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp FROM FlexibilityEvent ORDER BY timestamp DESC", rowSetWithRows(row));
-
-        OllamaPromptDTO result = resource.getPrompt().await().indefinitely();
-        MatcherAssert.assertThat(result, notNullValue());
-        MatcherAssert.assertThat(result.prompt, notNullValue());
-        MatcherAssert.assertThat(result.prompt.contains("ARBITRAGE_SELL"), is(true));
-        MatcherAssert.assertThat(result.prompt.contains("DISCHARGE"), is(true));
-    }
-
-    @Test
-    void getPrompt_withNoEvents_returnsEmptyPrompt() {
-        stubQuery("SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp FROM FlexibilityEvent ORDER BY timestamp DESC", rowSetWithRows());
-
-        OllamaPromptDTO result = resource.getPrompt().await().indefinitely();
-        MatcherAssert.assertThat(result, notNullValue());
-        MatcherAssert.assertThat(result.prompt.contains("Events:"), is(true));
-    }
-
-    @Test
-    void persistForecast_returnsForecastId() {
-        ForecastResultRequest request = new ForecastResultRequest();
-        request.windowStart = "2024-01-01T00:00:00";
-        request.windowEnd = "2024-01-31T23:59:59";
-        request.flexibilityEventsCount = 10;
-        request.gridBalancingCount = 3;
-        request.forecastResult = "Positive sentiment, 80% DISCHARGE success rate";
-
-        RowSet<Row> insertResult = rowSetWithRowCount(1);
-        Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(7L);
-        stubPreparedQuery("INSERT INTO FlexibilityForecastResult(windowStart, windowEnd, flexibilityEventsCount, gridBalancingCount, forecastResult, createdAt) VALUES (?,?,?,?,?,?)", insertResult);
-
-        Response response = resource.persistForecast(request).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        ForecastResultResponse body = (ForecastResultResponse) response.getEntity();
-        MatcherAssert.assertThat(body.forecastId, is(7L));
     }
 
     private void injectClient(FlexibilityEventResource target, MySQLPool pool) {
