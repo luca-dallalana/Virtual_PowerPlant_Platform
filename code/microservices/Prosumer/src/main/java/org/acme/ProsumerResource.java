@@ -46,6 +46,8 @@ public class ProsumerResource {
         .await().indefinitely();
     }
     
+    // Prosumer-related endpoints
+
     @GET
     public Multi<Prosumer> get() {
         return Prosumer.findAll(client);
@@ -81,6 +83,8 @@ public class ProsumerResource {
                 .onItem().transform(updated -> updated ? Response.Status.NO_CONTENT : Response.Status.NOT_FOUND)
                 .onItem().transform(status -> Response.status(status).build());
     }
+
+    // Asset-related endpoints
 
     @GET
     @Path("{prosumerId}/assets")
@@ -120,20 +124,14 @@ public class ProsumerResource {
 
     @GET
     @Path("assets/active")
-    public Multi<ActiveAssetDTO> getAllActiveAssets() {
+    public Multi<AssetDTO> getAllActiveAssets() {
         return Asset.findAllActive(client);
     }
 
     @GET
-    @Path("assets/batteries/active")
-    public Multi<BatteryAssetDTO> getActiveBatteries() {
-        return Asset.findActiveBatteries(client);
-    }
-
-    @GET
-    @Path("assets/solar/active")
-    public Multi<Asset> getActiveSolarAssets() {
-        return Asset.findActiveSolar(client);
+    @Path("assets/active/{assetType}")
+    public Multi<AssetDTO> getActiveAssetsByType(@PathParam("assetType") String assetType) {
+        return Asset.findActiveByType(client, assetType);
     }
 
     @POST

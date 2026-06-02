@@ -72,25 +72,18 @@ public class Asset {
 				.onItem().transform(pgRowSet -> pgRowSet.rowCount() == 1);
 	}
 
-	public static Multi<BatteryAssetDTO> findActiveBatteries(MySQLPool client) {
-		return client.preparedQuery("SELECT assetId, prosumerId FROM Asset WHERE assetType = ? AND status = ?")
-				.execute(Tuple.of("BATTERY", "ACTIVE"))
-				.onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
-				.onItem().transform(row -> new BatteryAssetDTO(row.getLong("prosumerId"), row.getLong("assetId")));
-	}
-
-	public static Multi<Asset> findActiveSolar(MySQLPool client) {
-		return client.preparedQuery("SELECT assetId, prosumerId, assetType, model, status FROM Asset WHERE assetType = ? AND status = ?")
-				.execute(Tuple.of("SOLAR", "ACTIVE"))
-				.onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
-				.onItem().transform(Asset::from);
-	}
-
-	public static Multi<ActiveAssetDTO> findAllActive(MySQLPool client) {
+	public static Multi<AssetDTO> findAllActive(MySQLPool client) {
 		return client.preparedQuery("SELECT assetId, prosumerId, assetType FROM Asset WHERE status = ?")
 				.execute(Tuple.of("ACTIVE"))
 				.onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
-				.onItem().transform(row -> new ActiveAssetDTO(row.getLong("assetId"), row.getLong("prosumerId"), row.getString("assetType")));
+				.onItem().transform(row -> new AssetDTO(row.getLong("assetId"), row.getLong("prosumerId"), row.getString("assetType")));
+	}
+
+	public static Multi<AssetDTO> findActiveByType(MySQLPool client, String assetType) {
+		return client.preparedQuery("SELECT assetId, prosumerId, assetType FROM Asset WHERE assetType = ? AND status = ?")
+				.execute(Tuple.of(assetType, "ACTIVE"))
+				.onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
+				.onItem().transform(row -> new AssetDTO(row.getLong("assetId"), row.getLong("prosumerId"), row.getString("assetType")));
 	}
 
 	public static Multi<Long> findActiveAssetIdsByProsumerIds(MySQLPool client, List<Long> prosumerIds) {

@@ -10,7 +10,7 @@ import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
 import jakarta.ws.rs.core.Response;
 import org.acme.Asset;
-import org.acme.BatteryAssetDTO;
+import org.acme.AssetDTO;
 import org.acme.Prosumer;
 import org.acme.ProsumerResource;
 import org.hamcrest.MatcherAssert;
@@ -212,26 +212,28 @@ class ProsumerResourceUnitTest {
     }
 
     @Test
-    void getActiveBatteries_returnsList() {
-        Row row1 = batteryAssetRow(1001L, 1L);
-        Row row2 = batteryAssetRow(1004L, 3L);
-        stubPreparedQuery("SELECT assetId, prosumerId FROM Asset WHERE assetType = ? AND status = ?", rowSetWithRows(row1, row2));
+    void getActiveAssetsByType_returnsList() {
+        Row row1 = activeAssetRow(1001L, 1L, "BATTERY");
+        Row row2 = activeAssetRow(1004L, 3L, "BATTERY");
+        stubPreparedQuery("SELECT assetId, prosumerId, assetType FROM Asset WHERE assetType = ? AND status = ?", rowSetWithRows(row1, row2));
 
-        List<BatteryAssetDTO> result = resource.getActiveBatteries().collect().asList().await().indefinitely();
+        List<AssetDTO> result = resource.getActiveAssetsByType("BATTERY").collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(2));
         MatcherAssert.assertThat(result.get(0).assetId, is(1001L));
         MatcherAssert.assertThat(result.get(0).prosumerId, is(1L));
+        MatcherAssert.assertThat(result.get(0).assetType, is("BATTERY"));
         MatcherAssert.assertThat(result.get(1).assetId, is(1004L));
         MatcherAssert.assertThat(result.get(1).prosumerId, is(3L));
     }
 
     @Test
-    void getActiveBatteries_returnsEmptyList() {
-        stubPreparedQuery("SELECT assetId, prosumerId FROM Asset WHERE assetType = ? AND status = ?", rowSetWithRows());
+    void getActiveAssetsByType_returnsEmptyList() {
+        stubPreparedQuery("SELECT assetId, prosumerId, assetType FROM Asset WHERE assetType = ? AND status = ?", rowSetWithRows());
 
-        List<BatteryAssetDTO> result = resource.getActiveBatteries().collect().asList().await().indefinitely();
+        List<AssetDTO> result = resource.getActiveAssetsByType("SOLAR").collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(0));
     }
+
 
     private void injectClient(ProsumerResource target, MySQLPool pool) {
         try {
@@ -291,10 +293,11 @@ class ProsumerResourceUnitTest {
         return row;
     }
 
-    private Row batteryAssetRow(Long assetId, Long prosumerId) {
+    private Row activeAssetRow(Long assetId, Long prosumerId, String assetType) {
         Row row = Mockito.mock(Row.class);
         Mockito.when(row.getLong("assetId")).thenReturn(assetId);
         Mockito.when(row.getLong("prosumerId")).thenReturn(prosumerId);
+        Mockito.when(row.getString("assetType")).thenReturn(assetType);
         return row;
     }
 
