@@ -21,7 +21,7 @@ resource "aws_instance" "exampleDeployQuarkus" {
   vpc_security_group_ids  = [aws_security_group.instance.id]
   key_name                = "vockey"
 
-  user_data = "${file("quarkus-ollama.sh")}"
+  user_data = "${file("quarkus.sh")}"
 
   user_data_replace_on_change = true
 
