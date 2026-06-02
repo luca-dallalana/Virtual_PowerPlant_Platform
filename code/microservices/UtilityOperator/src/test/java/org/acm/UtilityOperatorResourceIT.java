@@ -129,7 +129,7 @@ class UtilityOperatorResourceIT {
 
         given()
             .when()
-            .get("/UtilityOperator/gridcell")
+            .get("/UtilityOperator/gridcells")
             .then()
             .statusCode(200)
             .body("", hasSize(2))
@@ -144,7 +144,7 @@ class UtilityOperatorResourceIT {
 
         given()
             .when()
-            .get("/UtilityOperator/gridcell/LISBON-DT")
+            .get("/UtilityOperator/gridcells/LISBON-DT")
             .then()
             .statusCode(200)
             .body("gridCellId", is("LISBON-DT"))
@@ -192,10 +192,10 @@ class UtilityOperatorResourceIT {
             .contentType(ContentType.JSON)
             .body(body)
             .when()
-            .post("/UtilityOperator/gridcell")
+            .post("/UtilityOperator/gridcells")
             .then()
             .statusCode(201)
-            .header("Location", endsWith("/UtilityOperator/gridcell/LISBON-DT"));
+            .header("Location", endsWith("/UtilityOperator/gridcells/LISBON-DT"));
     }
 
     @Test
@@ -206,7 +206,7 @@ class UtilityOperatorResourceIT {
 
         given()
             .when()
-            .delete("/UtilityOperator/gridcell/LISBON-DT")
+            .delete("/UtilityOperator/gridcells/LISBON-DT")
             .then()
             .statusCode(204);
     }
@@ -218,7 +218,7 @@ class UtilityOperatorResourceIT {
 
         given()
             .when()
-            .delete("/UtilityOperator/gridcell/UNKNOWN")
+            .delete("/UtilityOperator/gridcells/UNKNOWN")
             .then()
             .statusCode(404);
     }
@@ -237,7 +237,7 @@ class UtilityOperatorResourceIT {
             .contentType(ContentType.JSON)
             .body(body)
             .when()
-            .put("/UtilityOperator/gridcell/LISBON-DT")
+            .put("/UtilityOperator/gridcells/LISBON-DT")
             .then()
             .statusCode(204);
     }
@@ -250,7 +250,7 @@ class UtilityOperatorResourceIT {
 
         given()
             .when()
-            .put("/UtilityOperator/gridcell/LISBON-DT/capacity/55.0")
+            .put("/UtilityOperator/gridcells/LISBON-DT/capacity/55.0")
             .then()
             .statusCode(204);
     }

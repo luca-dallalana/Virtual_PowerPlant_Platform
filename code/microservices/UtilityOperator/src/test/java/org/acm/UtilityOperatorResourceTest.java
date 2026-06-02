@@ -12,7 +12,6 @@ import jakarta.ws.rs.core.Response;
 import org.acme.GridCell;
 import org.acme.UtilityOperator;
 import org.acme.UtilityOperatorResource;
-import org.acme.ZoneInfo;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -122,38 +121,6 @@ class UtilityOperatorResourceUnitTest {
     }
 
     @Test
-    void getZones_returnsList() {
-        Row row1 = zoneInfoRow("FARO-RS", "PracaDomFranciscoGomes", "Faro");
-        Row row2 = zoneInfoRow("LISBON-DT", "ArcoCegoLisbon", "Lisboa");
-        stubQuery(
-            "SELECT gc.gridCellId, uo.name AS operatorName, uo.location AS operatorLocation " +
-            "FROM GridCell gc " +
-            "JOIN UtilityOperator uo ON gc.utilityOperatorId = uo.id " +
-            "ORDER BY gc.gridCellId ASC",
-            rowSetWithRows(row1, row2));
-
-        List<ZoneInfo> result = resource.getZones().collect().asList().await().indefinitely();
-        MatcherAssert.assertThat(result, hasSize(2));
-        MatcherAssert.assertThat(result.get(0).gridCellId, is("FARO-RS"));
-        MatcherAssert.assertThat(result.get(0).operatorName, is("PracaDomFranciscoGomes"));
-        MatcherAssert.assertThat(result.get(0).operatorLocation, is("Faro"));
-        MatcherAssert.assertThat(result.get(1).gridCellId, is("LISBON-DT"));
-    }
-
-    @Test
-    void getZones_returnsEmptyList() {
-        stubQuery(
-            "SELECT gc.gridCellId, uo.name AS operatorName, uo.location AS operatorLocation " +
-            "FROM GridCell gc " +
-            "JOIN UtilityOperator uo ON gc.utilityOperatorId = uo.id " +
-            "ORDER BY gc.gridCellId ASC",
-            rowSetWithRows());
-
-        List<ZoneInfo> result = resource.getZones().collect().asList().await().indefinitely();
-        MatcherAssert.assertThat(result, hasSize(0));
-    }
-
-    @Test
     void getGridCells_returnsList() {
         Row row1 = gridCellRow("LISBON-DT", 1L, 50.0, "Lisbon Downtown Area");
         Row row2 = gridCellRow("PORTO-IN", 3L, 75.0, "Porto Industrial Zone");
@@ -211,7 +178,7 @@ class UtilityOperatorResourceUnitTest {
         Response response = resource.createGridCell(gridCell).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(201));
         MatcherAssert.assertThat(response.getLocation(), notNullValue());
-        MatcherAssert.assertThat(response.getLocation().getPath(), is("/UtilityOperator/gridcell/LISBON-DT"));
+        MatcherAssert.assertThat(response.getLocation().getPath(), is("/UtilityOperator/gridcells/LISBON-DT"));
     }
 
     @Test
@@ -321,14 +288,6 @@ class UtilityOperatorResourceUnitTest {
         Mockito.when(row.getLong("id")).thenReturn(id);
         Mockito.when(row.getString("name")).thenReturn(name);
         Mockito.when(row.getString("location")).thenReturn(location);
-        return row;
-    }
-
-    private Row zoneInfoRow(String gridCellId, String operatorName, String operatorLocation) {
-        Row row = Mockito.mock(Row.class);
-        Mockito.when(row.getString("gridCellId")).thenReturn(gridCellId);
-        Mockito.when(row.getString("operatorName")).thenReturn(operatorName);
-        Mockito.when(row.getString("operatorLocation")).thenReturn(operatorLocation);
         return row;
     }
 

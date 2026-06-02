@@ -81,19 +81,13 @@ public class UtilityOperatorResource {
     }
 
     @GET
-    @Path("zones")
-    public Multi<ZoneInfo> getZones() {
-        return ZoneInfo.findAll(client);
-    }
-
-    @GET
-    @Path("gridcell")
+    @Path("gridcells")
     public Multi<GridCell> getAllGridCells() {
         return GridCell.findAll(client);
     }
 
     @GET
-    @Path("gridcell/{gridCellId}")
+    @Path("gridcells/{gridCellId}")
     public Uni<Response> getGridCell(String gridCellId) {
         return GridCell.findByGridCellId(client, gridCellId)
                 .onItem().transform(gridCell -> gridCell != null ? Response.ok(gridCell) : Response.status(Response.Status.NOT_FOUND))
@@ -107,15 +101,15 @@ public class UtilityOperatorResource {
     }
 
     @POST
-    @Path("gridcell")
+    @Path("gridcells")
     public Uni<Response> createGridCell(GridCell gridCell) {
         return gridCell.save(client, gridCell.gridCellId, gridCell.utilityOperatorId, gridCell.maxCapacity, gridCell.geographicBoundaries)
-                .onItem().transform(saved -> URI.create("/UtilityOperator/gridcell/" + gridCell.gridCellId))
+                .onItem().transform(saved -> URI.create("/UtilityOperator/gridcells/" + gridCell.gridCellId))
                 .onItem().transform(uri -> Response.created(uri).build());
     }
 
     @DELETE
-    @Path("gridcell/{gridCellId}")
+    @Path("gridcells/{gridCellId}")
     public Uni<Response> deleteGridCell(String gridCellId) {
         return GridCell.findByGridCellId(client, gridCellId)
                 .flatMap(gridCell -> {
@@ -129,7 +123,7 @@ public class UtilityOperatorResource {
     }
 
     @PUT
-    @Path("gridcell/{gridCellId}")
+    @Path("gridcells/{gridCellId}")
     public Uni<Response> updateGridCell(String gridCellId, GridCell gridCell) {
         gridCell.gridCellId = gridCellId;
         return GridCell.update(client, gridCellId, gridCell.utilityOperatorId, gridCell.maxCapacity, gridCell.geographicBoundaries)
@@ -138,7 +132,7 @@ public class UtilityOperatorResource {
     }
 
     @PUT
-    @Path("gridcell/{gridCellId}/capacity/{maxCapacity}")
+    @Path("gridcells/{gridCellId}/capacity/{maxCapacity}")
     public Uni<Response> updateGridCellCapacity(String gridCellId, Double maxCapacity) {
         return GridCell.updateMaxCapacity(client, gridCellId, maxCapacity)
                 .onItem().transform(updated -> updated ? Response.Status.NO_CONTENT : Response.Status.NOT_FOUND)
@@ -146,7 +140,7 @@ public class UtilityOperatorResource {
     }
 
     @GET
-    @Path("gridcell/{gridCellId}/neighbours")
+    @Path("gridcells/{gridCellId}/neighbours")
     public Multi<GridCell> getNeighbourGridCells(String gridCellId) {
         return GridCell.findNeighbours(client, gridCellId);
     }
