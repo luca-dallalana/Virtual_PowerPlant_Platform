@@ -11,6 +11,7 @@ import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
 import jakarta.ws.rs.core.Response;
 import org.acme.dto.GridBalancingEvaluateRequest;
+import org.acme.dto.GridBalancingEvaluateResponse;
 import org.acme.dto.GridCellDTO;
 import org.acme.dto.TelemetryDTO;
 import org.acme.entities.BalancingRecommendation;
@@ -138,10 +139,11 @@ class GridBalancingRecommendationResourceTest {
 
         Response response = resource.evaluate(request);
         MatcherAssert.assertThat(response.getStatus(), is(200));
-        List<BalancingRecommendation> result = (List<BalancingRecommendation>) response.getEntity();
-        MatcherAssert.assertThat(result, hasSize(1));
-        MatcherAssert.assertThat(result.get(0).status, is("RECOMMENDED"));
-        MatcherAssert.assertThat(result.get(0).targetGridCellId, is("GRID_B"));
+        GridBalancingEvaluateResponse result = (GridBalancingEvaluateResponse) response.getEntity();
+        MatcherAssert.assertThat(result.eventCreated, hasSize(1));
+        MatcherAssert.assertThat(result.hasGridBalancing, is(true));
+        MatcherAssert.assertThat(result.eventCreated.get(0).status, is("RECOMMENDED"));
+        MatcherAssert.assertThat(result.eventCreated.get(0).targetGridCellId, is("GRID_B"));
     }
 
     @Test
@@ -175,10 +177,11 @@ class GridBalancingRecommendationResourceTest {
 
         Response response = resource.evaluate(request);
         MatcherAssert.assertThat(response.getStatus(), is(200));
-        List<BalancingRecommendation> result = (List<BalancingRecommendation>) response.getEntity();
-        MatcherAssert.assertThat(result, hasSize(1));
-        MatcherAssert.assertThat(result.get(0).status, is("NO_TARGET"));
-        MatcherAssert.assertThat(result.get(0).targetGridCellId, is((String) null));
+        GridBalancingEvaluateResponse result = (GridBalancingEvaluateResponse) response.getEntity();
+        MatcherAssert.assertThat(result.eventCreated, hasSize(1));
+        MatcherAssert.assertThat(result.hasGridBalancing, is(true));
+        MatcherAssert.assertThat(result.eventCreated.get(0).status, is("NO_TARGET"));
+        MatcherAssert.assertThat(result.eventCreated.get(0).targetGridCellId, is((String) null));
     }
 
     @Test
@@ -200,8 +203,9 @@ class GridBalancingRecommendationResourceTest {
 
         Response response = resource.evaluate(request);
         MatcherAssert.assertThat(response.getStatus(), is(200));
-        List<BalancingRecommendation> result = (List<BalancingRecommendation>) response.getEntity();
-        MatcherAssert.assertThat(result, hasSize(0));
+        GridBalancingEvaluateResponse result = (GridBalancingEvaluateResponse) response.getEntity();
+        MatcherAssert.assertThat(result.eventCreated, hasSize(0));
+        MatcherAssert.assertThat(result.hasGridBalancing, is(false));
     }
 
     @Test
@@ -233,9 +237,10 @@ class GridBalancingRecommendationResourceTest {
 
         Response response = resource.evaluate(request);
         MatcherAssert.assertThat(response.getStatus(), is(200));
-        List<BalancingRecommendation> result = (List<BalancingRecommendation>) response.getEntity();
-        MatcherAssert.assertThat(result, hasSize(1));
-        MatcherAssert.assertThat(result.get(0).targetGridCellId, is("GRID_C"));
+        GridBalancingEvaluateResponse result = (GridBalancingEvaluateResponse) response.getEntity();
+        MatcherAssert.assertThat(result.eventCreated, hasSize(1));
+        MatcherAssert.assertThat(result.hasGridBalancing, is(true));
+        MatcherAssert.assertThat(result.eventCreated.get(0).targetGridCellId, is("GRID_C"));
     }
 
     @Test
@@ -250,8 +255,9 @@ class GridBalancingRecommendationResourceTest {
 
         Response response = resource.evaluate(request);
         MatcherAssert.assertThat(response.getStatus(), is(200));
-        List<BalancingRecommendation> result = (List<BalancingRecommendation>) response.getEntity();
-        MatcherAssert.assertThat(result, hasSize(0));
+        GridBalancingEvaluateResponse result = (GridBalancingEvaluateResponse) response.getEntity();
+        MatcherAssert.assertThat(result.eventCreated, hasSize(0));
+        MatcherAssert.assertThat(result.hasGridBalancing, is(false));
     }
 
     @Test

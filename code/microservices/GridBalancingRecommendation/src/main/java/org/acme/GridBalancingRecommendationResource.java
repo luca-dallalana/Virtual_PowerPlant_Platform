@@ -10,6 +10,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
+import org.acme.dto.GridBalancingEvaluateResponse;
 import org.acme.dto.GridCellEvaluationResult;
 import org.acme.dto.SingleCellEvaluationRequest;
 import org.acme.entities.BalancingRecommendation;
@@ -69,7 +70,7 @@ public class GridBalancingRecommendationResource {
     @Path("/evaluate")
     public Response evaluate(GridBalancingEvaluateRequest request) {
         List<BalancingRecommendation> recommendations = recommendationService.evaluateRecommendations(request);
-        return Response.ok(recommendations).build();
+        return Response.ok(new GridBalancingEvaluateResponse(recommendations)).build();
     }
 
     @POST

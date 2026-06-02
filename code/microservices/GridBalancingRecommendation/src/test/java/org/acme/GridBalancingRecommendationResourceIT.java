@@ -11,6 +11,7 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
+import org.acme.dto.GridBalancingEvaluateRequest;
 import org.acme.entities.BalancingRecommendation;
 import org.acme.services.GridBalancingRecommendationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -130,17 +131,15 @@ class GridBalancingRecommendationResourceIT {
         expectedRec.rationale = "Transfer 5kW to GRID_B";
         expectedRec.createdAt = LocalDateTime.now();
 
-        Mockito.when(recommendationService.calculateRecommendationsFromEvents(Mockito.anyList(), Mockito.anyList()))
-               .thenReturn(Uni.createFrom().item(Arrays.asList(expectedRec)));
+        Mockito.when(recommendationService.evaluateRecommendations(Mockito.any(GridBalancingEvaluateRequest.class)))
+               .thenReturn(Arrays.asList(expectedRec));
 
         Map<String, Object> body = new HashMap<>();
-        body.put("telemetryData", Arrays.asList(
+        body.put("sourceCell", createGridCellMap("GRID_A", 100.0));
+        body.put("neighbourCells", Arrays.asList(createGridCellMap("GRID_B", 100.0)));
+        body.put("allTelemetry", Arrays.asList(
             createTelemetryMap(1L, "EV_CHARGER", "GRID_A", 95.0f),
             createTelemetryMap(2L, "EV_CHARGER", "GRID_B", 50.0f)
-        ));
-        body.put("gridCells", Arrays.asList(
-            createGridCellMap("GRID_A", 100.0),
-            createGridCellMap("GRID_B", 100.0)
         ));
 
         given()
@@ -150,9 +149,10 @@ class GridBalancingRecommendationResourceIT {
             .post("/GridBalancingRecommendation/evaluate")
             .then()
             .statusCode(200)
-            .body("", hasSize(1))
-            .body("[0].status", is("RECOMMENDED"))
-            .body("[0].targetGridCellId", is("GRID_B"));
+            .body("eventCreated", hasSize(1))
+            .body("hasGridBalancing", is(true))
+            .body("eventCreated[0].status", is("RECOMMENDED"))
+            .body("eventCreated[0].targetGridCellId", is("GRID_B"));
     }
 
     @Test
@@ -169,17 +169,15 @@ class GridBalancingRecommendationResourceIT {
         expectedRec.rationale = "No available target grid cell";
         expectedRec.createdAt = LocalDateTime.now();
 
-        Mockito.when(recommendationService.calculateRecommendationsFromEvents(Mockito.anyList(), Mockito.anyList()))
-               .thenReturn(Uni.createFrom().item(Arrays.asList(expectedRec)));
+        Mockito.when(recommendationService.evaluateRecommendations(Mockito.any(GridBalancingEvaluateRequest.class)))
+               .thenReturn(Arrays.asList(expectedRec));
 
         Map<String, Object> body = new HashMap<>();
-        body.put("telemetryData", Arrays.asList(
+        body.put("sourceCell", createGridCellMap("GRID_A", 100.0));
+        body.put("neighbourCells", Arrays.asList(createGridCellMap("GRID_B", 100.0)));
+        body.put("allTelemetry", Arrays.asList(
             createTelemetryMap(1L, "EV_CHARGER", "GRID_A", 95.0f),
             createTelemetryMap(2L, "EV_CHARGER", "GRID_B", 95.0f)
-        ));
-        body.put("gridCells", Arrays.asList(
-            createGridCellMap("GRID_A", 100.0),
-            createGridCellMap("GRID_B", 100.0)
         ));
 
         given()
@@ -189,24 +187,23 @@ class GridBalancingRecommendationResourceIT {
             .post("/GridBalancingRecommendation/evaluate")
             .then()
             .statusCode(200)
-            .body("", hasSize(1))
-            .body("[0].status", is("NO_TARGET"))
-            .body("[0].targetGridCellId", nullValue());
+            .body("eventCreated", hasSize(1))
+            .body("hasGridBalancing", is(true))
+            .body("eventCreated[0].status", is("NO_TARGET"))
+            .body("eventCreated[0].targetGridCellId", nullValue());
     }
 
     @Test
     void evaluate_withNoOverload_returnsEmptyList() {
-        Mockito.when(recommendationService.calculateRecommendationsFromEvents(Mockito.anyList(), Mockito.anyList()))
-               .thenReturn(Uni.createFrom().item(Collections.emptyList()));
+        Mockito.when(recommendationService.evaluateRecommendations(Mockito.any(GridBalancingEvaluateRequest.class)))
+               .thenReturn(Collections.emptyList());
 
         Map<String, Object> body = new HashMap<>();
-        body.put("telemetryData", Arrays.asList(
+        body.put("sourceCell", createGridCellMap("GRID_A", 100.0));
+        body.put("neighbourCells", Arrays.asList(createGridCellMap("GRID_B", 100.0)));
+        body.put("allTelemetry", Arrays.asList(
             createTelemetryMap(1L, "EV_CHARGER", "GRID_A", 50.0f),
             createTelemetryMap(2L, "EV_CHARGER", "GRID_B", 60.0f)
-        ));
-        body.put("gridCells", Arrays.asList(
-            createGridCellMap("GRID_A", 100.0),
-            createGridCellMap("GRID_B", 100.0)
         ));
 
         given()
@@ -216,7 +213,8 @@ class GridBalancingRecommendationResourceIT {
             .post("/GridBalancingRecommendation/evaluate")
             .then()
             .statusCode(200)
-            .body("", hasSize(0));
+            .body("eventCreated", hasSize(0))
+            .body("hasGridBalancing", is(false));
     }
 
     @Test

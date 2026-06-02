@@ -278,7 +278,7 @@
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  evaluationStatus: response.status,&#10;  GridBalancingList: response.body.eventCreated,&#10;  hasGridBalancing: if (response.status = 200 and response.body != null) then true else false&#10;}" />
+          <zeebe:header key="resultExpression" value="={&#10;  evaluationStatus: response.status,&#10;  GridBalancingList: response.body.eventCreated,&#10;  hasGridBalancing: response.body.hasGridBalancing&#10;}" />
           <zeebe:header key="retryBackoff" value="PT0S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
@@ -391,7 +391,7 @@
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  gridCellEvaluationStatus: response.status,&#10;  needGridBalancing:response.body&#10;}" />
+          <zeebe:header key="resultExpression" value="={&#10;  gridCellEvaluationStatus: response.status,&#10;  needGridBalancing: response.body.needGridBalancing&#10;}" />
           <zeebe:header key="retryBackoff" value="PT0S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
