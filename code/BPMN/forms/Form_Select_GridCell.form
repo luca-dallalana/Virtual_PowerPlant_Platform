@@ -6,7 +6,7 @@
       "id": "Field_GridCellSelect",
       "key": "selectedGridCell",
       "description": "Choose a cell from the grid list",
-      "valuesExpression": "=for cell in GridCells return {\"label\": cell.name, \"value\": cell}",
+      "valuesExpression": "=for cell in GridCells return {\"label\": cell.gridCellId, \"value\": cell}",
       "layout": {
         "row": "Row_1lcp09f"
       }

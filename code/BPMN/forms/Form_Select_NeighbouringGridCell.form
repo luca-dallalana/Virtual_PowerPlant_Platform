@@ -9,7 +9,7 @@
       },
       "id": "Field_1kdfjpb",
       "key": "selectedGridCells",
-      "valuesExpression": "=for cell in  neighboursGridCells return { \"label\": cell.name, \"value\": cell }"
+      "valuesExpression": "=for cell in  neighboursGridCells return { \"label\": cell.gridCellId, \"value\": cell }"
     }
   ],
   "type": "default",

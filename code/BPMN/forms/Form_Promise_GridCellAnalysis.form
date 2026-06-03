@@ -1,14 +1,15 @@
 {
   "components": [
     {
-      "label": "=\"Is it possible to promise the GridCell \" + string(selectedGridCell) + \" Analysis?\"",
+      "label": "=\"Is it possible to promise the GridCell \" + string(selectedGridCell.gridCellId) + \" Analysis?\"",
       "type": "checkbox",
       "layout": {
         "row": "Row_19x3oy9",
         "columns": null
       },
       "id": "Field_0utg89c",
-      "key": "promise"
+      "key": "promise",
+      "defaultValue": true
     }
   ],
   "type": "default",

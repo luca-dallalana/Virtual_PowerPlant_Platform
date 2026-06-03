@@ -44,13 +44,13 @@
       <bpmn:extensionElements>
         <zeebe:userTask />
         <zeebe:assignmentDefinition assignee="demo" />
-        <zeebe:formDefinition formId="Form_Promise_FlexibilityForcasting" />
+        <zeebe:formDefinition formId="Form_Promise_FlexibilityForecasting" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1jp7h3m</bpmn:incoming>
       <bpmn:outgoing>Flow_0a9e14a</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:sequenceFlow id="Flow_0a9e14a" sourceRef="Activity_1b1jk70" targetRef="Gateway_10xhc8a" />
-    <bpmn:exclusiveGateway id="Gateway_10xhc8a" name="Is Flexibility Forecastingr possible?">
+    <bpmn:exclusiveGateway id="Gateway_10xhc8a" name="Is Flexibility Forecasting possible?">
       <bpmn:incoming>Flow_0a9e14a</bpmn:incoming>
       <bpmn:outgoing>Flow_1w00wu5</bpmn:outgoing>
       <bpmn:outgoing>Flow_07ktx5n</bpmn:outgoing>
@@ -89,7 +89,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/FlexibilityEvent/logs" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/FlexibilityEvent/logs" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -111,7 +111,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/GridBalancingRecommendation/recommendations" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/GridBalancingRecommendation/recommendations" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -133,7 +133,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/Prosumer/assets/active/SOLAR" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Prosumer/assets/active/SOLAR" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -155,7 +155,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/Telemetry/window/SOLAR/20" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Telemetry/window/SOLAR/20" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -186,7 +186,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/FlexibilityForecasting/evaluate-correlation" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/FlexibilityForecasting/evaluate-correlation" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;application/json&#34;,&#10;  &#34;accept&#34;: &#34;application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
@@ -212,7 +212,7 @@
     <bpmn:endEvent id="Event_0azjwnq" name="No Flexibility Forecasting analysis">
       <bpmn:incoming>Flow_1ebwveg</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:exclusiveGateway id="GW_HasAssets" name="Is Flexibility Forecastingto be evaluated ?">
+    <bpmn:exclusiveGateway id="GW_HasAssets" name="Is Flexibility Forecasting to be evaluated ?">
       <bpmn:incoming>Flow_16ebd6x</bpmn:incoming>
       <bpmn:outgoing>Flow_1ebwveg</bpmn:outgoing>
       <bpmn:outgoing>Flow_1jp7h3m</bpmn:outgoing>
@@ -238,7 +238,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/FlexibilityForecasting/build-prompt" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/FlexibilityForecasting/build-prompt" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;application/json&#34;,&#10;  &#34;accept&#34;: &#34;application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
@@ -263,7 +263,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/api/generate" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/api/generate" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
@@ -287,7 +287,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/FlexibilityForecasting/forecast" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/FlexibilityForecasting/forecast" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
@@ -345,7 +345,7 @@
     <bpmn:sequenceFlow id="Flow_10xzvfo" sourceRef="Activity_0k6ynkp" targetRef="Activity_1gqsmnq" />
     <bpmn:sequenceFlow id="Flow_1jcpkdo" sourceRef="Activity_1gqsmnq" targetRef="Gateway_0xdan8i" />
     <bpmn:sequenceFlow id="Flow_0k33l05" name="Yes" sourceRef="Gateway_0xdan8i" targetRef="Activity_08kjrab">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=persist = True</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=persist = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_1dpg2l4" name="No" sourceRef="Gateway_0xdan8i" targetRef="Event_1akqo88">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=persist = false</bpmn:conditionExpression>
@@ -372,7 +372,7 @@
       <bpmndi:BPMNShape id="Gateway_10xhc8a_di" bpmnElement="Gateway_10xhc8a" isMarkerVisible="true">
         <dc:Bounds x="455" y="375" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="450" y="432" width="62" height="40" />
+          <dc:Bounds x="452" y="432" width="58" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1obo2qh_di" bpmnElement="Activity_1obo2qh">
@@ -424,7 +424,7 @@
       <bpmndi:BPMNShape id="GW_HasAssets_di" bpmnElement="GW_HasAssets" isMarkerVisible="true">
         <dc:Bounds x="455" y="115" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="439" y="71" width="82" height="40" />
+          <dc:Bounds x="438" y="71" width="85" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1slvqke_di" bpmnElement="Activity_0iwtr17">

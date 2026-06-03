@@ -8,11 +8,12 @@
         "columns": null
       },
       "id": "Field_1pi6qf1",
-      "key": "promise"
+      "key": "promise",
+      "defaultValue": true
     }
   ],
   "type": "default",
-  "id": "Form_Promise_FlexibilityForcasting",
+  "id": "Form_Promise_FlexibilityForecasting",
   "executionPlatform": "Camunda Cloud",
   "executionPlatformVersion": "8.9.0",
   "exporter": {

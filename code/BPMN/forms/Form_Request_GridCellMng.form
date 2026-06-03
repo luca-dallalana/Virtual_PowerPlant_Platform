@@ -25,7 +25,7 @@
     },
     {
       "label": "Max Capacity",
-      "type": "textfield",
+      "type": "number",
       "layout": {
         "row": "Row_1ktdodz",
         "columns": null

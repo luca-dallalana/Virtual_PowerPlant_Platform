@@ -68,7 +68,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/Prosumer" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Prosumer" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
@@ -90,7 +90,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/UtilityOperator" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/UtilityOperator" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
@@ -228,7 +228,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/AssetLink" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/AssetLink" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -260,7 +260,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="=&#34;http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/AssetLink/&#34;+ prosumerID + &#34;/&#34; + UtilityOperatorID" target="url" />
+          <zeebe:input source="=&#34;http://KONG_SERVER_PLACEHOLDER:8000/AssetLink/&#34;+ prosumerID + &#34;/&#34; + UtilityOperatorID" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
@@ -282,7 +282,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="=&#34;http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/UtilityOperator/&#34; + UtilityOperatorID" target="url" />
+          <zeebe:input source="=&#34;http://KONG_SERVER_PLACEHOLDER:8000/UtilityOperator/&#34; + UtilityOperatorID" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
@@ -446,7 +446,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/Telemetry/Consume" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Telemetry/Consume" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;text/plain&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
