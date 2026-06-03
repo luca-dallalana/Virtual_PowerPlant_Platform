@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_130kq99" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.47.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
   <bpmn:collaboration id="Collaboration_1twr9we">
-    <bpmn:participant id="Participant_54ffadd1-59f2-4226-b2a8-6c9a775dc604" name="PROSUMER" processRef="ProsumerMngInitiator" />
-    <bpmn:participant id="Participant_69114438-a6e4-41ab-a99a-78848c155372" name="PROSUMER MANAGER" processRef="ProsumerMngExecutor" />
+    <bpmn:participant id="Participant_54ffadd1-59f2-4226-b2a8-6c9a775dc604" name="PROSUMER" processRef="AssetMngInitiator" />
+    <bpmn:participant id="Participant_69114438-a6e4-41ab-a99a-78848c155372" name="PROSUMER MANAGER" processRef="AssetMngExecutor" />
     <bpmn:messageFlow id="MessageFlow_533b9548-749d-44dc-9ff0-f4d8236ec74a" sourceRef="Activity_0yrey7y" targetRef="Event_442f9699-cfa2-4319-ad7a-3a2ee3dfb9da" />
     <bpmn:messageFlow id="Flow_16qrrkn" sourceRef="Activity_04wyitf" targetRef="Event_80deba5e-7f3a-4ef8-a47e-3845129fcae3" />
     <bpmn:messageFlow id="Flow_0j23k8x" sourceRef="Activity_121uouo" targetRef="Event_efc51f79-697f-45f0-9d3d-498dfa017797" />
@@ -11,7 +11,7 @@
     <bpmn:messageFlow id="Flow_10lp2yc" sourceRef="Activity_0cgm4mj" targetRef="Event_87ee8dcc-fc03-43d6-81aa-6ff29199d452" />
     <bpmn:messageFlow id="MessageFlow_481e2e6f-159d-47cb-a7fa-058d26dab14a" sourceRef="Activity_06moxmf" targetRef="Event_192495fb-19aa-4af5-b6f6-4e7c13be04b2" />
   </bpmn:collaboration>
-  <bpmn:process id="ProsumerMngInitiator" name="ProsumerMngInitiator" isExecutable="true">
+  <bpmn:process id="AssetMngInitiator" name="AssetMngInitiator" isExecutable="true">
     <bpmn:laneSet id="LaneSet_19dn2aa">
       <bpmn:lane id="Lane_c194296b-9ffd-41e8-b853-2e9413ed2741" name="Initiator TK01">
         <bpmn:flowNodeRef>Event_261ff510-8687-4be0-9a23-9d6d19eafaf3</bpmn:flowNodeRef>
@@ -48,7 +48,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Prosumer" target="url" />
+          <zeebe:input source="http://ec2-35-173-252-245.compute-1.amazonaws.com:8000/Prosumer" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
@@ -247,7 +247,7 @@
       <bpmn:outgoing>Flow_5903ee45-b2d4-482d-a42d-037a924516aa</bpmn:outgoing>
     </bpmn:userTask>
   </bpmn:process>
-  <bpmn:process id="ProsumerMngExecutor" name="ProsumerMngExecutor" isExecutable="true">
+  <bpmn:process id="AssetMngExecutor" name="AssetMngExecutor" isExecutable="true">
     <bpmn:laneSet id="LaneSet_9da11614-5e20-4700-ae07-93060636324d">
       <bpmn:lane id="Lane_85f9ec89-2e4a-4fbc-ab68-2c4f2a6dd3a7" name="Executor TK01">
         <bpmn:flowNodeRef>Gateway_f1a7058b-ae4b-432e-8241-404d36c4418a</bpmn:flowNodeRef>
@@ -322,7 +322,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="=&#34;http://KONG_SERVER_PLACEHOLDER:8000/Prosumer/&#34; + prosumer + &#34;/assets&#34;" target="url" />
+          <zeebe:input source="=&#34;http://ec2-35-173-252-245.compute-1.amazonaws.com:8000/Prosumer/&#34; + prosumer + &#34;/assets&#34;" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />

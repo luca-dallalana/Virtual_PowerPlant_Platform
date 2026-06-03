@@ -45,7 +45,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Prosumer/assets/active/BATTERY" target="url" />
+          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/Prosumer/assets/active/BATTERY" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -69,7 +69,7 @@
     <bpmn:userTask id="Task_DecideEvaluation" name="Decide if Flexibility Offers will be evaluated">
       <bpmn:extensionElements>
         <zeebe:userTask />
-        <zeebe:assignmentDefinition assignee="Demo" />
+        <zeebe:assignmentDefinition assignee="demo" />
         <zeebe:formDefinition formId="Form_Decide_FlexibilityEvaluation" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0j8mzzu</bpmn:incoming>
@@ -106,7 +106,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/FlexibilityEvent/evaluate" target="url" />
+          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/FlexibilityEvent/evaluate" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
@@ -136,7 +136,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Telemetry/latest/BATTERY/10" target="url" />
+          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/Telemetry/latest/BATTERY/10" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -159,6 +159,7 @@
     <bpmn:userTask id="Task_VerifyIfPossible" name="Verify if execute Flexibility Offer is possible">
       <bpmn:extensionElements>
         <zeebe:userTask />
+        <zeebe:assignmentDefinition assignee="demo" />
         <zeebe:formDefinition formId="Form_Promise_FlexibilityOffers" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1336aml</bpmn:incoming>
@@ -212,6 +213,7 @@
     <bpmn:userTask id="Activity_1qq36t0" name="Check Flexibility Offers">
       <bpmn:extensionElements>
         <zeebe:userTask />
+        <zeebe:assignmentDefinition assignee="demo" />
         <zeebe:formDefinition formId="Form_Check_FlexibilityEmission" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1o3jar3</bpmn:incoming>
@@ -230,13 +232,13 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/FlexibilityEvent/emit" target="url" />
+          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/FlexibilityEvent/emit" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="=FlexibilityEmissionList" target="body" />
+          <zeebe:input source="={&#34;eventCreated&#34;: FlexibilityEmissionList}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>

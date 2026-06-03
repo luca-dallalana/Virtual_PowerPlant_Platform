@@ -298,7 +298,7 @@ class GridBalancingRecommendationResourceTest {
         rec.overloadKw = 5.0;
 
         Mockito.when(recommendationService.emitAll(Mockito.anyList()))
-               .thenAnswer(inv -> Uni.createFrom().item(inv.getArgument(0)));
+               .thenAnswer(inv -> Uni.createFrom().item(() -> inv.<List<BalancingRecommendation>>getArgument(0)));
 
         resource.emit(Collections.singletonList(rec)).await().indefinitely();
         MatcherAssert.assertThat(rec.status, is("MANUAL"));

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_083jbot" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.47.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
   <bpmn:collaboration id="Collaboration_00q1ajs">
-    <bpmn:participant id="Participant_7482ecae-f244-4807-afd9-1c1ec6bd91de" name="Grid Cell Management" processRef="UtilityOperatorManagement" />
+    <bpmn:participant id="Participant_7482ecae-f244-4807-afd9-1c1ec6bd91de" name="Grid Cell Management" processRef="GridCellManagement" />
   </bpmn:collaboration>
-  <bpmn:process id="UtilityOperatorManagement" isExecutable="true">
+  <bpmn:process id="GridCellManagement" isExecutable="true">
     <bpmn:laneSet id="LaneSet_1sd88ss">
       <bpmn:lane id="Lane_815a5e53-d02a-41cc-a324-313a0892a456" name="UtilityOperator - Initiator TK01">
         <bpmn:flowNodeRef>Event_fa44b575-5992-40f8-b464-09f8917512bd</bpmn:flowNodeRef>
@@ -47,7 +47,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/UtilityOperator/gridcells" target="url" />
+          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/UtilityOperator/gridcells" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;:&#34;application/json&#34;,&#10;  &#34;accept&#34;:&#34;application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -103,7 +103,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/UtilityOperator" target="url" />
+          <zeebe:input source="http://ec2-13-217-141-67.compute-1.amazonaws.com:8000/UtilityOperator" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />

@@ -79,9 +79,9 @@ class EnergyAnalyticsKafkaTest {
         analyticsService.emitAnalytics(generated, consumed, discharged, avgSoC)
             .await().indefinitely();
 
-        assertSingleMessage("energy-discharged-zone", "GRID_A", "totalDischarge", 10.0, "batteryCount", 1, "timestamp");
-        assertSingleMessage("energy-generated-prosumer", "101", "totalGeneration", 50.0, "assetCount", 1, "timestamp");
-        assertSingleMessage("energy-consumed-prosumer", "202", "totalConsumption", 20.0, "chargerCount", 1, "timestamp");
+        assertSingleMessage("energy-discharged-zone", "GRID_A", "totalDischargeKwh", 10.0, "batteryCount", 1, "timestamp");
+        assertSingleMessage("energy-generated-prosumer", "101", "totalGenerationKwh", 50.0, "assetCount", 1, "timestamp");
+        assertSingleMessage("energy-consumed-prosumer", "202", "totalConsumptionKwh", 20.0, "chargerCount", 1, "timestamp");
         assertSingleMessage("average-soc", "system", "averageSoC", 92.0, "batteryCount", 1, "timestamp");
     }
 

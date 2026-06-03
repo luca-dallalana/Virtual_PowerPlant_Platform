@@ -1,13 +1,20 @@
 #!/bin/bash
 
 source ./access.sh
+# access.sh defaults to Account 1
 
-# # #Terraform - Quarkus Micro services changing the configuration of the DB connection, recompiling and packaging
+esc=$'\e'
+
 CompileCode() {
     sed -i "/quarkus.datasource.reactive.url/d" application.properties
     sed -i "/quarkus.container-image.group/d" application.properties
-    echo "quarkus.container-image.group=$DockerUsername" >> application.properties                                        
-    echo "quarkus.datasource.reactive.url=mysql://$addressDB:3306/VPPaaS" >> application.properties                                        
+    sed -i "/quarkus.http.port/d" application.properties
+    sed -i "/quarkus.container-image.build/d" application.properties
+    sed -i "/quarkus.container-image.push/d" application.properties
+    echo "quarkus.container-image.group=$DockerUsername" >> application.properties
+    echo "quarkus.datasource.reactive.url=mysql://$addressDB:3306/VPPaaS" >> application.properties
+    echo "quarkus.container-image.build=true" >> application.properties
+    echo "quarkus.container-image.push=true" >> application.properties
     cd ../../..
     DockerImage="$(grep -m 1 "<artifactId>" pom.xml|sed "s/<artifactId>//g"|sed "s/<\/artifactId>//g" |sed "s/\"//g" |sed "s/ //g" | sed "s/$esc\[[0-9;]*m//g")"
     DockerImageVersion="$(grep -m 1 "<version>" pom.xml|sed "s/<version>//g"|sed "s/<\/version>//g" |sed "s/\"//g" |sed "s/ //g" | sed "s/$esc\[[0-9;]*m//g")"
@@ -21,32 +28,53 @@ DeployMicroservice() {
     sed -i "/sudo docker run/d" quarkus.sh
     echo "sudo docker login -u \"$DockerUsername\" -p \"$DockerPassword\"" >> quarkus.sh
     echo "sudo docker pull $DockerUsername/$DockerImage:$DockerImageVersion" >> quarkus.sh
-    echo "sudo docker run -d --name $DockerImage -p 8080:8080 $DockerUsername/$DockerImage:$DockerImageVersion" >> quarkus.sh
+    echo "sudo docker run -d --name $DockerImage -p 8080:8080 ${EXTRA_DOCKER_FLAGS} $DockerUsername/$DockerImage:$DockerImageVersion" >> quarkus.sh
     terraform init
-    terraform taint aws_instance.exampleDeployQuarkus
-    terraform apply -auto-approve
+    terraform apply -replace=aws_instance.exampleDeployQuarkus -auto-approve
     cd ../..
+    unset EXTRA_DOCKER_FLAGS
 }
 
-# # #Terraform - RDS
+
+# ── ACCOUNT 1: infrastructure ─────────────────────────────────────────────────
+
+# Terraform - RDS
 cd RDS-Terraform
 terraform init && terraform apply -auto-approve
-esc=$'\e'
 addressDB="$(terraform state show aws_db_instance.example |grep address | sed "s/address//g" | sed "s/=//g" | sed "s/\"//g" |sed "s/ //g" | sed "s/$esc\[[0-9;]*m//g" )"
 cd ..
 
-# # #Terraform - Camunda
+# Terraform - Camunda
 cd Camunda-Terraform
 terraform init && terraform apply -auto-approve
 cd ..
 
-# # #Terraform - Kafka
+# Terraform - Kafka
 cd Kafka
 terraform init && terraform apply -auto-approve
-esc=$'\e'
 addresskafka="$(terraform state show 'aws_instance.exampleKafkaConfiguration[0]'|grep public_dns | sed "s/public_dns//g" | sed "s/=//g" | sed "s/\"//g" |sed "s/ //g" | sed "s/$esc\[[0-9;]*m//g" )"
 cd ..
 
+# Terraform - Ollama
+cd OllamaTerraform
+terraform init && terraform apply -auto-approve
+addressOllama="$(terraform state show 'aws_instance.exampleOllamaConfiguration[0]' |grep public_dns | sed "s/public_dns//g" | sed "s/=//g" | sed "s/\"//g" |sed "s/ //g" | sed "s/$esc\[[0-9;]*m//g" )"
+cd ..
+
+# Terraform - Kong
+cd KongTerraform
+terraform init && terraform apply -auto-approve
+cd ..
+
+# Terraform - Konga
+cd KongaTerraform
+terraform init && terraform apply -auto-approve
+cd ..
+
+
+# ── ACCOUNT 2: Quarkus microservices ──────────────────────────────────────────
+
+use_account2
 
 cd microservices/Telemetry/src/main/resources
 sed -i "/kafka.bootstrap.servers/d" application.properties
@@ -74,18 +102,38 @@ cd Quarkus-Terraform/utilityoperator
 DeployMicroservice
 
 
-# #Terraform 1 - Kong
-cd KongTerraform
-terraform init && terraform apply -auto-approve
-cd ..
-
-# #Terraform 2 - Konga
-cd KongaTerraform
-terraform init && terraform apply -auto-approve
-cd ..
+cd microservices/FlexibilityEvent/src/main/resources
+sed -i "/kafka.bootstrap.servers/d" application.properties
+echo "kafka.bootstrap.servers=$addresskafka:9092" >> application.properties
+CompileCode
+cd Quarkus-Terraform/flexibilityevent
+DeployMicroservice
 
 
-# Showing all the PUBLIC_DNSs
+cd microservices/GridBalancingRecommendation/src/main/resources
+sed -i "/kafka.bootstrap.servers/d" application.properties
+echo "kafka.bootstrap.servers=$addresskafka:9092" >> application.properties
+CompileCode
+cd Quarkus-Terraform/gridbalancingrecommendation
+DeployMicroservice
+
+
+cd microservices/EnergyAnalytics/src/main/resources
+sed -i "/kafka.bootstrap.servers/d" application.properties
+echo "kafka.bootstrap.servers=$addresskafka:9092" >> application.properties
+CompileCode
+cd Quarkus-Terraform/energyanalytics
+DeployMicroservice
+
+
+cd microservices/FlexibilityForecasting/src/main/resources
+CompileCode
+cd Quarkus-Terraform/flexibilityforecasting
+DeployMicroservice
+
+
+# ── Summary ───────────────────────────────────────────────────────────────────
+
 cd Camunda-Terraform
 echo "CAMUNDA IS AVAILABLE HERE:"
 addressCamunda="$(terraform state show aws_instance.exampleInstallCamundaEngine |grep public_dns| sed "s/public_dns//g" | sed "s/=//g" | sed "s/\"//g" |sed "s/ //g" | sed "s/$esc\[[0-9;]*m//g" )"
@@ -128,6 +176,34 @@ echo "http://"$addressMS":8080/q/swagger-ui/"
 echo
 cd ../..
 
+cd Quarkus-Terraform/flexibilityevent
+echo "MICROSERVICE flexibilityevent IS AVAILABLE HERE:"
+addressMS="$(terraform state show aws_instance.exampleDeployQuarkus |grep public_dns | sed "s/public_dns//g" | sed "s/=//g" | sed "s/\"//g" |sed "s/ //g" | sed "s/$esc\[[0-9;]*m//g" )"
+echo "http://"$addressMS":8080/q/swagger-ui/"
+echo
+cd ../..
+
+cd Quarkus-Terraform/gridbalancingrecommendation
+echo "MICROSERVICE gridbalancingrecommendation IS AVAILABLE HERE:"
+addressMS="$(terraform state show aws_instance.exampleDeployQuarkus |grep public_dns | sed "s/public_dns//g" | sed "s/=//g" | sed "s/\"//g" |sed "s/ //g" | sed "s/$esc\[[0-9;]*m//g" )"
+echo "http://"$addressMS":8080/q/swagger-ui/"
+echo
+cd ../..
+
+cd Quarkus-Terraform/energyanalytics
+echo "MICROSERVICE energyanalytics IS AVAILABLE HERE:"
+addressMS="$(terraform state show aws_instance.exampleDeployQuarkus |grep public_dns | sed "s/public_dns//g" | sed "s/=//g" | sed "s/\"//g" |sed "s/ //g" | sed "s/$esc\[[0-9;]*m//g" )"
+echo "http://"$addressMS":8080/q/swagger-ui/"
+echo
+cd ../..
+
+cd Quarkus-Terraform/flexibilityforecasting
+echo "MICROSERVICE flexibilityforecasting IS AVAILABLE HERE:"
+addressMS="$(terraform state show aws_instance.exampleDeployQuarkus |grep public_dns | sed "s/public_dns//g" | sed "s/=//g" | sed "s/\"//g" |sed "s/ //g" | sed "s/$esc\[[0-9;]*m//g" )"
+echo "http://"$addressMS":8080/q/swagger-ui/"
+echo
+cd ../..
+
 cd RDS-Terraform
 echo "RDS IS AVAILABLE HERE:"
 terraform state show aws_db_instance.example |grep address
@@ -135,7 +211,11 @@ terraform state show aws_db_instance.example |grep port
 echo
 cd ..
 
-echo "KONG IS AVAILABLE HERE:" 
+echo "OLLAMA IS AVAILABLE HERE:"
+echo "http://"$addressOllama":11434/"
+echo
+
+echo "KONG IS AVAILABLE HERE:"
 cd KongTerraform
 addressKong="$(terraform state show aws_instance.exampleInstallKong |grep public_dns | sed "s/public_dns//g" | sed "s/=//g" | sed "s/\"//g" |sed "s/ //g" | sed "s/$esc\[[0-9;]*m//g" )"
 echo "http://"$addressKong":8000/"
@@ -149,11 +229,14 @@ echo "http://"$addressKonga":1337/"
 echo
 cd ..
 
+echo "Patching all BPMNs with Kong server address..."
+sed -i "s|KONG_SERVER_PLACEHOLDER|${addressKong}|g" BPMN/*.bpmn
+
 echo "Deploying all the Camunda forms..."
 for entry in ./BPMN/forms/*.form
 do
   entry=${entry:2}
-  echo "$entry" 
+  echo "$entry"
   curl -L -X POST "http://$addressCamunda:8080/v2/deployments" \
   -H "Content-Type: multipart/form-data" \
   -H "Accept: application/json" \
@@ -164,9 +247,13 @@ echo "Deploying all the Camunda business processes..."
 for entry in ./BPMN/*.bpmn
 do
   entry=${entry:2}
-  echo "$entry" 
+  echo "$entry"
   curl -L -X POST "http://$addressCamunda:8080/v2/deployments" \
   -H "Content-Type: multipart/form-data" \
   -H "Accept: application/json" \
   -F "resources=@$entry"
 done
+
+echo ""
+echo "Provisioning Kong services and routes..."
+bash kongCommands-Provisioning.sh
