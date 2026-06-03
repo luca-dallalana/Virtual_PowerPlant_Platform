@@ -20,7 +20,7 @@ sudo docker run --rm --network=kong-net \
 -e "KONG_PG_HOST=kong-database" \
 -e "KONG_PG_PASSWORD=kongpass" \
 -e "KONG_PASSWORD=test" \
-kong/kong-gateway:3.9.0.0 kong migrations bootstrap
+kong:3.9.0 kong migrations bootstrap
 
 sudo docker run -d --name kong-gateway \
 --network=kong-net \
@@ -33,16 +33,10 @@ sudo docker run -d --name kong-gateway \
 -e "KONG_PROXY_ERROR_LOG=/dev/stderr" \
 -e "KONG_ADMIN_ERROR_LOG=/dev/stderr" \
 -e "KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl" \
--e "KONG_ADMIN_GUI_URL=http://localhost:8002" \
--e KONG_LICENSE_DATA \
 -p 8000:8000 \
 -p 8443:8443 \
 -p 8001:8001 \
--p 8002:8002 \
--p 8445:8445 \
--p 8003:8003 \
--p 8004:8004 \
--p 127.0.0.1:8444:8444 \
-kong/kong-gateway:3.9.0.0
+-p 8444:8444 \
+kong:3.9.0
 
 echo "Finished."

@@ -299,12 +299,12 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-54-224-51-23.compute-1.amazonaws.com:8080/Prosumer" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Prosumer" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;FiscalNumber&#34;: fiscalNumber,&#10;  &#34;id&#34;: 0,&#10;  &#34;location&#34;: location,&#10;  &#34;name&#34;: name&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;FiscalNumber&#34;: fiscalnumber,&#10;  &#34;id&#34;: 0,&#10;  &#34;location&#34;: location,&#10;  &#34;name&#34;: name&#10;}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>

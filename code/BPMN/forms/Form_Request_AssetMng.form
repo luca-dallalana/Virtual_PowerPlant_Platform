@@ -10,7 +10,7 @@
       "id": "Field_0ivtinr",
       "key": "selectedProsumer",
       "description": "Asset Prosumer",
-      "valuesExpression": "=for prosumer in ProsumerList return {\"label\": operator.name, \"value\": operator.id}"
+      "valuesExpression": "=for prosumer in ProsumerList return {\"label\": prosumer.name, \"value\": prosumer.id}"
     },
     {
       "label": "Select Type",

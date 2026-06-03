@@ -23,6 +23,26 @@ cd Quarkus-Terraform/assetlink
 terraform destroy -auto-approve
 cd ../..
 
+# #Terraform - Quarkus flexibilityevent
+cd Quarkus-Terraform/flexibilityevent
+terraform destroy -auto-approve
+cd ../..
+
+# #Terraform - Quarkus gridbalancingrecommendation
+cd Quarkus-Terraform/gridbalancingrecommendation
+terraform destroy -auto-approve
+cd ../..
+
+# #Terraform - Quarkus energyanalytics
+cd Quarkus-Terraform/energyanalytics
+terraform destroy -auto-approve
+cd ../..
+
+# #Terraform - Quarkus flexibilityforecasting
+cd Quarkus-Terraform/flexibilityforecasting
+terraform destroy -auto-approve
+cd ../..
+
 # #Terraform - RDS
 cd RDS-Terraform
 terraform destroy -auto-approve
@@ -35,6 +55,11 @@ cd ..
 
 # # #Terraform - Kafka
 cd Kafka
+terraform destroy -auto-approve
+cd ..
+
+# # #Terraform - Ollama
+cd OllamaTerraform
 terraform destroy -auto-approve
 cd ..
 

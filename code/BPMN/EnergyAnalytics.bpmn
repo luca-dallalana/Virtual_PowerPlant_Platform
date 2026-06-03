@@ -102,7 +102,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/UtilityOperator/zones" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/UtilityOperator/gridcells" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -124,7 +124,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/Prosumer/all" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Prosumer/assets/active" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -133,7 +133,7 @@
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  prosumerStatus: response.status,&#10;  prosumerList:  response.body&#10;}" />
+          <zeebe:header key="resultExpression" value="={&#10;  prosumerStatus: response.status,&#10;  assetsList: response.body&#10;}" />
           <zeebe:header key="retryBackoff" value="PT10S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
@@ -146,13 +146,13 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/EnergyAnalytics/average-soc" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/EnergyAnalytics/compute/average-soc" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=30" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=30" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#34;assetLinkList&#34;: assetLinkList, &#34;telemetryRecords&#34;: socTelemetry, &#34;windowStart&#34;: windowStart, &#34;windowEnd&#34;: windowEnd}" target="body" />
+          <zeebe:input source="={&#34;telemetry&#34;: batteryTelemetry}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -171,13 +171,13 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/EnergyAnalytics/consumed-by-prosumer" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/EnergyAnalytics/compute/consumed-by-prosumer" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=30" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=30" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#34;prosumerList&#34;: prosumerList, &#34;assetLinkList&#34;: assetLinkList, &#34;telemetryRecords&#34;: evTelemetry, &#34;windowStart&#34;: windowStart, &#34;windowEnd&#34;: windowEnd}" target="body" />
+          <zeebe:input source="={&#34;assets&#34;: assetsList, &#34;telemetry&#34;: evTelemetry}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -196,7 +196,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="=&#34;http://ec2-23-22-152-18.compute-1.amazonaws.com:8080/Telemetry?asset_type=EV_CHARGER&#38;from=&#34; + windowStart + &#34;&#38;to=&#34; + windowEnd" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Telemetry/window/EV_CHARGER/30" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -218,13 +218,13 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/EnergyAnalytics/generated-by-prosumer" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/EnergyAnalytics/compute/generated-by-prosumer" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=30" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=30" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#34;prosumerList&#34;: prosumerList, &#34;assetLinkList&#34;: assetLinkList, &#34;telemetryRecords&#34;: solarTelemetry, &#34;windowStart&#34;: windowStart, &#34;windowEnd&#34;: windowEnd}" target="body" />
+          <zeebe:input source="={&#34;assets&#34;: assetsList, &#34;telemetry&#34;: solarTelemetry}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -243,7 +243,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="=&#34;http://ec2-23-22-152-18.compute-1.amazonaws.com:8080/Telemetry?asset_type=SOLAR&#38;from=&#34; + windowStart + &#34;&#38;to=&#34; + windowEnd" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Telemetry/window/SOLAR/30" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -265,13 +265,13 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/EnergyAnalytics/discharged-by-zone" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/EnergyAnalytics/compute/discharged-by-zone" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=30" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=30" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#34;zoneList&#34;: zoneList, &#34;assetLinkList&#34;: assetLinkList, &#34;telemetryRecords&#34;: batteryTelemetry, &#34;windowStart&#34;: windowStart, &#34;windowEnd&#34;: windowEnd}" target="body" />
+          <zeebe:input source="={&#34;zones&#34;: GridCellList, &#34;telemetry&#34;: batteryTelemetry}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -303,13 +303,13 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="Kongurl" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/EnergyAnalytics/emit" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#34;generatedByProsumer&#34;: generatedByProsumerList, &#34; consumedByProsumer&#34;:  consumedByProsumerList, &#34;dischargedByZone&#34;: dischargedByZoneList, &#34;averageSoC&#34;: averageSoCList}" target="body" />
+          <zeebe:input source="={&#34;generatedByProsumer&#34;: generatedByProsumerList, &#34;consumedByProsumer&#34;: consumedByProsumerList, &#34;dischargedByZone&#34;: dischargedByZoneList, &#34;averageSoC&#34;: averageSoCList}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -406,7 +406,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="=&#34;http://ec2-23-22-152-18.compute-1.amazonaws.com:8080/Telemetry?asset_type=BATTERY&#38;from=&#34; + windowStart + &#34;&#38;to=&#34; + windowEnd" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Telemetry/window/BATTERY/30" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />

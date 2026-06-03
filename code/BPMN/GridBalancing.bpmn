@@ -104,7 +104,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/Prosumer/AssetBatteries" target="url" />
+          <zeebe:input source="=&#34;http://KONG_SERVER_PLACEHOLDER:8000/UtilityOperator/gridcells/&#34; + selectedGridCell.gridCellId + &#34;/neighbours&#34;" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -154,7 +154,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/Prosumer/AssetBatteries" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/UtilityOperator/gridcells" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -231,7 +231,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="kongURL" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/GridBalancingRecommendation/emit" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
@@ -266,13 +266,13 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/Prosumer/AssetBatteries" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/GridBalancingRecommendation/evaluate" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="=neighboursGridCellTelemetry" target="body" />
+          <zeebe:input source="={&#34;sourceCell&#34;: selectedGridCell, &#34;neighbourCells&#34;: selectedGridCells, &#34;allTelemetry&#34;: neighboursGridCellTelemetry}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -293,17 +293,20 @@
           <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
           <zeebe:ioMapping>
             <zeebe:input source="noAuth" target="authentication.type" />
-            <zeebe:input source="GET" target="method" />
-            <zeebe:input target="url" />
+            <zeebe:input source="POST" target="method" />
+            <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/AssetLink/prosumerIds/by-operators" target="url" />
+            <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
             <zeebe:input source="=false" target="storeResponse" />
             <zeebe:input source="=false" target="followRedirects" />
             <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
             <zeebe:input source="=20" target="readTimeoutInSeconds" />
+            <zeebe:input source="=for cell in selectedGridCells return cell.utilityOperatorId" target="body" />
+            <zeebe:input source="=false" target="ignoreNullValues" />
           </zeebe:ioMapping>
           <zeebe:taskHeaders>
             <zeebe:header key="elementTemplateVersion" value="13" />
             <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-            <zeebe:header key="resultExpression" value="={&#10;  myResponseBody: response.body&#10;  // Use FEEL to extract values, e.g.,:&#10;  // myUserId: response.body.post.userId&#10;}" />
+            <zeebe:header key="resultExpression" value="={&#10;  neighbourProsumerIds: response.body&#10;}" />
             <zeebe:header key="retryBackoff" value="PT0S" />
           </zeebe:taskHeaders>
         </bpmn:extensionElements>
@@ -315,8 +318,11 @@
           <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
           <zeebe:ioMapping>
             <zeebe:input source="noAuth" target="authentication.type" />
-            <zeebe:input source="GET" target="method" />
-            <zeebe:input target="url" />
+            <zeebe:input source="POST" target="method" />
+            <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Prosumer/assets/active/by-prosumers" target="url" />
+            <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
+            <zeebe:input source="=neighbourProsumerIds" target="body" />
+            <zeebe:input source="=false" target="ignoreNullValues" />
             <zeebe:input source="=false" target="storeResponse" />
             <zeebe:input source="=false" target="followRedirects" />
             <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -325,7 +331,7 @@
           <zeebe:taskHeaders>
             <zeebe:header key="elementTemplateVersion" value="13" />
             <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-            <zeebe:header key="resultExpression" value="={&#10;  myResponseBody: response.body&#10;  // Use FEEL to extract values, e.g.,:&#10;  // myUserId: response.body.post.userId&#10;}" />
+            <zeebe:header key="resultExpression" value="={&#10;  neighbourAssetIds: response.body&#10;}" />
             <zeebe:header key="retryBackoff" value="PT0S" />
           </zeebe:taskHeaders>
         </bpmn:extensionElements>
@@ -337,8 +343,11 @@
           <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
           <zeebe:ioMapping>
             <zeebe:input source="noAuth" target="authentication.type" />
-            <zeebe:input source="GET" target="method" />
-            <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/Prosumer/AssetBatteries" target="url" />
+            <zeebe:input source="POST" target="method" />
+            <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Telemetry/latest/bulk" target="url" />
+            <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
+            <zeebe:input source="=neighbourAssetIds" target="body" />
+            <zeebe:input source="=false" target="ignoreNullValues" />
             <zeebe:input source="=false" target="storeResponse" />
             <zeebe:input source="=false" target="followRedirects" />
             <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -379,13 +388,13 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/Prosumer/AssetBatteries" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/GridBalancingRecommendation/evaluateCell" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="=GridCellTelemetry" target="body" />
+          <zeebe:input source="={&#34;gridCell&#34;: selectedGridCell, &#34;telemetryData&#34;: GridCellTelemetry}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -408,7 +417,7 @@
           <zeebe:ioMapping>
             <zeebe:input source="noAuth" target="authentication.type" />
             <zeebe:input source="GET" target="method" />
-            <zeebe:input target="url" />
+            <zeebe:input source="=&#34;http://KONG_SERVER_PLACEHOLDER:8000/AssetLink/prosumerIds/by-operator/&#34; + selectedGridCell.utilityOperatorId" target="url" />
             <zeebe:input source="=false" target="storeResponse" />
             <zeebe:input source="=false" target="followRedirects" />
             <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -417,7 +426,7 @@
           <zeebe:taskHeaders>
             <zeebe:header key="elementTemplateVersion" value="13" />
             <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-            <zeebe:header key="resultExpression" value="={&#10;  myResponseBody: response.body&#10;  // Use FEEL to extract values, e.g.,:&#10;  // myUserId: response.body.post.userId&#10;}" />
+            <zeebe:header key="resultExpression" value="={&#10;  prosumerIds: response.body&#10;}" />
             <zeebe:header key="retryBackoff" value="PT0S" />
           </zeebe:taskHeaders>
         </bpmn:extensionElements>
@@ -429,17 +438,20 @@
           <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
           <zeebe:ioMapping>
             <zeebe:input source="noAuth" target="authentication.type" />
-            <zeebe:input source="GET" target="method" />
-            <zeebe:input target="url" />
+            <zeebe:input source="POST" target="method" />
+            <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Prosumer/assets/active/by-prosumers" target="url" />
+            <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
             <zeebe:input source="=false" target="storeResponse" />
             <zeebe:input source="=false" target="followRedirects" />
             <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
             <zeebe:input source="=20" target="readTimeoutInSeconds" />
+            <zeebe:input source="=prosumerIds" target="body" />
+            <zeebe:input source="=false" target="ignoreNullValues" />
           </zeebe:ioMapping>
           <zeebe:taskHeaders>
             <zeebe:header key="elementTemplateVersion" value="13" />
             <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-            <zeebe:header key="resultExpression" value="={&#10;  myResponseBody: response.body&#10;  // Use FEEL to extract values, e.g.,:&#10;  // myUserId: response.body.post.userId&#10;}" />
+            <zeebe:header key="resultExpression" value="={&#10;  assetIds: response.body&#10;}" />
             <zeebe:header key="retryBackoff" value="PT0S" />
           </zeebe:taskHeaders>
         </bpmn:extensionElements>
@@ -451,12 +463,15 @@
           <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
           <zeebe:ioMapping>
             <zeebe:input source="noAuth" target="authentication.type" />
-            <zeebe:input source="GET" target="method" />
-            <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/Prosumer/AssetBatteries" target="url" />
+            <zeebe:input source="POST" target="method" />
+            <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Telemetry/latest/bulk" target="url" />
+            <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
             <zeebe:input source="=false" target="storeResponse" />
             <zeebe:input source="=false" target="followRedirects" />
             <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
             <zeebe:input source="=20" target="readTimeoutInSeconds" />
+            <zeebe:input source="=assetIds" target="body" />
+            <zeebe:input source="=false" target="ignoreNullValues" />
           </zeebe:ioMapping>
           <zeebe:taskHeaders>
             <zeebe:header key="elementTemplateVersion" value="13" />
@@ -814,16 +829,12 @@
         <dc:Bounds x="530" y="80" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_03b4snr_di" bpmnElement="Event_03b4snr">
-        <dc:Bounds x="682" y="102" width="36" height="36" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_00pbrai_di" bpmnElement="Event_00pbrai">
         <dc:Bounds x="152" y="102" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Flow_0z2zysh_di" bpmnElement="Flow_0z2zysh">
-        <di:waypoint x="188" y="120" />
-        <di:waypoint x="230" y="120" />
-      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_03b4snr_di" bpmnElement="Event_03b4snr">
+        <dc:Bounds x="682" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="BPMNEdge_0cg761d" bpmnElement="Flow_0mg3r3g">
         <di:waypoint x="330" y="120" />
         <di:waypoint x="380" y="120" />
@@ -835,6 +846,10 @@
       <bpmndi:BPMNEdge id="BPMNEdge_1aev5g3" bpmnElement="Flow_18c7knr">
         <di:waypoint x="630" y="120" />
         <di:waypoint x="682" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0z2zysh_di" bpmnElement="Flow_0z2zysh">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="230" y="120" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
@@ -852,11 +867,11 @@
         <dc:Bounds x="540" y="80" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_1v2wdjt" bpmnElement="Event_0m9ywzx">
-        <dc:Bounds x="692" y="102" width="36" height="36" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BPMNShape_0r2defz" bpmnElement="Event_1b041pr">
         <dc:Bounds x="152" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1v2wdjt" bpmnElement="Event_0m9ywzx">
+        <dc:Bounds x="692" y="102" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="BPMNEdge_06i1vj8" bpmnElement="Flow_18t6rxz">
         <di:waypoint x="188" y="120" />

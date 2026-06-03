@@ -2,6 +2,7 @@ package org.acme;
 
 import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -95,6 +96,9 @@ public class ProsumerResource {
     @POST
     @Path("{prosumerId}/assets")
     public Uni<Response> createAsset(Long prosumerId, Asset asset) {
+        if (asset.assetId == null) {
+            asset.assetId = Math.abs(UUID.randomUUID().getLeastSignificantBits());
+        }
         return asset.save(client, asset.assetId, prosumerId, asset.assetType, asset.model, asset.status)
                 .onItem().transform(id -> URI.create("/Prosumer/" + prosumerId + "/assets/" + asset.assetId))
                 .onItem().transform(uri -> Response.created(uri).build());

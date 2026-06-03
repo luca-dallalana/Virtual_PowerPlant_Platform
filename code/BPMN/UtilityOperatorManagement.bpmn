@@ -46,7 +46,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-34-207-249-215.compute-1.amazonaws.com:8080/UtilityOperator" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/UtilityOperator" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;:&#34;application/json&#34;,&#10;  &#34;accept&#34;:&#34;application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />

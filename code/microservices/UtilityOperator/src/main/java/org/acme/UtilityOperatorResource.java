@@ -1,6 +1,7 @@
 package org.acme;
 
 import java.net.URI;
+import java.util.UUID;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -103,6 +104,9 @@ public class UtilityOperatorResource {
     @POST
     @Path("gridcells")
     public Uni<Response> createGridCell(GridCell gridCell) {
+        if (gridCell.gridCellId == null || gridCell.gridCellId.isEmpty()) {
+            gridCell.gridCellId = UUID.randomUUID().toString();
+        }
         return gridCell.save(client, gridCell.gridCellId, gridCell.utilityOperatorId, gridCell.maxCapacity, gridCell.geographicBoundaries)
                 .onItem().transform(saved -> URI.create("/UtilityOperator/gridcells/" + gridCell.gridCellId))
                 .onItem().transform(uri -> Response.created(uri).build());

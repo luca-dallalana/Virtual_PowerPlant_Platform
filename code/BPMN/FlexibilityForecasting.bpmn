@@ -88,7 +88,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/FlexibilityEvent/logs" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/FlexibilityEvent/logs" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -110,7 +110,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/GridBalancingRecommendation/recommendations" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/GridBalancingRecommendation/recommendations" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -132,7 +132,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/Prosumer/assets/solar/active" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Prosumer/assets/active/SOLAR" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -154,7 +154,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="GET" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/Telemetry/window/SOLAR/20" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Telemetry/window/SOLAR/20" target="url" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
@@ -185,7 +185,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/FlexibilityForecasting/evaluate-correlation" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/FlexibilityForecasting/evaluate-correlation" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;application/json&#34;,&#10;  &#34;accept&#34;: &#34;application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
@@ -236,7 +236,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/FlexibilityForecasting/build-prompt" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/FlexibilityForecasting/build-prompt" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;application/json&#34;,&#10;  &#34;accept&#34;: &#34;application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
@@ -261,13 +261,13 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-ollama.compute-1.amazonaws.com:11434/api/generate" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/api/generate" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=120" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=120" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#34;model&#34;: &#34;llama3&#34;, &#34;prompt&#34;: prompt, &#34;stream&#34;: false}" target="body" />
+          <zeebe:input source="={&#34;model&#34;: &#34;llama3.2&#34;, &#34;prompt&#34;: prompt, &#34;stream&#34;: false}" target="body" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
@@ -285,7 +285,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="noAuth" target="authentication.type" />
           <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://ec2-34-238-164-142.compute-1.amazonaws.com:8080/FlexibilityForecasting/forecast" target="url" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/FlexibilityForecasting/forecast" target="url" />
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
