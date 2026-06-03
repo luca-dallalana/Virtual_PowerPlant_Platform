@@ -93,12 +93,14 @@ public class AssetLinkResource {
 
     @GET
     @Path("prosumerIds/by-operator/{utilityOperatorId}")
+    @Produces(MediaType.APPLICATION_JSON)
     public Multi<Long> getProsumerIdsByOperator(Long utilityOperatorId) {
         return AssetLink.findProsumerIdsByOperatorId(client, utilityOperatorId);
     }
 
     @POST
     @Path("prosumerIds/by-operators")
+    @Produces(MediaType.APPLICATION_JSON)
     public Multi<Long> getProsumerIdsByOperators(List<Long> utilityOperatorIds) {
         return AssetLink.findProsumerIdsByOperatorIds(client, utilityOperatorIds);
     }

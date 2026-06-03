@@ -140,6 +140,7 @@ public class ProsumerResource {
 
     @POST
     @Path("assets/active/by-prosumers")
+    @Produces(MediaType.APPLICATION_JSON)
     public Multi<Long> getActiveAssetIdsByProsumers(List<Long> prosumerIds) {
         return Asset.findActiveAssetIdsByProsumerIds(client, prosumerIds);
     }

@@ -267,8 +267,8 @@
           <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=false" target="followRedirects" />
-          <zeebe:input source="=120" target="connectionTimeoutInSeconds" />
-          <zeebe:input source="=120" target="readTimeoutInSeconds" />
+          <zeebe:input source="=180" target="connectionTimeoutInSeconds" />
+          <zeebe:input source="=180" target="readTimeoutInSeconds" />
           <zeebe:input source="={&#34;model&#34;: &#34;llama3.2&#34;, &#34;prompt&#34;: prompt, &#34;stream&#34;: false}" target="body" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>

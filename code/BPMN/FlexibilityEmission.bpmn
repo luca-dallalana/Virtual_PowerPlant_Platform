@@ -118,7 +118,7 @@
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  evaluationStatus: response.status,&#10;  FlexibilityEmissionList: response.body.eventCreated,&#10;  hasFlexibilityEmission: if (response.status = 200 and response.body != null) then true else false&#10;}" />
+          <zeebe:header key="resultExpression" value="={&#10;  evaluationStatus: response.status,&#10;  FlexibilityEmissionList: response.body.eventCreated,&#10;  hasFlexibilityEmission: response.body.suggestedOffers&#10;}" />
           <zeebe:header key="retryBackoff" value="PT5S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
@@ -145,7 +145,7 @@
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  telemetryStatus: response.status,&#10;  telemetryList: response.body,&#10;  hasTelemetry: if (response.status = 200 and response.body != null) then true else false&#10;}" />
+          <zeebe:header key="resultExpression" value="={&#10;  telemetryStatus: response.status,&#10;  telemetryList: response.body,&#10;  hasTelemetry: if (response.status = 200 and response.body != null and count(response.body) > 0) then true else false&#10;}" />
           <zeebe:header key="retryBackoff" value="PT5S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>

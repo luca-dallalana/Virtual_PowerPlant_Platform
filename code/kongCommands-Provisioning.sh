@@ -101,7 +101,10 @@ curl -i -X POST \
 curl -i -X POST \
 --url "http://${KONG_SERVER_ADDRESS}:8001/services/" \
 --data "name=ollama-service" \
---data "url=${OLLAMA_URL}"
+--data "url=${OLLAMA_URL}" \
+--data "read_timeout=180000" \
+--data "write_timeout=180000" \
+--data "connect_timeout=180000"
 
 
 # create routes — strip_path=false so the full path reaches the upstream unchanged
