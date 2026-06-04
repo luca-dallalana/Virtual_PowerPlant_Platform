@@ -151,7 +151,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_3hf48k5&#34;,&#10;  &#34;correlationKey&#34;: string(prosumer)&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_3hf48k5&#34;,&#10;  &#34;correlationKey&#34;: string(assetId)&#10;}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -174,7 +174,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_1574nku&#34;,&#10;  &#34;correlationKey&#34;: string(prosumer)&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_1574nku&#34;,&#10;  &#34;correlationKey&#34;: string(assetId)&#10;}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -197,7 +197,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;processDefinitionId&#34;: &#34;AssetMngExecutor&#34;,&#10;  &#34;variables&#34;: &#10;  { &#10;    &#34;prosumer&#34;: selectedProsumer,&#10;    &#34;type&#34;: selectedType,&#10;    &#34;model&#34; : model&#10;  }&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;processDefinitionId&#34;: &#34;AssetMngExecutor&#34;,&#10;  &#34;variables&#34;: &#10;  { &#10;    &#34;assetId&#34;: assetId,&#10;    &#34;prosumer&#34;: selectedProsumer,&#10;    &#34;type&#34;: selectedType,&#10;    &#34;model&#34; : model&#10;  }&#10;}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -327,7 +327,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;assetType&#34;: type,&#10;  &#34;model&#34;: model,&#10;  &#34;status&#34;: &#34;ACTIVE&#34;&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;assetId&#34;: assetId,&#10;  &#34;assetType&#34;: type,&#10;  &#34;model&#34;: model,&#10;  &#34;status&#34;: &#34;ACTIVE&#34;&#10;}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -360,7 +360,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_193pqte&#34;,&#10;  &#34;correlationKey&#34;: string(prosumer)&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_193pqte&#34;,&#10;  &#34;correlationKey&#34;: string(assetId)&#10;}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -383,7 +383,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_32pq3og&#34;,&#10;  &#34;correlationKey&#34;: string(prosumer)&#10;}&#10;" target="body" />
+          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_32pq3og&#34;,&#10;  &#34;correlationKey&#34;: string(assetId)&#10;}&#10;" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -406,7 +406,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_104fa6j&#34;,&#10;  &#34;correlationKey&#34;: string(prosumer)&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_104fa6j&#34;,&#10;  &#34;correlationKey&#34;: string(assetId)&#10;}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -429,7 +429,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_3ed762b&#34;,&#10;  &#34;correlationKey&#34;:  string(prosumer)&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;name&#34;:&#34;Message_3ed762b&#34;,&#10;  &#34;correlationKey&#34;:  string(assetId)&#10;}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
@@ -472,32 +472,32 @@
   </bpmn:process>
   <bpmn:message id="Message_193pqte" name="Message_193pqte">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=string(prosumer)" />
+      <zeebe:subscription correlationKey="=string(assetId)" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_104fa6j" name="Message_104fa6j">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=string(prosumer)" />
+      <zeebe:subscription correlationKey="=string(assetId)" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_32pq3og" name="Message_32pq3og">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=string(prosumer)" />
+      <zeebe:subscription correlationKey="=string(assetId)" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_3ed762b" name="Message_3ed762b">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=string(prosumer)" />
+      <zeebe:subscription correlationKey="=string(assetId)" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_3hf48k5" name="Message_3hf48k5">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=string(prosumer)" />
+      <zeebe:subscription correlationKey="=string(assetId)" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_1574nku" name="Message_1574nku">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=string(prosumer)" />
+      <zeebe:subscription correlationKey="=string(assetId)" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_05o1brq" name="Message_05o1brq" />

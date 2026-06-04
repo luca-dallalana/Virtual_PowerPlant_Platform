@@ -52,7 +52,7 @@
           <zeebe:input source="=false" target="storeResponse" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#10;  &#34;utilityOperatorId&#34;: selectedUtilityOperator,&#10;  &#34;geographicBoundaries&#34;: geographicBoundaries,&#10;  &#34;maxCapacity&#34;: maxCapacity&#10;}" target="body" />
+          <zeebe:input source="={&#10;  &#34;gridCellId&#34;: gridCellId,&#10;  &#34;utilityOperatorId&#34;: selectedUtilityOperator,&#10;  &#34;geographicBoundaries&#34;: geographicBoundaries,&#10;  &#34;maxCapacity&#34;: maxCapacity&#10;}" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>

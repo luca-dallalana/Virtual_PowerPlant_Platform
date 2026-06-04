@@ -1,6 +1,17 @@
 {
   "components": [
     {
+      "label": "ID",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_0ldnokp",
+        "columns": null
+      },
+      "id": "Field_0sgxud9",
+      "key": "gridCellId",
+      "description": "Grid Cell ID"
+    },
+    {
       "label": "Select Utility Operator",
       "type": "select",
       "layout": {
@@ -13,6 +24,17 @@
       "description": "Grid Cell Utility Operator"
     },
     {
+      "label": "Max Capacity",
+      "type": "number",
+      "layout": {
+        "row": "Row_0rz718b",
+        "columns": null
+      },
+      "id": "Field_1h3pbhu",
+      "key": "maxCapacity",
+      "description": "Grid Cell Max Capacity"
+    },
+    {
       "label": "Geographic Boundaries",
       "type": "textfield",
       "layout": {
@@ -22,17 +44,6 @@
       "id": "Field_0h23kvz",
       "key": "geographicBoundaries",
       "description": "Grid Cell geographic Boundaries"
-    },
-    {
-      "label": "Max Capacity",
-      "type": "number",
-      "layout": {
-        "row": "Row_1ktdodz",
-        "columns": null
-      },
-      "id": "Field_1h3pbhu",
-      "key": "maxCapacity",
-      "description": "Grid Cell Max Capacity"
     }
   ],
   "type": "default",

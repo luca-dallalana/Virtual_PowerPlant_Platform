@@ -1,6 +1,17 @@
 {
   "components": [
     {
+      "label": "ID",
+      "type": "number",
+      "layout": {
+        "row": "Row_0hbo1xm",
+        "columns": null
+      },
+      "id": "Field_14hm1mw",
+      "key": "assetId",
+      "description": "Asset ID"
+    },
+    {
       "label": "Select Prosumer",
       "type": "select",
       "layout": {
@@ -39,12 +50,12 @@
     },
     {
       "label": "Model",
-      "type": "textarea",
+      "type": "textfield",
       "layout": {
-        "row": "Row_1ie87h8",
+        "row": "Row_01aioa1",
         "columns": null
       },
-      "id": "Field_0wsc2b4",
+      "id": "Field_1pp5yd7",
       "key": "model",
       "description": "Asset Model"
     }
