@@ -72,6 +72,29 @@ resource "null_resource" "update_dns" {
   }
 }
 
+resource "null_resource" "create_topics" {
+  depends_on = [null_resource.update_dns]
+
+  connection {
+    type        = "ssh"
+    user        = "ec2-user"
+    private_key = file("key.pem")
+    host        = aws_instance.exampleKafkaConfiguration[0].public_ip
+  }
+
+  provisioner "file" {
+    source      = "topics.sh"
+    destination = "/home/ec2-user/topics.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /home/ec2-user/topics.sh",
+      "/home/ec2-user/topics.sh"
+    ]
+  }
+}
+
 resource "aws_security_group" "instance" {
   name = var.security_group_name
 

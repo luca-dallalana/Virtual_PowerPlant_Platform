@@ -23,20 +23,4 @@ echo "sudo bin/kafka-storage.sh format -t $KAFKA_CLUSTER_ID -c config/server.pro
 
 sudo bin/kafka-server-start.sh config/server.properties &
 
-%{ if idBroker == 0 }
-sleep 15
-topics=(
-  "Flexibility-Offers"
-  "GridBalancingRecommendation"
-  "Energy-Discharged-Zone"
-  "Energy-Generated-Prosumer"
-  "Energy-Consumed-Prosumer"
-  "Average-SoC"
-)
-for topic in "$${topics[@]}"; do
-  sudo bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists \
-    --topic "$topic" --partitions 3 --replication-factor 3
-done
-%{ endif }
-
 echo "Finished."
