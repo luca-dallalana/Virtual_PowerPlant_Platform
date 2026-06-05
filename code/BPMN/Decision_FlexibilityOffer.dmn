@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:biodi="http://bpmn.io/schema/dmn/biodi/2.0" id="Definitions_1euj1u1" name="DRD" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.47.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <decision id="Decision_FlexibilityOffer" name="Flexibility Offer Decision">
+    <extensionElements>
+      <zeebe:versionTag />
+    </extensionElements>
+    <decisionTable id="DecisionTable_0304pyk" hitPolicy="FIRST">
+      <input id="InputClause_1fihiwt" label="State of Health (%)">
+        <inputExpression id="LiteralExpression_09ou58p" typeRef="number">
+          <text>soh_percent</text>
+        </inputExpression>
+      </input>
+      <input id="InputClause_00nze7b" label="Market Price Level">
+        <inputExpression id="LiteralExpression_0ckd49u" typeRef="string">
+          <text>marketPriceLevel</text>
+        </inputExpression>
+      </input>
+      <input id="InputClause_0uuyj2c" label="State of Charge (%)">
+        <inputExpression id="LiteralExpression_04k2ugp" typeRef="number">
+          <text>soc_percent</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="Event Type" name="eventType" typeRef="string" biodi:width="210" />
+      <output id="OutputClause_1g0xwdw" label="Recommended Action" name="recommendedAction" typeRef="string" />
+      <rule id="DecisionRule_0uzpoly">
+        <inputEntry id="UnaryTests_0mqywag">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1ttxgmm">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_101ruk1">
+          <text>&lt;= 20</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_17wizy8">
+          <text>"BALANCING_UNAVAILABLE"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_0x0g0mi">
+          <text>"UNAVAILABLE"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_18geiq7">
+        <inputEntry id="UnaryTests_0uvvls7">
+          <text>&lt; 70</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_089695k">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_18mhxx3">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1ci4gt4">
+          <text>"DEGRADED_ASSET"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_18gdkbs">
+          <text>"NOARBITRAGE"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0dp6a0y">
+        <inputEntry id="UnaryTests_17u6jhj">
+          <text>&gt;= 70</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0yyrwba">
+          <text>"HIGH"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1qo32fp">
+          <text>&gt;= 90</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1ye8ab4">
+          <text>"ARBITRAGE_SELL"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_0jtc6p5">
+          <text>"DISCHARGE"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0y6y9rq">
+        <inputEntry id="UnaryTests_1go8axm">
+          <text>&gt;= 70</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1dt6jp7">
+          <text>"LOW"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_04taonn">
+          <text>&lt;= 30</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_18vm7tf">
+          <text>"ARBITRAGE_BUY"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_09se4un">
+          <text>"CHARGE"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0orkdd0">
+        <inputEntry id="UnaryTests_1dmer69">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_17v8hky">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_09fqdbh">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_028ayma">
+          <text>"NO_ACTION"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_0gqaful">
+          <text>"NO_ACTION"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape id="Decision_1ryfdyx_di" dmnElementRef="Decision_FlexibilityOffer">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

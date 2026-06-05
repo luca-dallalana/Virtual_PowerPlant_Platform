@@ -9,17 +9,9 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.acme.dto.BatteryAssetDTO;
-import org.acme.dto.TelemetryDTO;
-import org.acme.dto.BatchEvaluateRequest;
-import org.acme.dto.BatchEvaluateResponse;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Path("FlexibilityEvent")
@@ -32,14 +24,6 @@ public class FlexibilityEventResource {
     @ConfigProperty(name = "myapp.schema.create", defaultValue = "true")
     boolean schemaCreate;
 
-    @Inject
-    @Channel("flexibility-offers")
-    Emitter<String> flexibilityEmitter;
-
-    @Inject
-    @ConfigProperty(name = "kafka.bootstrap.servers")
-    String kafka_servers;
-
     void config(@Observes StartupEvent ev) {
         if (schemaCreate) {
             initdb();
@@ -47,6 +31,9 @@ public class FlexibilityEventResource {
     }
 
     private void initdb() {
+        final String INS = "INSERT INTO FlexibilityEvent "
+            + "(assetId,prosumerId,eventType,soc_percent,soh_percent,recommendedAction,marketPriceLevel,gridCellId,timestamp) VALUES ";
+
         client.query("DROP TABLE IF EXISTS FlexibilityEvent").execute()
         .flatMap(r -> client.query("CREATE TABLE FlexibilityEvent (" +
                 "id SERIAL PRIMARY KEY, " +
@@ -54,11 +41,18 @@ public class FlexibilityEventResource {
                 "prosumerId BIGINT UNSIGNED NOT NULL, " +
                 "eventType VARCHAR(100) NOT NULL, " +
                 "soc_percent FLOAT, " +
+                "soh_percent FLOAT, " +
                 "recommendedAction VARCHAR(50), " +
-                "marketPrice FLOAT, " +
-                "incentiveAmount FLOAT, " +
+                "marketPriceLevel VARCHAR(10), " +
                 "gridCellId VARCHAR(100), " +
                 "timestamp DATETIME NOT NULL)").execute())
+        // Historical flexibility events — simulate prior BPMN runs for FlexibilityForecasting context.
+        .flatMap(r -> client.query(INS + "(1001,1,'ARBITRAGE_SELL',95.2,92.5,'DISCHARGE','HIGH','LISBON-DT',NOW()-INTERVAL 18 MINUTE)").execute())
+        .flatMap(r -> client.query(INS + "(1001,1,'ARBITRAGE_SELL',93.1,92.5,'DISCHARGE','HIGH','LISBON-DT',NOW()-INTERVAL 14 MINUTE)").execute())
+        .flatMap(r -> client.query(INS + "(1011,2,'ARBITRAGE_SELL',96.8,88.0,'DISCHARGE','HIGH','SETUBAL-CT',NOW()-INTERVAL 12 MINUTE)").execute())
+        .flatMap(r -> client.query(INS + "(1008,4,'BALANCING_UNAVAILABLE',17.3,75.0,'UNAVAILABLE',NULL,'FARO-RS',NOW()-INTERVAL 10 MINUTE)").execute())
+        .flatMap(r -> client.query(INS + "(1001,1,'ARBITRAGE_SELL',91.5,92.5,'DISCHARGE','HIGH','LISBON-DT',NOW()-INTERVAL 6 MINUTE)").execute())
+        .flatMap(r -> client.query(INS + "(1011,2,'ARBITRAGE_SELL',94.2,88.0,'DISCHARGE','HIGH','SETUBAL-CT',NOW()-INTERVAL 3 MINUTE)").execute())
         .await().indefinitely();
     }
 
@@ -87,54 +81,6 @@ public class FlexibilityEventResource {
         return FlexibilityEvent.findByEventType(client, eventType);
     }
 
-    @POST
-    @Path("evaluate")
-    public Response evaluateBatch(BatchEvaluateRequest request) {
-        Map<Long, Long> assetToProsumerMap = new HashMap<>();
-        if (request.batteryAssets != null) {
-            for (BatteryAssetDTO asset : request.batteryAssets) {
-                assetToProsumerMap.put(asset.assetId, asset.prosumerId);
-            }
-        }
-
-        List<FlexibilityEvent> suggestions = new ArrayList<>();
-        if (request.telemetryList != null) {
-            for (TelemetryDTO telemetry : request.telemetryList) {
-                Long prosumerId = assetToProsumerMap.get(telemetry.asset_id);
-                if (prosumerId == null) continue;
-
-                FlexibilityEvent event = null;
-                if (telemetry.State_of_Charge != null && telemetry.State_of_Charge > 90.0f) {
-                    event = new FlexibilityEvent();
-                    event.assetId = telemetry.asset_id;
-                    event.prosumerId = prosumerId;
-                    event.eventType = "ARBITRAGE_SELL";
-                    event.soc_percent = telemetry.State_of_Charge;
-                    event.recommendedAction = "DISCHARGE";
-                    event.marketPrice = getCurrentMarketPrice();
-                    event.incentiveAmount = calculateIncentive(telemetry.State_of_Charge);
-                    event.gridCellId = telemetry.grid_cell_id;
-                    event.timestamp = LocalDateTime.now();
-                } else if (telemetry.State_of_Charge != null && telemetry.State_of_Charge < 20.0f) {
-                    event = new FlexibilityEvent();
-                    event.assetId = telemetry.asset_id;
-                    event.prosumerId = prosumerId;
-                    event.eventType = "BALANCING_UNAVAILABLE";
-                    event.soc_percent = telemetry.State_of_Charge;
-                    event.recommendedAction = "UNAVAILABLE";
-                    event.gridCellId = telemetry.grid_cell_id;
-                    event.timestamp = LocalDateTime.now();
-                }
-
-                if (event != null) {
-                    suggestions.add(event);
-                }
-            }
-        }
-
-        return Response.ok(new BatchEvaluateResponse(suggestions)).build();
-    }
-
     @GET
     @Path("logs")
     public Multi<FlexibilityEvent> getLogs(@QueryParam("from") String from, @QueryParam("to") String to) {
@@ -144,13 +90,12 @@ public class FlexibilityEventResource {
     }
 
     @POST
-    @Path("emit")
-    public Uni<Response> emitFlexibilityOffers(BatchEvaluateResponse request) {
-        if (request.eventCreated == null || request.eventCreated.isEmpty()) {
-            return Uni.createFrom().item(Response.ok(new BatchEvaluateResponse(new ArrayList<>())).build());
+    @Path("save")
+    public Uni<Response> saveBatch(List<FlexibilityEvent> events) {
+        if (events == null || events.isEmpty()) {
+            return Uni.createFrom().item(Response.ok(new ArrayList<>()).build());
         }
 
-        List<FlexibilityEvent> events = request.eventCreated;
         for (FlexibilityEvent event : events) {
             if (event.timestamp == null) {
                 event.timestamp = LocalDateTime.now();
@@ -165,23 +110,7 @@ public class FlexibilityEventResource {
             for (int i = 0; i < events.size(); i++) {
                 events.get(i).id = (Long) ids.get(i);
             }
-            for (FlexibilityEvent event : events) {
-                if (!"ARBITRAGE_SELL".equals(event.eventType)) continue;
-                String kafkaMessage = String.format(
-                    "{\"eventId\":%d,\"assetId\":%d,\"prosumerId\":%d,\"eventType\":\"%s\",\"recommendedAction\":\"%s\",\"timestamp\":\"%s\"}",
-                    event.id, event.assetId, event.prosumerId, event.eventType, event.recommendedAction, event.timestamp
-                );
-                flexibilityEmitter.send(kafkaMessage);
-            }
-            return Response.ok(new BatchEvaluateResponse(events)).build();
+            return Response.ok(events).build();
         });
-    }
-
-    private Float getCurrentMarketPrice() { // In production this SHOULD NOT be hardcoded, but for demo purposes we return a fixed value
-        return 150.0f;
-    }
-
-    private Float calculateIncentive(Float soc) {
-        return (soc - 90.0f) * 2.0f;
     }
 }
