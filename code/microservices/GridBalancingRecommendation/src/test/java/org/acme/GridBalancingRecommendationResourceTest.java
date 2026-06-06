@@ -2,7 +2,6 @@ package org.acme;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.mysqlclient.MySQLPool;
-
 import io.vertx.mutiny.sqlclient.PreparedQuery;
 import io.vertx.mutiny.sqlclient.Query;
 import io.vertx.mutiny.sqlclient.Row;
@@ -10,9 +9,10 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
 import jakarta.ws.rs.core.Response;
-import org.acme.dto.GridBalancingEvaluateRequest;
-import org.acme.dto.GridBalancingEvaluateResponse;
+import org.acme.dto.BalancingRecommendationDTO;
 import org.acme.dto.GridCellDTO;
+import org.acme.dto.GridCellMetricsDTO;
+import org.acme.dto.GridCellMetricsRequest;
 import org.acme.dto.TelemetryDTO;
 import org.acme.entities.BalancingRecommendation;
 import org.acme.services.GridBalancingRecommendationService;
@@ -43,53 +43,51 @@ class GridBalancingRecommendationResourceTest {
         resource = new GridBalancingRecommendationResource();
         client = Mockito.mock(MySQLPool.class);
         recommendationService = Mockito.mock(GridBalancingRecommendationService.class);
-        injectClient(resource, client);
-        injectSchemaCreate(resource, false);
-        injectService(resource, recommendationService);
-        injectThresholdPercent(resource, 0.9);
+        injectField("client", client);
+        injectField("schemaCreate", false);
+        injectField("recommendationService", recommendationService);
     }
+
+    // ── CRUD tests ──────────────────────────────────────────────────────────────
 
     @Test
     void getAll_returnsList() {
-        LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
-        LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
-        Row row1 = balancingRecommendationRow(1L, "GRID_A", "GRID_B", 95.0, 40.0, 5.0, 5.0, 0.9, "RECOMMENDED", "Transfer 5kW to GRID_B", timestamp1);
-        Row row2 = balancingRecommendationRow(2L, "GRID_C", null, 100.0, null, 10.0, null, 0.9, "NO_TARGET", "No available target", timestamp2);
-        stubQuery("SELECT id, sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw, overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt FROM BalancingRecommendation ORDER BY createdAt DESC", rowSetWithRows(row1, row2));
+        LocalDateTime ts1 = LocalDateTime.of(2024, 1, 15, 10, 30);
+        LocalDateTime ts2 = LocalDateTime.of(2024, 1, 15, 11, 30);
+        Row row1 = recommendationRow(1L, 1006L, "REDUCE_CHARGING", "PORTO-IN", "PORTO-IN", ts1);
+        Row row2 = recommendationRow(2L, 1001L, "DISCHARGE", "LISBON-DT", "PORTO-IN", ts2);
+        stubQuery("SELECT id, assetId, action, fromCell, toCell, createdAt "
+                + "FROM BalancingRecommendation ORDER BY createdAt DESC", rowSetWithRows(row1, row2));
 
         List<BalancingRecommendation> result = resource.getAll().collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(2));
         MatcherAssert.assertThat(result.get(0).id, is(1L));
-        MatcherAssert.assertThat(result.get(0).sourceGridCellId, is("GRID_A"));
-        MatcherAssert.assertThat(result.get(0).targetGridCellId, is("GRID_B"));
-        MatcherAssert.assertThat(result.get(0).sourceNetLoadKw, is(95.0));
-        MatcherAssert.assertThat(result.get(0).targetHeadroomKw, is(40.0));
-        MatcherAssert.assertThat(result.get(0).overloadKw, is(5.0));
-        MatcherAssert.assertThat(result.get(0).transferableKw, is(5.0));
-        MatcherAssert.assertThat(result.get(0).thresholdPercent, is(0.9));
-        MatcherAssert.assertThat(result.get(0).status, is("RECOMMENDED"));
-        MatcherAssert.assertThat(result.get(0).rationale, is("Transfer 5kW to GRID_B"));
-        MatcherAssert.assertThat(result.get(0).createdAt, is(timestamp1));
+        MatcherAssert.assertThat(result.get(0).assetId, is(1006L));
+        MatcherAssert.assertThat(result.get(0).action, is("REDUCE_CHARGING"));
+        MatcherAssert.assertThat(result.get(0).fromCell, is("PORTO-IN"));
+        MatcherAssert.assertThat(result.get(0).toCell, is("PORTO-IN"));
+        MatcherAssert.assertThat(result.get(1).action, is("DISCHARGE"));
     }
 
     @Test
     void getById_returnsEntity() {
-        LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-        Row row = balancingRecommendationRow(1L, "GRID_A", "GRID_B", 95.0, 40.0, 5.0, 5.0, 0.9, "RECOMMENDED", "Transfer 5kW to GRID_B", timestamp);
-        stubPreparedQuery("SELECT id, sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw, overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt FROM BalancingRecommendation WHERE id = ?", rowSetWithRows(row));
+        LocalDateTime ts = LocalDateTime.of(2024, 1, 15, 10, 30);
+        Row row = recommendationRow(1L, 1006L, "REDUCE_CHARGING", "PORTO-IN", "PORTO-IN", ts);
+        stubPreparedQuery("SELECT id, assetId, action, fromCell, toCell, createdAt "
+                + "FROM BalancingRecommendation WHERE id = ?", rowSetWithRows(row));
 
         Response response = resource.getById(1L).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
         BalancingRecommendation result = (BalancingRecommendation) response.getEntity();
         MatcherAssert.assertThat(result.id, is(1L));
-        MatcherAssert.assertThat(result.sourceGridCellId, is("GRID_A"));
-        MatcherAssert.assertThat(result.targetGridCellId, is("GRID_B"));
-        MatcherAssert.assertThat(result.status, is("RECOMMENDED"));
+        MatcherAssert.assertThat(result.assetId, is(1006L));
+        MatcherAssert.assertThat(result.action, is("REDUCE_CHARGING"));
     }
 
     @Test
     void getById_returnsNotFound() {
-        stubPreparedQuery("SELECT id, sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw, overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt FROM BalancingRecommendation WHERE id = ?", rowSetWithRows());
+        stubPreparedQuery("SELECT id, assetId, action, fromCell, toCell, createdAt "
+                + "FROM BalancingRecommendation WHERE id = ?", rowSetWithRows());
 
         Response response = resource.getById(99L).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(404));
@@ -97,308 +95,91 @@ class GridBalancingRecommendationResourceTest {
 
     @Test
     void getBySource_returnsFiltered() {
-        LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-        Row row1 = balancingRecommendationRow(1L, "GRID_A", "GRID_B", 95.0, 40.0, 5.0, 5.0, 0.9, "RECOMMENDED", "Transfer 5kW to GRID_B", timestamp);
-        Row row2 = balancingRecommendationRow(2L, "GRID_A", "GRID_C", 98.0, 30.0, 8.0, 8.0, 0.9, "RECOMMENDED", "Transfer 8kW to GRID_C", timestamp);
-        stubPreparedQuery("SELECT id, sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw, overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt FROM BalancingRecommendation WHERE sourceGridCellId = ? ORDER BY createdAt DESC", rowSetWithRows(row1, row2));
+        LocalDateTime ts = LocalDateTime.of(2024, 1, 15, 10, 30);
+        Row row1 = recommendationRow(1L, 1006L, "REDUCE_CHARGING", "PORTO-IN", "PORTO-IN", ts);
+        Row row2 = recommendationRow(2L, 1007L, "REDUCE_CHARGING", "PORTO-IN", "PORTO-IN", ts);
+        stubPreparedQuery("SELECT id, assetId, action, fromCell, toCell, createdAt "
+                + "FROM BalancingRecommendation WHERE fromCell = ? ORDER BY createdAt DESC", rowSetWithRows(row1, row2));
 
-        List<BalancingRecommendation> result = resource.getBySource("GRID_A").collect().asList().await().indefinitely();
+        List<BalancingRecommendation> result = resource.getBySource("PORTO-IN").collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(2));
-        MatcherAssert.assertThat(result.get(0).sourceGridCellId, is("GRID_A"));
-        MatcherAssert.assertThat(result.get(1).sourceGridCellId, is("GRID_A"));
-    }
-
-    @Test
-    void evaluate_withOverloadAndTarget_createsRECOMMENDED() {
-        GridCellDTO sourceCell = createGridCell("GRID_A", 100.0);
-        List<GridCellDTO> neighbourCells = Collections.singletonList(createGridCell("GRID_B", 100.0));
-        List<TelemetryDTO> telemetry = Arrays.asList(
-            createEVChargerTelemetry(1L, "GRID_A", 95.0f),
-            createEVChargerTelemetry(2L, "GRID_B", 50.0f)
-        );
-
-        BalancingRecommendation expectedRec = new BalancingRecommendation();
-        expectedRec.sourceGridCellId = "GRID_A";
-        expectedRec.targetGridCellId = "GRID_B";
-        expectedRec.status = "RECOMMENDED";
-        expectedRec.overloadKw = 5.0;
-        expectedRec.transferableKw = 5.0;
-        expectedRec.sourceNetLoadKw = 95.0;
-        expectedRec.targetHeadroomKw = 40.0;
-        expectedRec.thresholdPercent = 0.9;
-        expectedRec.rationale = "Transfer 5kW to GRID_B";
-        expectedRec.createdAt = LocalDateTime.now();
-
-        Mockito.when(recommendationService.evaluateRecommendations(Mockito.any(GridBalancingEvaluateRequest.class)))
-               .thenReturn(Arrays.asList(expectedRec));
-
-        GridBalancingEvaluateRequest request = new GridBalancingEvaluateRequest();
-        request.sourceCell = sourceCell;
-        request.neighbourCells = neighbourCells;
-        request.allTelemetry = telemetry;
-
-        Response response = resource.evaluate(request);
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        GridBalancingEvaluateResponse result = (GridBalancingEvaluateResponse) response.getEntity();
-        MatcherAssert.assertThat(result.eventCreated, hasSize(1));
-        MatcherAssert.assertThat(result.hasGridBalancing, is(true));
-        MatcherAssert.assertThat(result.eventCreated.get(0).status, is("RECOMMENDED"));
-        MatcherAssert.assertThat(result.eventCreated.get(0).targetGridCellId, is("GRID_B"));
-    }
-
-    @Test
-    void evaluate_withOverloadNoTarget_createsNO_TARGET() {
-        GridCellDTO sourceCell = createGridCell("GRID_A", 100.0);
-        List<GridCellDTO> neighbourCells = Collections.singletonList(createGridCell("GRID_B", 100.0));
-        List<TelemetryDTO> telemetry = Arrays.asList(
-            createEVChargerTelemetry(1L, "GRID_A", 95.0f),
-            createEVChargerTelemetry(2L, "GRID_B", 95.0f)
-        );
-
-        BalancingRecommendation expectedRec = new BalancingRecommendation();
-        expectedRec.sourceGridCellId = "GRID_A";
-        expectedRec.targetGridCellId = null;
-        expectedRec.status = "NO_TARGET";
-        expectedRec.overloadKw = 5.0;
-        expectedRec.transferableKw = null;
-        expectedRec.sourceNetLoadKw = 95.0;
-        expectedRec.targetHeadroomKw = null;
-        expectedRec.thresholdPercent = 0.9;
-        expectedRec.rationale = "No available target grid cell";
-        expectedRec.createdAt = LocalDateTime.now();
-
-        Mockito.when(recommendationService.evaluateRecommendations(Mockito.any(GridBalancingEvaluateRequest.class)))
-               .thenReturn(Arrays.asList(expectedRec));
-
-        GridBalancingEvaluateRequest request = new GridBalancingEvaluateRequest();
-        request.sourceCell = sourceCell;
-        request.neighbourCells = neighbourCells;
-        request.allTelemetry = telemetry;
-
-        Response response = resource.evaluate(request);
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        GridBalancingEvaluateResponse result = (GridBalancingEvaluateResponse) response.getEntity();
-        MatcherAssert.assertThat(result.eventCreated, hasSize(1));
-        MatcherAssert.assertThat(result.hasGridBalancing, is(true));
-        MatcherAssert.assertThat(result.eventCreated.get(0).status, is("NO_TARGET"));
-        MatcherAssert.assertThat(result.eventCreated.get(0).targetGridCellId, is((String) null));
-    }
-
-    @Test
-    void evaluate_withNoOverload_returnsEmptyList() {
-        GridCellDTO sourceCell = createGridCell("GRID_A", 100.0);
-        List<GridCellDTO> neighbourCells = Collections.singletonList(createGridCell("GRID_B", 100.0));
-        List<TelemetryDTO> telemetry = Arrays.asList(
-            createEVChargerTelemetry(1L, "GRID_A", 50.0f),
-            createEVChargerTelemetry(2L, "GRID_B", 60.0f)
-        );
-
-        Mockito.when(recommendationService.evaluateRecommendations(Mockito.any(GridBalancingEvaluateRequest.class)))
-               .thenReturn(Collections.emptyList());
-
-        GridBalancingEvaluateRequest request = new GridBalancingEvaluateRequest();
-        request.sourceCell = sourceCell;
-        request.neighbourCells = neighbourCells;
-        request.allTelemetry = telemetry;
-
-        Response response = resource.evaluate(request);
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        GridBalancingEvaluateResponse result = (GridBalancingEvaluateResponse) response.getEntity();
-        MatcherAssert.assertThat(result.eventCreated, hasSize(0));
-        MatcherAssert.assertThat(result.hasGridBalancing, is(false));
-    }
-
-    @Test
-    void evaluate_withOverloadAndMultipleNeighbours_createsRECOMMENDED() {
-        GridCellDTO sourceCell = createGridCell("GRID_A", 100.0);
-        List<GridCellDTO> neighbourCells = Arrays.asList(
-            createGridCell("GRID_B", 100.0),
-            createGridCell("GRID_C", 100.0)
-        );
-        List<TelemetryDTO> telemetry = Arrays.asList(
-            createEVChargerTelemetry(1L, "GRID_A", 95.0f),
-            createEVChargerTelemetry(2L, "GRID_B", 92.0f),
-            createEVChargerTelemetry(3L, "GRID_C", 50.0f)
-        );
-
-        BalancingRecommendation rec = new BalancingRecommendation();
-        rec.sourceGridCellId = "GRID_A";
-        rec.targetGridCellId = "GRID_C";
-        rec.status = "RECOMMENDED";
-        rec.overloadKw = 5.0;
-
-        Mockito.when(recommendationService.evaluateRecommendations(Mockito.any(GridBalancingEvaluateRequest.class)))
-               .thenReturn(Collections.singletonList(rec));
-
-        GridBalancingEvaluateRequest request = new GridBalancingEvaluateRequest();
-        request.sourceCell = sourceCell;
-        request.neighbourCells = neighbourCells;
-        request.allTelemetry = telemetry;
-
-        Response response = resource.evaluate(request);
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        GridBalancingEvaluateResponse result = (GridBalancingEvaluateResponse) response.getEntity();
-        MatcherAssert.assertThat(result.eventCreated, hasSize(1));
-        MatcherAssert.assertThat(result.hasGridBalancing, is(true));
-        MatcherAssert.assertThat(result.eventCreated.get(0).targetGridCellId, is("GRID_C"));
-    }
-
-    @Test
-    void evaluate_withEmptyData_returnsEmptyList() {
-        Mockito.when(recommendationService.evaluateRecommendations(Mockito.any(GridBalancingEvaluateRequest.class)))
-               .thenReturn(Collections.emptyList());
-
-        GridBalancingEvaluateRequest request = new GridBalancingEvaluateRequest();
-        request.sourceCell = null;
-        request.neighbourCells = Collections.emptyList();
-        request.allTelemetry = Collections.emptyList();
-
-        Response response = resource.evaluate(request);
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        GridBalancingEvaluateResponse result = (GridBalancingEvaluateResponse) response.getEntity();
-        MatcherAssert.assertThat(result.eventCreated, hasSize(0));
-        MatcherAssert.assertThat(result.hasGridBalancing, is(false));
-    }
-
-    @Test
-    void emit_savesAndReturns200() {
-        BalancingRecommendation rec = new BalancingRecommendation();
-        rec.sourceGridCellId = "GRID_A";
-        rec.targetGridCellId = "GRID_B";
-        rec.sourceNetLoadKw = 95.0;
-        rec.targetHeadroomKw = 40.0;
-        rec.overloadKw = 5.0;
-        rec.transferableKw = 5.0;
-        rec.thresholdPercent = 0.9;
-        rec.status = "RECOMMENDED";
-        rec.rationale = "Transfer 5kW to GRID_B";
-        rec.createdAt = LocalDateTime.now();
-
-        BalancingRecommendation saved = new BalancingRecommendation();
-        saved.id = 1L;
-        saved.sourceGridCellId = "GRID_A";
-        saved.status = "RECOMMENDED";
-
-        List<BalancingRecommendation> savedList = Collections.singletonList(saved);
-        Mockito.when(recommendationService.emitAll(Mockito.anyList()))
-               .thenReturn(Uni.createFrom().item(savedList));
-
-        Response response = resource.emit(Collections.singletonList(rec)).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        List<BalancingRecommendation> result = (List<BalancingRecommendation>) response.getEntity();
-        MatcherAssert.assertThat(result.get(0).id, is(1L));
-        MatcherAssert.assertThat(result.get(0).sourceGridCellId, is("GRID_A"));
-    }
-
-    @Test
-    void emit_appliesDefaults() {
-        BalancingRecommendation rec = new BalancingRecommendation();
-        rec.sourceGridCellId = "GRID_A";
-        rec.sourceNetLoadKw = 95.0;
-        rec.overloadKw = 5.0;
-
-        Mockito.when(recommendationService.emitAll(Mockito.anyList()))
-               .thenAnswer(inv -> Uni.createFrom().item(() -> inv.<List<BalancingRecommendation>>getArgument(0)));
-
-        resource.emit(Collections.singletonList(rec)).await().indefinitely();
-        MatcherAssert.assertThat(rec.status, is("MANUAL"));
-        MatcherAssert.assertThat(rec.createdAt, notNullValue());
-        MatcherAssert.assertThat(rec.thresholdPercent, is(0.9));
+        MatcherAssert.assertThat(result.get(0).fromCell, is("PORTO-IN"));
+        MatcherAssert.assertThat(result.get(1).fromCell, is("PORTO-IN"));
     }
 
     @Test
     void create_withValidData_returns201() {
-        BalancingRecommendation recommendation = new BalancingRecommendation();
-        recommendation.sourceGridCellId = "GRID_A";
-        recommendation.targetGridCellId = "GRID_B";
-        recommendation.sourceNetLoadKw = 95.0;
-        recommendation.targetHeadroomKw = 40.0;
-        recommendation.overloadKw = 5.0;
-        recommendation.transferableKw = 5.0;
-        recommendation.thresholdPercent = 0.9;
-        recommendation.status = "RECOMMENDED";
-        recommendation.rationale = "Transfer 5kW to GRID_B";
-        recommendation.createdAt = LocalDateTime.now();
+        BalancingRecommendation rec = new BalancingRecommendation();
+        rec.assetId = 1006L;
+        rec.action = "REDUCE_CHARGING";
+        rec.fromCell = "PORTO-IN";
+        rec.toCell = "PORTO-IN";
+        rec.createdAt = LocalDateTime.now();
 
         RowSet<Row> insertResult = rowSetWithRowCount(1);
         Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID))
-               .thenReturn(123L);
-        stubPreparedQuery("INSERT INTO BalancingRecommendation(sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw, overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt) VALUES (?,?,?,?,?,?,?,?,?,?)", insertResult);
+               .thenReturn(42L);
+        stubPreparedQuery("INSERT INTO BalancingRecommendation (assetId, action, fromCell, toCell, createdAt) VALUES (?,?,?,?,?)", insertResult);
 
-        Response response = resource.create(recommendation).await().indefinitely();
+        Response response = resource.create(rec).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(201));
-        MatcherAssert.assertThat(response.getLocation().toString(), containsString("/123"));
+        MatcherAssert.assertThat(response.getLocation().toString(), containsString("/42"));
     }
 
     @Test
-    void create_appliesDefaults() {
-        BalancingRecommendation recommendation = new BalancingRecommendation();
-        recommendation.sourceGridCellId = "GRID_A";
-        recommendation.targetGridCellId = "GRID_B";
-        recommendation.sourceNetLoadKw = 95.0;
-        recommendation.targetHeadroomKw = 40.0;
-        recommendation.overloadKw = 5.0;
-        recommendation.transferableKw = 5.0;
-        recommendation.rationale = "Transfer 5kW to GRID_B";
+    void create_setsCreatedAtWhenNull() {
+        BalancingRecommendation rec = new BalancingRecommendation();
+        rec.assetId = 1006L;
+        rec.action = "REDUCE_CHARGING";
+        rec.fromCell = "PORTO-IN";
+        rec.toCell = "PORTO-IN";
 
         RowSet<Row> insertResult = rowSetWithRowCount(1);
         Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID))
-               .thenReturn(123L);
-        stubPreparedQuery("INSERT INTO BalancingRecommendation(sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw, overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt) VALUES (?,?,?,?,?,?,?,?,?,?)", insertResult);
+               .thenReturn(42L);
+        stubPreparedQuery("INSERT INTO BalancingRecommendation (assetId, action, fromCell, toCell, createdAt) VALUES (?,?,?,?,?)", insertResult);
 
-        Response response = resource.create(recommendation).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(201));
-        MatcherAssert.assertThat(recommendation.createdAt, notNullValue());
-        MatcherAssert.assertThat(recommendation.status, is("MANUAL"));
-        MatcherAssert.assertThat(recommendation.thresholdPercent, is(0.9));
+        resource.create(rec).await().indefinitely();
+        MatcherAssert.assertThat(rec.createdAt, notNullValue());
     }
 
     @Test
     void update_withExistingId_returns204() {
-        BalancingRecommendation recommendation = new BalancingRecommendation();
-        recommendation.sourceGridCellId = "GRID_A";
-        recommendation.targetGridCellId = "GRID_B";
-        recommendation.sourceNetLoadKw = 95.0;
-        recommendation.targetHeadroomKw = 40.0;
-        recommendation.overloadKw = 5.0;
-        recommendation.transferableKw = 5.0;
-        recommendation.thresholdPercent = 0.9;
-        recommendation.status = "RECOMMENDED";
-        recommendation.rationale = "Transfer 5kW to GRID_B";
-        recommendation.createdAt = LocalDateTime.now();
+        BalancingRecommendation rec = new BalancingRecommendation();
+        rec.assetId = 1006L;
+        rec.action = "REDUCE_CHARGING";
+        rec.fromCell = "PORTO-IN";
+        rec.toCell = "PORTO-IN";
+        rec.createdAt = LocalDateTime.now();
 
         RowSet<Row> updateResult = rowSetWithRowCount(1);
-        stubPreparedQuery("UPDATE BalancingRecommendation SET sourceGridCellId = ?, targetGridCellId = ?, sourceNetLoadKw = ?, targetHeadroomKw = ?, overloadKw = ?, transferableKw = ?, thresholdPercent = ?, status = ?, rationale = ?, createdAt = ? WHERE id = ?", updateResult);
+        stubPreparedQuery("UPDATE BalancingRecommendation SET assetId = ?, action = ?, "
+                + "fromCell = ?, toCell = ?, createdAt = ? WHERE id = ?", updateResult);
 
-        Response response = resource.update(1L, recommendation).await().indefinitely();
+        Response response = resource.update(1L, rec).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(204));
     }
 
     @Test
     void update_withNonExistingId_returns404() {
-        BalancingRecommendation recommendation = new BalancingRecommendation();
-        recommendation.sourceGridCellId = "GRID_A";
-        recommendation.targetGridCellId = "GRID_B";
-        recommendation.sourceNetLoadKw = 95.0;
-        recommendation.targetHeadroomKw = 40.0;
-        recommendation.overloadKw = 5.0;
-        recommendation.transferableKw = 5.0;
-        recommendation.thresholdPercent = 0.9;
-        recommendation.status = "RECOMMENDED";
-        recommendation.rationale = "Transfer 5kW to GRID_B";
-        recommendation.createdAt = LocalDateTime.now();
+        BalancingRecommendation rec = new BalancingRecommendation();
+        rec.assetId = 1006L;
+        rec.action = "REDUCE_CHARGING";
+        rec.fromCell = "PORTO-IN";
+        rec.toCell = "PORTO-IN";
+        rec.createdAt = LocalDateTime.now();
 
         RowSet<Row> updateResult = rowSetWithRowCount(0);
-        stubPreparedQuery("UPDATE BalancingRecommendation SET sourceGridCellId = ?, targetGridCellId = ?, sourceNetLoadKw = ?, targetHeadroomKw = ?, overloadKw = ?, transferableKw = ?, thresholdPercent = ?, status = ?, rationale = ?, createdAt = ? WHERE id = ?", updateResult);
+        stubPreparedQuery("UPDATE BalancingRecommendation SET assetId = ?, action = ?, "
+                + "fromCell = ?, toCell = ?, createdAt = ? WHERE id = ?", updateResult);
 
-        Response response = resource.update(99L, recommendation).await().indefinitely();
+        Response response = resource.update(99L, rec).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(404));
     }
 
     @Test
     void delete_withExistingId_returns204() {
-        RowSet<Row> deleteResult = rowSetWithRowCount(1);
-        stubPreparedQuery("DELETE FROM BalancingRecommendation WHERE id = ?", deleteResult);
+        stubPreparedQuery("DELETE FROM BalancingRecommendation WHERE id = ?", rowSetWithRowCount(1));
 
         Response response = resource.delete(1L).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(204));
@@ -406,78 +187,97 @@ class GridBalancingRecommendationResourceTest {
 
     @Test
     void delete_withNonExistingId_returns404() {
-        RowSet<Row> deleteResult = rowSetWithRowCount(0);
-        stubPreparedQuery("DELETE FROM BalancingRecommendation WHERE id = ?", deleteResult);
+        stubPreparedQuery("DELETE FROM BalancingRecommendation WHERE id = ?", rowSetWithRowCount(0));
 
         Response response = resource.delete(99L).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(404));
     }
 
-    @Test
-    void getByTimeWindow_returnsList() {
-        LocalDateTime from = LocalDateTime.of(2024, 1, 1, 0, 0);
-        LocalDateTime to = LocalDateTime.of(2024, 12, 31, 23, 59);
-        LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
-        LocalDateTime timestamp2 = LocalDateTime.of(2024, 6, 20, 14, 0);
-        Row row1 = balancingRecommendationRow(1L, "GRID_A", "GRID_B", 95.0, 40.0, 5.0, 5.0, 0.9, "RECOMMENDED", "Transfer 5kW to GRID_B", timestamp1);
-        Row row2 = balancingRecommendationRow(2L, "GRID_C", null, 100.0, null, 10.0, null, 0.9, "NO_TARGET", "No available target", timestamp2);
-        stubPreparedQuery("SELECT id, sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw, overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt FROM BalancingRecommendation WHERE createdAt >= ? AND createdAt <= ? ORDER BY createdAt DESC", rowSetWithRows(row1, row2));
-
-        List<BalancingRecommendation> result = resource.getByTimeWindow(from.toString(), to.toString()).collect().asList().await().indefinitely();
-        MatcherAssert.assertThat(result, hasSize(2));
-        MatcherAssert.assertThat(result.get(0).id, is(1L));
-        MatcherAssert.assertThat(result.get(0).sourceGridCellId, is("GRID_A"));
-        MatcherAssert.assertThat(result.get(1).id, is(2L));
-        MatcherAssert.assertThat(result.get(1).status, is("NO_TARGET"));
-    }
+    // ── /metrics tests ───────────────────────────────────────────────────────────
 
     @Test
-    void getByTimeWindow_returnsEmptyList() {
-        LocalDateTime from = LocalDateTime.of(2020, 1, 1, 0, 0);
-        LocalDateTime to = LocalDateTime.of(2020, 12, 31, 23, 59);
-        stubPreparedQuery("SELECT id, sourceGridCellId, targetGridCellId, sourceNetLoadKw, targetHeadroomKw, overloadKw, transferableKw, thresholdPercent, status, rationale, createdAt FROM BalancingRecommendation WHERE createdAt >= ? AND createdAt <= ? ORDER BY createdAt DESC", rowSetWithRows());
+    void computeMetrics_singleCell_returnsMetrics() {
+        GridCellDTO cell = new GridCellDTO();
+        cell.gridCellId = "PORTO-IN";
+        cell.maxCapacity = 75.0;
 
-        List<BalancingRecommendation> result = resource.getByTimeWindow(from.toString(), to.toString()).collect().asList().await().indefinitely();
-        MatcherAssert.assertThat(result, hasSize(0));
+        TelemetryDTO ev = new TelemetryDTO();
+        ev.asset_type = "EV_CHARGER";
+        ev.grid_cell_id = "PORTO-IN";
+        ev.Charging_Rate = 70.0f;
+
+        GridCellMetricsDTO metrics = new GridCellMetricsDTO("PORTO-IN", 75.0, 70.0, -2.5);
+        Mockito.when(recommendationService.computeSingleCellMetrics(
+                Mockito.any(GridCellDTO.class), Mockito.anyList()))
+               .thenReturn(metrics);
+
+        GridCellMetricsRequest request = new GridCellMetricsRequest();
+        request.gridCell = cell;
+        request.telemetryData = List.of(ev);
+
+        Response response = resource.computeMetrics(request);
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        GridCellMetricsDTO result = (GridCellMetricsDTO) response.getEntity();
+        MatcherAssert.assertThat(result.gridCellId, is("PORTO-IN"));
+        MatcherAssert.assertThat(result.netLoad, is(70.0));
     }
 
-    private void injectClient(GridBalancingRecommendationResource target, MySQLPool pool) {
-        try {
-            Field field = GridBalancingRecommendationResource.class.getDeclaredField("client");
-            field.setAccessible(true);
-            field.set(target, pool);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IllegalStateException("Failed to inject MySQLPool", e);
-        }
+    @Test
+    void computeMetrics_multiCell_returnsList() {
+        GridCellDTO cell = new GridCellDTO();
+        cell.gridCellId = "LISBON-DT";
+        cell.maxCapacity = 50.0;
+
+        List<GridCellMetricsDTO> metrics = List.of(
+                new GridCellMetricsDTO("LISBON-DT", 50.0, 0.0, 45.0)
+        );
+        Mockito.when(recommendationService.computeMultiCellMetrics(
+                Mockito.anyList(), Mockito.anyList()))
+               .thenReturn(metrics);
+
+        GridCellMetricsRequest request = new GridCellMetricsRequest();
+        request.neighbourCells = List.of(cell);
+        request.allTelemetry = Collections.emptyList();
+
+        Response response = resource.computeMetrics(request);
+        MatcherAssert.assertThat(response.getStatus(), is(200));
     }
 
-    private void injectSchemaCreate(GridBalancingRecommendationResource target, boolean value) {
-        try {
-            Field field = GridBalancingRecommendationResource.class.getDeclaredField("schemaCreate");
-            field.setAccessible(true);
-            field.set(target, value);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IllegalStateException("Failed to inject schemaCreate", e);
-        }
+    @Test
+    void computeMetrics_emptyRequest_returns400() {
+        GridCellMetricsRequest request = new GridCellMetricsRequest();
+
+        Response response = resource.computeMetrics(request);
+        MatcherAssert.assertThat(response.getStatus(), is(400));
     }
 
-    private void injectService(GridBalancingRecommendationResource target, GridBalancingRecommendationService service) {
-        try {
-            Field field = GridBalancingRecommendationResource.class.getDeclaredField("recommendationService");
-            field.setAccessible(true);
-            field.set(target, service);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IllegalStateException("Failed to inject GridBalancingRecommendationService", e);
-        }
+    // ── /save tests ──────────────────────────────────────────────────────────────
+
+    @Test
+    void saveRecommendations_returnsSavedList() {
+        BalancingRecommendationDTO dto = new BalancingRecommendationDTO();
+        dto.assetId = 1006L;
+        dto.action = "REDUCE_CHARGING";
+        dto.from = "PORTO-IN";
+        dto.to = "PORTO-IN";
+
+        BalancingRecommendation saved = new BalancingRecommendation(1L, 1006L, "REDUCE_CHARGING", "PORTO-IN", "PORTO-IN", LocalDateTime.now());
+        Mockito.when(recommendationService.saveRecommendations(Mockito.anyList()))
+               .thenReturn(Uni.createFrom().item(List.of(saved)));
+
+        Response response = resource.saveRecommendations(List.of(dto)).await().indefinitely();
+        MatcherAssert.assertThat(response.getStatus(), is(200));
     }
 
-    private void injectThresholdPercent(GridBalancingRecommendationResource target, double value) {
+    // ── Helpers ──────────────────────────────────────────────────────────────────
+
+    private void injectField(String name, Object value) {
         try {
-            Field field = GridBalancingRecommendationResource.class.getDeclaredField("thresholdPercent");
+            Field field = GridBalancingRecommendationResource.class.getDeclaredField(name);
             field.setAccessible(true);
-            field.set(target, value);
+            field.set(resource, value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IllegalStateException("Failed to inject thresholdPercent", e);
+            throw new IllegalStateException("Failed to inject field: " + name, e);
         }
     }
 
@@ -507,68 +307,22 @@ class GridBalancingRecommendationResourceTest {
         return rowSet;
     }
 
-    private Row balancingRecommendationRow(Long id, String sourceGridCellId, String targetGridCellId,
-                                           Double sourceNetLoadKw, Double targetHeadroomKw, Double overloadKw,
-                                           Double transferableKw, Double thresholdPercent, String status,
-                                           String rationale, LocalDateTime createdAt) {
+    private Row recommendationRow(Long id, Long assetId, String action,
+                                  String fromCell, String toCell, LocalDateTime createdAt) {
         Row row = Mockito.mock(Row.class);
         Mockito.when(row.getLong("id")).thenReturn(id);
-        Mockito.when(row.getString("sourceGridCellId")).thenReturn(sourceGridCellId);
-        Mockito.when(row.getString("targetGridCellId")).thenReturn(targetGridCellId);
-        Mockito.when(row.getDouble("sourceNetLoadKw")).thenReturn(sourceNetLoadKw);
-        Mockito.when(row.getDouble("targetHeadroomKw")).thenReturn(targetHeadroomKw);
-        Mockito.when(row.getDouble("overloadKw")).thenReturn(overloadKw);
-        Mockito.when(row.getDouble("transferableKw")).thenReturn(transferableKw);
-        Mockito.when(row.getDouble("thresholdPercent")).thenReturn(thresholdPercent);
-        Mockito.when(row.getString("status")).thenReturn(status);
-        Mockito.when(row.getString("rationale")).thenReturn(rationale);
+        Mockito.when(row.getLong("assetId")).thenReturn(assetId);
+        Mockito.when(row.getString("action")).thenReturn(action);
+        Mockito.when(row.getString("fromCell")).thenReturn(fromCell);
+        Mockito.when(row.getString("toCell")).thenReturn(toCell);
         Mockito.when(row.getLocalDateTime("createdAt")).thenReturn(createdAt);
         return row;
-    }
-
-    private TelemetryDTO createEVChargerTelemetry(Long assetId, String gridCellId, Float chargingRate) {
-        TelemetryDTO dto = new TelemetryDTO();
-        dto.asset_id = assetId;
-        dto.asset_type = "EV_CHARGER";
-        dto.grid_cell_id = gridCellId;
-        dto.Charging_Rate = chargingRate;
-        dto.timeStamp = LocalDateTime.now();
-        return dto;
-    }
-
-    private TelemetryDTO createSolarTelemetry(Long assetId, String gridCellId, Float currentGeneration) {
-        TelemetryDTO dto = new TelemetryDTO();
-        dto.asset_id = assetId;
-        dto.asset_type = "SOLAR";
-        dto.grid_cell_id = gridCellId;
-        dto.Current_Generation = currentGeneration;
-        dto.timeStamp = LocalDateTime.now();
-        return dto;
-    }
-
-    private TelemetryDTO createBatteryTelemetry(Long assetId, String gridCellId, Float currentOutput) {
-        TelemetryDTO dto = new TelemetryDTO();
-        dto.asset_id = assetId;
-        dto.asset_type = "BATTERY";
-        dto.grid_cell_id = gridCellId;
-        dto.Current_Output = currentOutput;
-        dto.timeStamp = LocalDateTime.now();
-        return dto;
-    }
-
-    private GridCellDTO createGridCell(String gridCellId, Double maxCapacity) {
-        GridCellDTO dto = new GridCellDTO();
-        dto.gridCellId = gridCellId;
-        dto.maxCapacity = maxCapacity;
-        dto.utilityOperatorId = 1L;
-        dto.geographicBoundaries = "Test boundaries";
-        return dto;
     }
 
     private static final class ListRowIterator implements RowIterator<Row> {
         private final java.util.Iterator<Row> iterator;
 
-        private ListRowIterator(List<Row> rows) {
+        ListRowIterator(List<Row> rows) {
             this.iterator = rows.iterator();
         }
 

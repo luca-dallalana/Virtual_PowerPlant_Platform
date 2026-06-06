@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_03lqrla" name="DRD" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.47.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <decision id="Decision_GridBalancing" name="Grid Balancing Decision">
+    <extensionElements>
+      <zeebe:versionTag />
+    </extensionElements>
+    <decisionTable id="DecisionTable_1bnw6ev" hitPolicy="FIRST">
+      <input id="Input_1" label="Asset Type">
+        <inputExpression id="InputExpression_1" typeRef="string">
+          <text>assetType</text>
+        </inputExpression>
+      </input>
+      <input id="InputClause_0ralcku" label="Grid Cell Context">
+        <inputExpression id="LiteralExpression_0me02om" typeRef="string">
+          <text>gridCellContext</text>
+        </inputExpression>
+      </input>
+      <input id="InputClause_13hcrmx" label="Sate of Charge (%)">
+        <inputExpression id="LiteralExpression_0zhznyl" typeRef="number">
+          <text>socPercent</text>
+        </inputExpression>
+      </input>
+      <input id="InputClause_1nfbg0i" label="Is Charging">
+        <inputExpression id="LiteralExpression_0bvng5n" typeRef="boolean">
+          <text>isCharging</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="Action" name="action" typeRef="string" />
+      <rule id="DecisionRule_1pixji7">
+        <inputEntry id="UnaryTests_0lbwntt">
+          <text>"BATTERY"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1oh1anj">
+          <text>"STRESSED"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0d5qd8x">
+          <text>&lt; 20</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_03rl06b">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1fg2exk">
+          <text>"NO_ACTION"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0wgxr7p">
+        <inputEntry id="UnaryTests_02rh219">
+          <text>"BATTERY"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0f4fefl">
+          <text>"STRESSED"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1rgyjuz">
+          <text>&gt;= 50</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_084gyyt">
+          <text>true</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0dw6ksx">
+          <text>"DISCHARGE"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1wns2dy">
+        <inputEntry id="UnaryTests_1q7avkm">
+          <text>"BATTERY"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_059knh4">
+          <text>"SURPLUS"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0ketuc1">
+          <text>&lt; 30</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_02mygzf">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1jpk0f2">
+          <text>"NO_ACTION"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0nypqyr">
+        <inputEntry id="UnaryTests_0336s3e">
+          <text>"BATTERY"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_092obxt">
+          <text>"SURPLUS"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0iw5vww">
+          <text>&gt;= 60</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0vqlxen">
+          <text>true</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0w0lnwr">
+          <text>"DISCHARGE"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1lijk7e">
+        <inputEntry id="UnaryTests_1rpegih">
+          <text>"EV_CHARGER"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0oaozs0">
+          <text>"STRESSED"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_04oef08">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1g1icja">
+          <text>true</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1xybi71">
+          <text>"STOP_CHARGING"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1rdkjtw">
+        <inputEntry id="UnaryTests_1jrcad3">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_06uauqr">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0iat2it">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_130kpns">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0cjtsje">
+          <text>"NO_ACTION"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape id="Decision_16hphu8_di" dmnElementRef="Decision_GridBalancing">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

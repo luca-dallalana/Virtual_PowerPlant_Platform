@@ -219,7 +219,7 @@
       <bpmn:outgoing>Flow_08r6ey9</bpmn:outgoing>
       <bpmn:outgoing>Flow_1jfxnby</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:task id="Activity_1pmvp2o" name="Declare Flexibility Forecasting persistence">
+    <bpmn:task id="Activity_1pmvp2o" name="Declare Flexibility Offers persistence">
       <bpmn:incoming>Flow_0348xry</bpmn:incoming>
       <bpmn:outgoing>Flow_018zirq</bpmn:outgoing>
     </bpmn:task>
@@ -235,20 +235,20 @@
           <zeebe:input source="=false" target="followRedirects" />
           <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
           <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#34;eventCreated&#34;: FlexibilityEmissionList}" target="body" />
+          <zeebe:input source="=FlexibilityEmissionList" target="body" />
           <zeebe:input source="=false" target="ignoreNullValues" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="13" />
           <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  emissionStatus: response.status,&#10;  myResponseBody: response.body&#10;}" />
+          <zeebe:header key="resultExpression" value="={&#10;  persistStatus: response.status,&#10;  persistCount: response.body&#10;}" />
           <zeebe:header key="retryBackoff" value="PT0S" />
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0p0cpro</bpmn:incoming>
       <bpmn:outgoing>Flow_0348xry</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:task id="Activity_0xtbddh" name="Promise Flexibility Forecasting persistence">
+    <bpmn:task id="Activity_0xtbddh" name="Promise Flexibility Offers persistence">
       <bpmn:incoming>Flow_EventCreated_Yes</bpmn:incoming>
       <bpmn:outgoing>Flow_0p0cpro</bpmn:outgoing>
     </bpmn:task>
@@ -303,12 +303,12 @@
         <dc:Bounds x="160" y="80" width="1830" height="340" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Lane_AssetEvaluation_di" bpmnElement="Lane_FlexibilityEvaluation" isHorizontal="true">
-        <dc:Bounds x="190" y="260" width="1800" height="160" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Lane_Scheduler_di" bpmnElement="Lane_Flexibility_Manager" isHorizontal="true">
         <dc:Bounds x="190" y="80" width="1800" height="180" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_AssetEvaluation_di" bpmnElement="Lane_FlexibilityEvaluation" isHorizontal="true">
+        <dc:Bounds x="190" y="260" width="1800" height="160" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StartEvent_Timer_di" bpmnElement="StartEvent_Timer">

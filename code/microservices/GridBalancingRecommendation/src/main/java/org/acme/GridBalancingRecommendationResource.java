@@ -10,14 +10,12 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
-import org.acme.dto.GridBalancingEvaluateResponse;
-import org.acme.dto.GridCellEvaluationResult;
-import org.acme.dto.SingleCellEvaluationRequest;
+import org.acme.dto.BalancingRecommendationDTO;
+import org.acme.dto.GridCellMetricsDTO;
+import org.acme.dto.GridCellMetricsRequest;
 import org.acme.entities.BalancingRecommendation;
 import org.acme.services.GridBalancingRecommendationService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.acme.dto.GridBalancingEvaluateRequest;
-
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,12 +34,6 @@ public class GridBalancingRecommendationResource {
     @ConfigProperty(name = "myapp.schema.create", defaultValue = "true")
     boolean schemaCreate;
 
-    @ConfigProperty(name = "gridbalancing.threshold.percent", defaultValue = "0.9")
-    double thresholdPercent;
-
-    @ConfigProperty(name = "kafka.bootstrap.servers")
-    String kafka_servers;
-
     void onStart(@Observes StartupEvent ev) {
         if (schemaCreate) {
             initdb();
@@ -49,42 +41,48 @@ public class GridBalancingRecommendationResource {
     }
 
     private void initdb() {
+        final String INS = "INSERT INTO BalancingRecommendation (assetId, action, fromCell, toCell, createdAt) VALUES ";
+
         client.query("DROP TABLE IF EXISTS BalancingRecommendation").execute()
                 .flatMap(r -> client.query("CREATE TABLE BalancingRecommendation ("
                         + "id SERIAL PRIMARY KEY, "
-                        + "sourceGridCellId VARCHAR(100) NOT NULL, "
-                        + "targetGridCellId VARCHAR(100), "
-                        + "sourceNetLoadKw DOUBLE NOT NULL, "
-                        + "targetHeadroomKw DOUBLE, "
-                        + "overloadKw DOUBLE NOT NULL, "
-                        + "transferableKw DOUBLE, "
-                        + "thresholdPercent DOUBLE NOT NULL, "
-                        + "status VARCHAR(30) NOT NULL, "
-                        + "rationale TEXT, "
+                        + "assetId BIGINT NOT NULL, "
+                        + "action VARCHAR(50) NOT NULL, "
+                        + "fromCell VARCHAR(100) NOT NULL, "
+                        + "toCell VARCHAR(100) NOT NULL, "
                         + "createdAt DATETIME NOT NULL"
                         + ")").execute())
+                // Seed: PORTO-IN overload scenario — EV chargers in PORTO-IN recommended to reduce load
+                .flatMap(r -> client.query(INS + "(1006,'REDUCE_CHARGING','PORTO-IN','PORTO-IN',NOW()-INTERVAL 15 MINUTE)").execute())
+                .flatMap(r -> client.query(INS + "(1007,'REDUCE_CHARGING','PORTO-IN','PORTO-IN',NOW()-INTERVAL 15 MINUTE)").execute())
+                // LISBON-DT battery discharging to supply PORTO-IN
+                .flatMap(r -> client.query(INS + "(1001,'DISCHARGE','LISBON-DT','PORTO-IN',NOW()-INTERVAL 15 MINUTE)").execute())
+                // 13 minutes ago: second evaluation cycle
+                .flatMap(r -> client.query(INS + "(1006,'REDUCE_CHARGING','PORTO-IN','PORTO-IN',NOW()-INTERVAL 13 MINUTE)").execute())
+                .flatMap(r -> client.query(INS + "(1007,'REDUCE_CHARGING','PORTO-IN','PORTO-IN',NOW()-INTERVAL 13 MINUTE)").execute())
                 .await().indefinitely();
     }
 
     @POST
-    @Path("/evaluate")
-    public Response evaluate(GridBalancingEvaluateRequest request) {
-        List<BalancingRecommendation> recommendations = recommendationService.evaluateRecommendations(request);
-        return Response.ok(new GridBalancingEvaluateResponse(recommendations)).build();
+    @Path("/metrics")
+    public Response computeMetrics(GridCellMetricsRequest request) {
+        if (request.gridCell != null) {
+            GridCellMetricsDTO result = recommendationService.computeSingleCellMetrics(
+                    request.gridCell, request.telemetryData);
+            return Response.ok(result).build();
+        } else if (request.neighbourCells != null) {
+            List<GridCellMetricsDTO> results = recommendationService.computeMultiCellMetrics(
+                    request.neighbourCells, request.allTelemetry);
+            return Response.ok(results).build();
+        }
+        return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Request must contain either gridCell or neighbourCells").build();
     }
 
     @POST
-    @Path("/evaluateCell")
-    public Response evaluateCell(SingleCellEvaluationRequest request) {
-        GridCellEvaluationResult result = recommendationService.evaluateCell(request);
-        return Response.ok(result).build();
-    }
-
-    @POST
-    @Path("/emit")
-    public Uni<Response> emit(List<BalancingRecommendation> recommendations) {
-        recommendations.forEach(this::applyDefaults);
-        return recommendationService.emitAll(recommendations)
+    @Path("/save")
+    public Uni<Response> saveRecommendations(List<BalancingRecommendationDTO> recommendations) {
+        return recommendationService.saveRecommendations(recommendations)
                 .onItem().transform(saved -> Response.ok(saved).build());
     }
 
@@ -102,9 +100,9 @@ public class GridBalancingRecommendationResource {
     }
 
     @GET
-    @Path("source/{gridCellId}")
-    public Multi<BalancingRecommendation> getBySource(@PathParam("gridCellId") String gridCellId) {
-        return BalancingRecommendation.findBySourceGridCellId(client, gridCellId);
+    @Path("source/{fromCell}")
+    public Multi<BalancingRecommendation> getBySource(@PathParam("fromCell") String fromCell) {
+        return BalancingRecommendation.findByFromCell(client, fromCell);
     }
 
     @GET
@@ -119,7 +117,9 @@ public class GridBalancingRecommendationResource {
 
     @POST
     public Uni<Response> create(BalancingRecommendation recommendation) {
-        applyDefaults(recommendation);
+        if (recommendation.createdAt == null) {
+            recommendation.createdAt = LocalDateTime.now();
+        }
         return recommendation.save(client)
                 .onItem().transform(id -> URI.create("/GridBalancingRecommendation/" + id))
                 .onItem().transform(uri -> Response.created(uri).build());
@@ -128,18 +128,14 @@ public class GridBalancingRecommendationResource {
     @PUT
     @Path("{id}")
     public Uni<Response> update(@PathParam("id") Long id, BalancingRecommendation recommendation) {
-        applyDefaults(recommendation);
-        return BalancingRecommendation.update(client,
-                        id,
-                        recommendation.sourceGridCellId,
-                        recommendation.targetGridCellId,
-                        recommendation.sourceNetLoadKw,
-                        recommendation.targetHeadroomKw,
-                        recommendation.overloadKw,
-                        recommendation.transferableKw,
-                        recommendation.thresholdPercent,
-                        recommendation.status,
-                        recommendation.rationale,
+        if (recommendation.createdAt == null) {
+            recommendation.createdAt = LocalDateTime.now();
+        }
+        return BalancingRecommendation.update(client, id,
+                        recommendation.assetId,
+                        recommendation.action,
+                        recommendation.fromCell,
+                        recommendation.toCell,
                         recommendation.createdAt)
                 .onItem().transform(updated -> updated ? Response.Status.NO_CONTENT : Response.Status.NOT_FOUND)
                 .onItem().transform(status -> Response.status(status).build());
@@ -151,17 +147,5 @@ public class GridBalancingRecommendationResource {
         return BalancingRecommendation.delete(client, id)
                 .onItem().transform(deleted -> deleted ? Response.Status.NO_CONTENT : Response.Status.NOT_FOUND)
                 .onItem().transform(status -> Response.status(status).build());
-    }
-
-    private void applyDefaults(BalancingRecommendation recommendation) {
-        if (recommendation.createdAt == null) {
-            recommendation.createdAt = LocalDateTime.now();
-        }
-        if (recommendation.thresholdPercent == null) {
-            recommendation.thresholdPercent = thresholdPercent;
-        }
-        if (recommendation.status == null || recommendation.status.isBlank()) {
-            recommendation.status = "MANUAL";
-        }
     }
 }

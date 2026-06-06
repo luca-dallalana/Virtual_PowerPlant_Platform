@@ -6,65 +6,51 @@
   <bpmn:process id="GridBalancing" name="GridBalancing" isExecutable="true">
     <bpmn:laneSet id="LaneSet_092j3hf">
       <bpmn:lane id="Lane_0psnoyx" name="Grid Balancing Evaluation">
-        <bpmn:flowNodeRef>Gateway_1dbyhgh</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_1c6zm9s</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Activity_1b3463o</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Activity_19jgtw5</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Activity_15q8r4u</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Activity_1xasl7p</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Activity_0bxqod4</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Activity_11ao121</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_1dbyhgh</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0r3gk67</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_1uw20r4</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_12sfntu</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Activity_0r3gk67</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0bxqod4</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0rx3oti</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0rpaydt</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_05ky24n</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1h6cdx5</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1xasl7p</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1b3463o</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_15q8r4u</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_19jgtw5</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_08npy1o</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_0a0p8ex</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_11ao121</bpmn:flowNodeRef>
       </bpmn:lane>
       <bpmn:lane id="Lane_181jjgn" name="Grid Balancing Manager">
-        <bpmn:flowNodeRef>Activity_18qnknf</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Activity_1t14g35</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Event_1jpfxhi</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Gateway_0iqm8sw</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Gateway_0txl3l7</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Activity_16t05qa</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Activity_054ts6u</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Event_0v78gm3</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Event_1wjgux1</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_085gnyk</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_1wjgux1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_0v78gm3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_054ts6u</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_16t05qa</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_0txl3l7</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_0iqm8sw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_1jpfxhi</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1t14g35</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_18qnknf</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>GW_EventCreated</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>EndEvent_NoRuleTriggered</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_18hhwxv</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Gateway_1ijo3sb</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Event_177fap1</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Event_0vdbfl1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_177fap1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_NoRuleTriggered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_13v1bgq</bpmn:flowNodeRef>
       </bpmn:lane>
     </bpmn:laneSet>
-    <bpmn:sequenceFlow id="Flow_1xm4l2t" sourceRef="Activity_11ao121" targetRef="Activity_0bxqod4" />
-    <bpmn:sequenceFlow id="Flow_1dqu83l" sourceRef="Activity_18hhwxv" targetRef="Gateway_1ijo3sb" />
-    <bpmn:sequenceFlow id="Flow_0yymzt2" name="Yes" sourceRef="GW_EventCreated" targetRef="Activity_18hhwxv">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=hasGridBalancing = true</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_EventCreated_No" name="No" sourceRef="GW_EventCreated" targetRef="EndEvent_NoRuleTriggered">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=hasGridBalancing = false</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_05aapwz" sourceRef="Activity_16t05qa" targetRef="Activity_054ts6u" />
-    <bpmn:sequenceFlow id="Flow_00w6vh7" name="Yes" sourceRef="Gateway_0txl3l7" targetRef="Activity_16t05qa">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=decide = true</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_0thla12" name="No" sourceRef="Gateway_0txl3l7" targetRef="Event_1wjgux1">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=decide = false</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_1vqzwe8" sourceRef="Activity_085gnyk" targetRef="Gateway_0txl3l7" />
     <bpmn:sequenceFlow id="Flow_1lgrbxx" name="Yes" sourceRef="Gateway_0iqm8sw" targetRef="Activity_085gnyk">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=needGridBalancing = true</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_0tw3v5c" name="No" sourceRef="Gateway_0iqm8sw" targetRef="Event_0v78gm3">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=needGridBalancing = false</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=selectedCellMetrics.netLoad &gt;= selectedGridCell.maxCapacity * 0.9 // The number is the threshold percentage that can be adjusted by the stakeholders.</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_0l3s6ag" sourceRef="Activity_08npy1o" targetRef="Activity_0r3gk67" />
     <bpmn:sequenceFlow id="Flow_093dwk4" sourceRef="Activity_12sfntu" targetRef="Gateway_0iqm8sw" />
-    <bpmn:sequenceFlow id="Flow_13qq79x" sourceRef="Activity_0r3gk67" targetRef="Activity_12sfntu" />
     <bpmn:sequenceFlow id="Flow_1jxpr3x" sourceRef="Activity_0a0p8ex" targetRef="Activity_08npy1o" />
     <bpmn:sequenceFlow id="Flow_0v77yz7" sourceRef="Activity_18qnknf" targetRef="Activity_1t14g35" />
     <bpmn:sequenceFlow id="Flow_0r22up3" sourceRef="StartEvent_1" targetRef="Activity_18qnknf" />
@@ -76,62 +62,6 @@
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=promise = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_1h7dh1p" sourceRef="Activity_1c6zm9s" targetRef="Gateway_1dbyhgh" />
-    <bpmn:userTask id="Activity_085gnyk" name="Decide If neighbouring  GridCells will be analysed">
-      <bpmn:extensionElements>
-        <zeebe:userTask />
-        <zeebe:assignmentDefinition assignee="demo" />
-        <zeebe:formDefinition formId="Form_Decide_neighbouringGridCells" />
-      </bpmn:extensionElements>
-      <bpmn:incoming>Flow_1lgrbxx</bpmn:incoming>
-      <bpmn:outgoing>Flow_1vqzwe8</bpmn:outgoing>
-    </bpmn:userTask>
-    <bpmn:endEvent id="Event_1wjgux1" name="No analysis of neighbouring GridCells">
-      <bpmn:incoming>Flow_0thla12</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:endEvent id="Event_0v78gm3" name="GridCell doesn&#39;t exeed its safety threshold">
-      <bpmn:incoming>Flow_0tw3v5c</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:userTask id="Activity_054ts6u" name="Decide neighbouring GridCells to analyse">
-      <bpmn:extensionElements>
-        <zeebe:userTask />
-        <zeebe:assignmentDefinition assignee="demo" />
-        <zeebe:formDefinition formId="Form_Select_NeighbouringGridCell" />
-      </bpmn:extensionElements>
-      <bpmn:incoming>Flow_05aapwz</bpmn:incoming>
-      <bpmn:outgoing>Flow_1tgj7f7</bpmn:outgoing>
-    </bpmn:userTask>
-    <bpmn:serviceTask id="Activity_16t05qa" name="Retrieve GridCell neighbours" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
-        <zeebe:ioMapping>
-          <zeebe:input source="noAuth" target="authentication.type" />
-          <zeebe:input source="GET" target="method" />
-          <zeebe:input source="=&#34;http://KONG_SERVER_PLACEHOLDER:8000/UtilityOperator/gridcells/&#34; + selectedGridCell.gridCellId + &#34;/neighbours&#34;" target="url" />
-          <zeebe:input source="=false" target="storeResponse" />
-          <zeebe:input source="=false" target="followRedirects" />
-          <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
-          <zeebe:input source="=20" target="readTimeoutInSeconds" />
-        </zeebe:ioMapping>
-        <zeebe:taskHeaders>
-          <zeebe:header key="elementTemplateVersion" value="13" />
-          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  neighbourscatalogStatus: response.status,&#10;  neighboursGridCells: response.body&#10;}" />
-          <zeebe:header key="retryBackoff" value="PT0S" />
-        </zeebe:taskHeaders>
-      </bpmn:extensionElements>
-      <bpmn:incoming>Flow_00w6vh7</bpmn:incoming>
-      <bpmn:outgoing>Flow_05aapwz</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:exclusiveGateway id="Gateway_0txl3l7" name="Are neighbouring GridCells  to be analysed?">
-      <bpmn:incoming>Flow_1vqzwe8</bpmn:incoming>
-      <bpmn:outgoing>Flow_00w6vh7</bpmn:outgoing>
-      <bpmn:outgoing>Flow_0thla12</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
-    <bpmn:exclusiveGateway id="Gateway_0iqm8sw" name="GridCell exceeds its safety threshold?">
-      <bpmn:incoming>Flow_093dwk4</bpmn:incoming>
-      <bpmn:outgoing>Flow_0tw3v5c</bpmn:outgoing>
-      <bpmn:outgoing>Flow_1lgrbxx</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
     <bpmn:endEvent id="Event_1jpfxhi" name="Evaluation Not possible">
       <bpmn:incoming>Flow_0xkui0n</bpmn:incoming>
     </bpmn:endEvent>
@@ -186,231 +116,6 @@
       <bpmn:outgoing>Flow_1hbbb2y</bpmn:outgoing>
       <bpmn:outgoing>Flow_0xkui0n</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="Flow_1v3g191" name="Yes" sourceRef="Gateway_1ijo3sb" targetRef="Activity_1b3463o">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=emit = true</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_1esc52s" name="No" sourceRef="Gateway_1ijo3sb" targetRef="Event_177fap1">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=emit = false</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_0vk60ux" sourceRef="Activity_1b3463o" targetRef="Activity_15q8r4u" />
-    <bpmn:sequenceFlow id="Flow_0oaybih" sourceRef="Activity_15q8r4u" targetRef="Activity_19jgtw5" />
-    <bpmn:sequenceFlow id="Flow_016986i" sourceRef="Activity_19jgtw5" targetRef="Event_0vdbfl1" />
-    <bpmn:sequenceFlow id="Flow_1tgj7f7" sourceRef="Activity_054ts6u" targetRef="Activity_1uw20r4" />
-    <bpmn:sequenceFlow id="Flow_0y0t8b2" sourceRef="Activity_1uw20r4" targetRef="Activity_11ao121" />
-    <bpmn:exclusiveGateway id="GW_EventCreated" name="Grid Balancing&#10;Suggested?">
-      <bpmn:incoming>Flow_1fy928y</bpmn:incoming>
-      <bpmn:outgoing>Flow_EventCreated_No</bpmn:outgoing>
-      <bpmn:outgoing>Flow_0yymzt2</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
-    <bpmn:endEvent id="EndEvent_NoRuleTriggered" name="No Grid Balancing&#10;Suggested">
-      <bpmn:incoming>Flow_EventCreated_No</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:userTask id="Activity_18hhwxv" name="Check Grid Balancing">
-      <bpmn:extensionElements>
-        <zeebe:userTask />
-        <zeebe:assignmentDefinition assignee="demo" />
-        <zeebe:formDefinition formId="Form_Check_GridBalancing" />
-      </bpmn:extensionElements>
-      <bpmn:incoming>Flow_0yymzt2</bpmn:incoming>
-      <bpmn:outgoing>Flow_1dqu83l</bpmn:outgoing>
-    </bpmn:userTask>
-    <bpmn:sequenceFlow id="Flow_0r51khz" sourceRef="Activity_0bxqod4" targetRef="Activity_1xasl7p" />
-    <bpmn:sequenceFlow id="Flow_1fy928y" sourceRef="Activity_1xasl7p" targetRef="GW_EventCreated" />
-    <bpmn:exclusiveGateway id="Gateway_1ijo3sb" name="Emit Grid Balancing?">
-      <bpmn:incoming>Flow_1dqu83l</bpmn:incoming>
-      <bpmn:outgoing>Flow_1v3g191</bpmn:outgoing>
-      <bpmn:outgoing>Flow_1esc52s</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
-    <bpmn:task id="Activity_1b3463o" name="Promise Grid Balancing Emission">
-      <bpmn:incoming>Flow_1v3g191</bpmn:incoming>
-      <bpmn:outgoing>Flow_0vk60ux</bpmn:outgoing>
-    </bpmn:task>
-    <bpmn:task id="Activity_19jgtw5" name="Declare Grid Balancing Emission">
-      <bpmn:incoming>Flow_0oaybih</bpmn:incoming>
-      <bpmn:outgoing>Flow_016986i</bpmn:outgoing>
-    </bpmn:task>
-    <bpmn:serviceTask id="Activity_15q8r4u" name="Emit Grid Balancing" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
-        <zeebe:ioMapping>
-          <zeebe:input source="noAuth" target="authentication.type" />
-          <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/GridBalancingRecommendation/emit" target="url" />
-          <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
-          <zeebe:input source="=false" target="storeResponse" />
-          <zeebe:input source="=false" target="followRedirects" />
-          <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
-          <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="=GridBalancingList" target="body" />
-          <zeebe:input source="=false" target="ignoreNullValues" />
-        </zeebe:ioMapping>
-        <zeebe:taskHeaders>
-          <zeebe:header key="elementTemplateVersion" value="13" />
-          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  emissionStatus: response.status,&#10;  myResponseBody: response.body&#10;}" />
-          <zeebe:header key="retryBackoff" value="PT0S" />
-        </zeebe:taskHeaders>
-      </bpmn:extensionElements>
-      <bpmn:incoming>Flow_0vk60ux</bpmn:incoming>
-      <bpmn:outgoing>Flow_0oaybih</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:endEvent id="Event_177fap1" name="Grid Balancing not Emitted">
-      <bpmn:incoming>Flow_1esc52s</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:endEvent id="Event_0vdbfl1" name="Grid Balancing Emitted">
-      <bpmn:incoming>Flow_016986i</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:task id="Activity_1xasl7p" name="Declare neighbouring GridCell Analysis">
-      <bpmn:incoming>Flow_0r51khz</bpmn:incoming>
-      <bpmn:outgoing>Flow_1fy928y</bpmn:outgoing>
-    </bpmn:task>
-    <bpmn:serviceTask id="Activity_0bxqod4" name="Evaluate Grid Balancing" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
-        <zeebe:ioMapping>
-          <zeebe:input source="noAuth" target="authentication.type" />
-          <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/GridBalancingRecommendation/evaluate" target="url" />
-          <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
-          <zeebe:input source="=false" target="storeResponse" />
-          <zeebe:input source="=false" target="followRedirects" />
-          <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
-          <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#34;sourceCell&#34;: selectedGridCell, &#34;neighbourCells&#34;: selectedGridCells, &#34;allTelemetry&#34;: neighboursGridCellTelemetry}" target="body" />
-          <zeebe:input source="=false" target="ignoreNullValues" />
-        </zeebe:ioMapping>
-        <zeebe:taskHeaders>
-          <zeebe:header key="elementTemplateVersion" value="13" />
-          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  evaluationStatus: response.status,&#10;  GridBalancingList: response.body.eventCreated,&#10;  hasGridBalancing: response.body.hasGridBalancing&#10;}" />
-          <zeebe:header key="retryBackoff" value="PT0S" />
-        </zeebe:taskHeaders>
-      </bpmn:extensionElements>
-      <bpmn:incoming>Flow_1xm4l2t</bpmn:incoming>
-      <bpmn:outgoing>Flow_0r51khz</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:subProcess id="Activity_11ao121" name="Retrieve neighbouring GridCells Telemetry">
-      <bpmn:incoming>Flow_0y0t8b2</bpmn:incoming>
-      <bpmn:outgoing>Flow_1xm4l2t</bpmn:outgoing>
-      <bpmn:serviceTask id="Activity_1f8rhdk" name="Retrieve GridCells Prosumers" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
-        <bpmn:extensionElements>
-          <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
-          <zeebe:ioMapping>
-            <zeebe:input source="noAuth" target="authentication.type" />
-            <zeebe:input source="POST" target="method" />
-            <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/AssetLink/prosumerIds/by-operators" target="url" />
-            <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
-            <zeebe:input source="=false" target="storeResponse" />
-            <zeebe:input source="=false" target="followRedirects" />
-            <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
-            <zeebe:input source="=20" target="readTimeoutInSeconds" />
-            <zeebe:input source="=for cell in selectedGridCells return cell.utilityOperatorId" target="body" />
-            <zeebe:input source="=false" target="ignoreNullValues" />
-          </zeebe:ioMapping>
-          <zeebe:taskHeaders>
-            <zeebe:header key="elementTemplateVersion" value="13" />
-            <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-            <zeebe:header key="resultExpression" value="={&#10;  neighbourProsumerIds: response.body&#10;}" />
-            <zeebe:header key="retryBackoff" value="PT0S" />
-          </zeebe:taskHeaders>
-        </bpmn:extensionElements>
-        <bpmn:incoming>Flow_18t6rxz</bpmn:incoming>
-        <bpmn:outgoing>Flow_0w6d37n</bpmn:outgoing>
-      </bpmn:serviceTask>
-      <bpmn:serviceTask id="Activity_0s7m74r" name="Retrive GridCells AssetID&#39;s" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
-        <bpmn:extensionElements>
-          <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
-          <zeebe:ioMapping>
-            <zeebe:input source="noAuth" target="authentication.type" />
-            <zeebe:input source="POST" target="method" />
-            <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Prosumer/assets/active/by-prosumers" target="url" />
-            <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
-            <zeebe:input source="=neighbourProsumerIds" target="body" />
-            <zeebe:input source="=false" target="ignoreNullValues" />
-            <zeebe:input source="=false" target="storeResponse" />
-            <zeebe:input source="=false" target="followRedirects" />
-            <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
-            <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          </zeebe:ioMapping>
-          <zeebe:taskHeaders>
-            <zeebe:header key="elementTemplateVersion" value="13" />
-            <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-            <zeebe:header key="resultExpression" value="={&#10;  neighbourAssetIds: response.body&#10;}" />
-            <zeebe:header key="retryBackoff" value="PT0S" />
-          </zeebe:taskHeaders>
-        </bpmn:extensionElements>
-        <bpmn:incoming>Flow_0w6d37n</bpmn:incoming>
-        <bpmn:outgoing>Flow_1r68t9v</bpmn:outgoing>
-      </bpmn:serviceTask>
-      <bpmn:serviceTask id="Activity_15noxe8" name="Retrieve neighbouring GridCells Telemetry" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
-        <bpmn:extensionElements>
-          <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
-          <zeebe:ioMapping>
-            <zeebe:input source="noAuth" target="authentication.type" />
-            <zeebe:input source="POST" target="method" />
-            <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Telemetry/latest/bulk" target="url" />
-            <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
-            <zeebe:input source="=neighbourAssetIds" target="body" />
-            <zeebe:input source="=false" target="ignoreNullValues" />
-            <zeebe:input source="=false" target="storeResponse" />
-            <zeebe:input source="=false" target="followRedirects" />
-            <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
-            <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          </zeebe:ioMapping>
-          <zeebe:taskHeaders>
-            <zeebe:header key="elementTemplateVersion" value="13" />
-            <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-            <zeebe:header key="resultExpression" value="={&#10;  TelemetryStatus: response.status,&#10;  neighboursGridCellTelemetry: response.body&#10;}" />
-            <zeebe:header key="retryBackoff" value="PT0S" />
-          </zeebe:taskHeaders>
-        </bpmn:extensionElements>
-        <bpmn:incoming>Flow_1r68t9v</bpmn:incoming>
-        <bpmn:outgoing>Flow_0bk1c1z</bpmn:outgoing>
-      </bpmn:serviceTask>
-      <bpmn:startEvent id="Event_1b041pr">
-        <bpmn:outgoing>Flow_18t6rxz</bpmn:outgoing>
-      </bpmn:startEvent>
-      <bpmn:endEvent id="Event_0m9ywzx">
-        <bpmn:incoming>Flow_0bk1c1z</bpmn:incoming>
-      </bpmn:endEvent>
-      <bpmn:sequenceFlow id="Flow_18t6rxz" sourceRef="Event_1b041pr" targetRef="Activity_1f8rhdk" />
-      <bpmn:sequenceFlow id="Flow_0w6d37n" sourceRef="Activity_1f8rhdk" targetRef="Activity_0s7m74r" />
-      <bpmn:sequenceFlow id="Flow_1r68t9v" sourceRef="Activity_0s7m74r" targetRef="Activity_15noxe8" />
-      <bpmn:sequenceFlow id="Flow_0bk1c1z" sourceRef="Activity_15noxe8" targetRef="Event_0m9ywzx" />
-    </bpmn:subProcess>
-    <bpmn:task id="Activity_1uw20r4" name="Promise neighbouring GridCell Analysis">
-      <bpmn:incoming>Flow_1tgj7f7</bpmn:incoming>
-      <bpmn:outgoing>Flow_0y0t8b2</bpmn:outgoing>
-    </bpmn:task>
-    <bpmn:task id="Activity_12sfntu" name="Declare GridCell Analysis">
-      <bpmn:incoming>Flow_13qq79x</bpmn:incoming>
-      <bpmn:outgoing>Flow_093dwk4</bpmn:outgoing>
-    </bpmn:task>
-    <bpmn:serviceTask id="Activity_0r3gk67" name="Evaluate GridCell" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
-        <zeebe:ioMapping>
-          <zeebe:input source="noAuth" target="authentication.type" />
-          <zeebe:input source="POST" target="method" />
-          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/GridBalancingRecommendation/evaluateCell" target="url" />
-          <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
-          <zeebe:input source="=false" target="storeResponse" />
-          <zeebe:input source="=false" target="followRedirects" />
-          <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
-          <zeebe:input source="=20" target="readTimeoutInSeconds" />
-          <zeebe:input source="={&#34;gridCell&#34;: selectedGridCell, &#34;telemetryData&#34;: GridCellTelemetry}" target="body" />
-          <zeebe:input source="=false" target="ignoreNullValues" />
-        </zeebe:ioMapping>
-        <zeebe:taskHeaders>
-          <zeebe:header key="elementTemplateVersion" value="13" />
-          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
-          <zeebe:header key="resultExpression" value="={&#10;  gridCellEvaluationStatus: response.status,&#10;  needGridBalancing: response.body.needGridBalancing&#10;}" />
-          <zeebe:header key="retryBackoff" value="PT0S" />
-        </zeebe:taskHeaders>
-      </bpmn:extensionElements>
-      <bpmn:incoming>Flow_0l3s6ag</bpmn:incoming>
-      <bpmn:outgoing>Flow_13qq79x</bpmn:outgoing>
-    </bpmn:serviceTask>
     <bpmn:subProcess id="Activity_08npy1o" name="Retrieve GridCell Telemetry">
       <bpmn:extensionElements />
       <bpmn:incoming>Flow_1jxpr3x</bpmn:incoming>
@@ -502,55 +207,390 @@
       <bpmn:incoming>Flow_1hbbb2y</bpmn:incoming>
       <bpmn:outgoing>Flow_1jxpr3x</bpmn:outgoing>
     </bpmn:task>
+    <bpmn:serviceTask id="Activity_0r3gk67" name="Compute GridCell netLoad" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="noAuth" target="authentication.type" />
+          <zeebe:input source="POST" target="method" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/GridBalancingRecommendation/metrics" target="url" />
+          <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
+          <zeebe:input source="=false" target="storeResponse" />
+          <zeebe:input source="=false" target="followRedirects" />
+          <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
+          <zeebe:input source="=20" target="readTimeoutInSeconds" />
+          <zeebe:input source="={&#34;gridCell&#34;: selectedGridCell, &#34;telemetryData&#34;: GridCellTelemetry}" target="body" />
+          <zeebe:input source="=false" target="ignoreNullValues" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="13" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
+          <zeebe:header key="resultExpression" value="={&#10;  selectedCellMetricsStatus: response.status,&#10;  selectedCellMetrics: response.body&#10;}" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0l3s6ag</bpmn:incoming>
+      <bpmn:outgoing>Flow_13qq79x</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_0v78gm3" name="GridCell doesn&#39;t exeed its safety threshold">
+      <bpmn:incoming>Flow_0tw3v5c</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="Gateway_0iqm8sw" name="GridCell exceeds its safety threshold?">
+      <bpmn:incoming>Flow_093dwk4</bpmn:incoming>
+      <bpmn:outgoing>Flow_1lgrbxx</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0tw3v5c</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Activity_085gnyk" name="Decide If neighbouring  GridCells will be analysed">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:assignmentDefinition assignee="demo" />
+        <zeebe:formDefinition formId="Form_Decide_neighbouringGridCells" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1lgrbxx</bpmn:incoming>
+      <bpmn:outgoing>Flow_1vqzwe8</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_0y0t8b2" sourceRef="Activity_1uw20r4" targetRef="Activity_11ao121" />
+    <bpmn:sequenceFlow id="Flow_1xm4l2t" sourceRef="Activity_11ao121" targetRef="Activity_0bxqod4" />
+    <bpmn:sequenceFlow id="Flow_00w6vh7" name="Yes" sourceRef="Gateway_0txl3l7" targetRef="Activity_16t05qa">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=decide = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1tgj7f7" sourceRef="Activity_054ts6u" targetRef="Activity_1uw20r4" />
+    <bpmn:sequenceFlow id="Flow_05aapwz" sourceRef="Activity_16t05qa" targetRef="Activity_054ts6u" />
+    <bpmn:sequenceFlow id="Flow_0thla12" name="No" sourceRef="Gateway_0txl3l7" targetRef="Event_1wjgux1">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=decide = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:task id="Activity_12sfntu" name="Declare GridCell Analysis">
+      <bpmn:incoming>Flow_13qq79x</bpmn:incoming>
+      <bpmn:outgoing>Flow_093dwk4</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Activity_1uw20r4" name="Promise neighbouring GridCell Analysis">
+      <bpmn:incoming>Flow_1tgj7f7</bpmn:incoming>
+      <bpmn:outgoing>Flow_0y0t8b2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_0txl3l7" name="Are neighbouring GridCells  to be analysed?">
+      <bpmn:incoming>Flow_1vqzwe8</bpmn:incoming>
+      <bpmn:outgoing>Flow_00w6vh7</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0thla12</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Activity_16t05qa" name="Retrieve GridCell neighbours" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="noAuth" target="authentication.type" />
+          <zeebe:input source="GET" target="method" />
+          <zeebe:input source="=&#34;http://KONG_SERVER_PLACEHOLDER:8000/UtilityOperator/gridcells/&#34; + selectedGridCell.gridCellId + &#34;/neighbours&#34;" target="url" />
+          <zeebe:input source="=false" target="storeResponse" />
+          <zeebe:input source="=false" target="followRedirects" />
+          <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
+          <zeebe:input source="=20" target="readTimeoutInSeconds" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="13" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
+          <zeebe:header key="resultExpression" value="={&#10;  neighbourscatalogStatus: response.status,&#10;  neighboursGridCells: response.body&#10;}" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_00w6vh7</bpmn:incoming>
+      <bpmn:outgoing>Flow_05aapwz</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Activity_054ts6u" name="Decide neighbouring GridCells to analyse">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:assignmentDefinition assignee="demo" />
+        <zeebe:formDefinition formId="Form_Select_NeighbouringGridCell" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_05aapwz</bpmn:incoming>
+      <bpmn:outgoing>Flow_1tgj7f7</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_1wjgux1" name="No analysis of neighbouring GridCells">
+      <bpmn:incoming>Flow_0thla12</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_13qq79x" sourceRef="Activity_0r3gk67" targetRef="Activity_12sfntu" />
+    <bpmn:sequenceFlow id="Flow_0tw3v5c" name="No" sourceRef="Gateway_0iqm8sw" targetRef="Event_0v78gm3">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=selectedCellMetrics.netLoad &lt; selectedGridCell.maxCapacity * 0.9 // The number is the threshold percentage that can be adjusted by the stakeholders.</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1fy928y" sourceRef="Activity_1xasl7p" targetRef="GW_EventCreated" />
+    <bpmn:sequenceFlow id="Flow_0yymzt2" name="Yes" sourceRef="GW_EventCreated" targetRef="Activity_18hhwxv">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=count(GridBalancingList) &gt; 0</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_EventCreated_No" name="No" sourceRef="GW_EventCreated" targetRef="EndEvent_NoRuleTriggered">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=count(GridBalancingList) = 0</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1dqu83l" sourceRef="Activity_18hhwxv" targetRef="Gateway_1ijo3sb" />
+    <bpmn:sequenceFlow id="Flow_1v3g191" name="Yes" sourceRef="Gateway_1ijo3sb" targetRef="Activity_1b3463o">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=emit = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1esc52s" name="No" sourceRef="Gateway_1ijo3sb" targetRef="Event_177fap1">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=emit = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0vk60ux" sourceRef="Activity_1b3463o" targetRef="Activity_15q8r4u" />
+    <bpmn:sequenceFlow id="Flow_0oaybih" sourceRef="Activity_15q8r4u" targetRef="Activity_19jgtw5" />
+    <bpmn:sequenceFlow id="Flow_0up0ctk" sourceRef="Activity_1h6cdx5" targetRef="Activity_1xasl7p" />
+    <bpmn:sequenceFlow id="Flow_1oixawr" sourceRef="Activity_0bxqod4" targetRef="Activity_0rx3oti" />
+    <bpmn:sequenceFlow id="Flow_0p5pyrl" sourceRef="Activity_0rx3oti" targetRef="Activity_0rpaydt" />
+    <bpmn:sequenceFlow id="Flow_1io8cvg" sourceRef="Activity_0rpaydt" targetRef="Activity_05ky24n" />
+    <bpmn:sequenceFlow id="Flow_1d4kgkw" sourceRef="Activity_05ky24n" targetRef="Activity_1h6cdx5" />
+    <bpmn:subProcess id="Activity_11ao121" name="Retrieve neighbouring GridCells Telemetry">
+      <bpmn:incoming>Flow_0y0t8b2</bpmn:incoming>
+      <bpmn:outgoing>Flow_1xm4l2t</bpmn:outgoing>
+      <bpmn:serviceTask id="Activity_1f8rhdk" name="Retrieve GridCells Prosumers" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
+          <zeebe:ioMapping>
+            <zeebe:input source="noAuth" target="authentication.type" />
+            <zeebe:input source="POST" target="method" />
+            <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/AssetLink/prosumerIds/by-operators" target="url" />
+            <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
+            <zeebe:input source="=false" target="storeResponse" />
+            <zeebe:input source="=false" target="followRedirects" />
+            <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
+            <zeebe:input source="=20" target="readTimeoutInSeconds" />
+            <zeebe:input source="=for cell in selectedGridCells return cell.utilityOperatorId" target="body" />
+            <zeebe:input source="=false" target="ignoreNullValues" />
+          </zeebe:ioMapping>
+          <zeebe:taskHeaders>
+            <zeebe:header key="elementTemplateVersion" value="13" />
+            <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
+            <zeebe:header key="resultExpression" value="={&#10;  neighbourProsumerIds: response.body&#10;}" />
+            <zeebe:header key="retryBackoff" value="PT0S" />
+          </zeebe:taskHeaders>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_18t6rxz</bpmn:incoming>
+        <bpmn:outgoing>Flow_0w6d37n</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="Activity_0s7m74r" name="Retrive GridCells AssetID&#39;s" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
+          <zeebe:ioMapping>
+            <zeebe:input source="noAuth" target="authentication.type" />
+            <zeebe:input source="POST" target="method" />
+            <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Prosumer/assets/active/by-prosumers" target="url" />
+            <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
+            <zeebe:input source="=neighbourProsumerIds" target="body" />
+            <zeebe:input source="=false" target="ignoreNullValues" />
+            <zeebe:input source="=false" target="storeResponse" />
+            <zeebe:input source="=false" target="followRedirects" />
+            <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
+            <zeebe:input source="=20" target="readTimeoutInSeconds" />
+          </zeebe:ioMapping>
+          <zeebe:taskHeaders>
+            <zeebe:header key="elementTemplateVersion" value="13" />
+            <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
+            <zeebe:header key="resultExpression" value="={&#10;  neighbourAssetIds: response.body&#10;}" />
+            <zeebe:header key="retryBackoff" value="PT0S" />
+          </zeebe:taskHeaders>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_0w6d37n</bpmn:incoming>
+        <bpmn:outgoing>Flow_1r68t9v</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="Activity_15noxe8" name="Retrieve neighbouring GridCells Telemetry" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
+          <zeebe:ioMapping>
+            <zeebe:input source="noAuth" target="authentication.type" />
+            <zeebe:input source="POST" target="method" />
+            <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Telemetry/latest/bulk" target="url" />
+            <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
+            <zeebe:input source="=neighbourAssetIds" target="body" />
+            <zeebe:input source="=false" target="ignoreNullValues" />
+            <zeebe:input source="=false" target="storeResponse" />
+            <zeebe:input source="=false" target="followRedirects" />
+            <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
+            <zeebe:input source="=20" target="readTimeoutInSeconds" />
+          </zeebe:ioMapping>
+          <zeebe:taskHeaders>
+            <zeebe:header key="elementTemplateVersion" value="13" />
+            <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
+            <zeebe:header key="resultExpression" value="={&#10;  TelemetryStatus: response.status,&#10;  neighboursGridCellTelemetry: response.body&#10;}" />
+            <zeebe:header key="retryBackoff" value="PT0S" />
+          </zeebe:taskHeaders>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_1r68t9v</bpmn:incoming>
+        <bpmn:outgoing>Flow_0bk1c1z</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:startEvent id="Event_1b041pr">
+        <bpmn:outgoing>Flow_18t6rxz</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:endEvent id="Event_0m9ywzx">
+        <bpmn:incoming>Flow_0bk1c1z</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_18t6rxz" sourceRef="Event_1b041pr" targetRef="Activity_1f8rhdk" />
+      <bpmn:sequenceFlow id="Flow_0w6d37n" sourceRef="Activity_1f8rhdk" targetRef="Activity_0s7m74r" />
+      <bpmn:sequenceFlow id="Flow_1r68t9v" sourceRef="Activity_0s7m74r" targetRef="Activity_15noxe8" />
+      <bpmn:sequenceFlow id="Flow_0bk1c1z" sourceRef="Activity_15noxe8" targetRef="Event_0m9ywzx" />
+    </bpmn:subProcess>
+    <bpmn:serviceTask id="Activity_0bxqod4" name="Compute GridCells netLoads" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="noAuth" target="authentication.type" />
+          <zeebe:input source="POST" target="method" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/GridBalancingRecommendation/metrics" target="url" />
+          <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
+          <zeebe:input source="=false" target="storeResponse" />
+          <zeebe:input source="=false" target="followRedirects" />
+          <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
+          <zeebe:input source="=20" target="readTimeoutInSeconds" />
+          <zeebe:input source="={&#34;neighbourCells&#34;: selectedGridCells, &#34;allTelemetry&#34;: neighboursGridCellTelemetry}" target="body" />
+          <zeebe:input source="=false" target="ignoreNullValues" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="13" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
+          <zeebe:header key="resultExpression" value="={&#10;  neighbourMetricsStatus: response.status,&#10;  neighbourMetrics: response.body&#10;}" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1xm4l2t</bpmn:incoming>
+      <bpmn:outgoing>Flow_1oixawr</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:scriptTask id="Activity_0rx3oti" name="Identify Surplus Grid Cells">
+      <bpmn:extensionElements>
+        <zeebe:script expression="=neighbourMetrics[headroom &#62; 0].gridCellId" resultVariable="surplusGridCells" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1oixawr</bpmn:incoming>
+      <bpmn:outgoing>Flow_0p5pyrl</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Activity_0rpaydt" name="Categorize Assets for Evaluation">
+      <bpmn:extensionElements>
+        <zeebe:script expression="=concatenate(&#10;  for t in GridCellTelemetry return {&#10;    asset_id: t.asset_id,&#10;    asset_type: t.asset_type,&#10;    grid_cell_id: t.grid_cell_id,&#10;    cell_context: &#34;STRESSED&#34;,&#10;    soc_percent: if t.asset_type = &#34;BATTERY&#34; then t.State_of_Charge else null,&#10;    is_charging: if t.asset_type = &#34;BATTERY&#34;&#10;                 then (if t.Current_Output != null then t.Current_Output &#60; 0 else false)&#10;                 else if t.asset_type = &#34;EV_CHARGER&#34;&#10;                 then (if t.Charging_Rate != null then t.Charging_Rate &#62; 0 else false)&#10;                 else false&#10;  },&#10;  for t in neighboursGridCellTelemetry[grid_cell_id in surplusGridCells] return {&#10;    asset_id: t.asset_id,&#10;    asset_type: t.asset_type,&#10;    grid_cell_id: t.grid_cell_id,&#10;    cell_context: &#34;SURPLUS&#34;,&#10;    soc_percent: if t.asset_type = &#34;BATTERY&#34; then t.State_of_Charge else null,&#10;    is_charging: if t.asset_type = &#34;BATTERY&#34;&#10;                 then (if t.Current_Output != null then t.Current_Output &#60; 0 else false)&#10;                 else if t.asset_type = &#34;EV_CHARGER&#34;&#10;                 then (if t.Charging_Rate != null then t.Charging_Rate &#62; 0 else false)&#10;                 else false&#10;  }&#10;)" resultVariable="allAssetsToEvaluate" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0p5pyrl</bpmn:incoming>
+      <bpmn:outgoing>Flow_1io8cvg</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:businessRuleTask id="Activity_05ky24n" name="Grid Balancing Decision">
+      <bpmn:extensionElements>
+        <zeebe:calledDecision decisionId="Decision_GridBalancing" resultVariable="dmnResult" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=currentAsset.asset_type" target="assetType" />
+          <zeebe:input source="=currentAsset.cell_context" target="gridCellContext" />
+          <zeebe:input source="=currentAsset.soc_percent" target="socPercent" />
+          <zeebe:input source="=currentAsset.is_charging" target="isCharging" />
+          <zeebe:output source="={ &#10;assetId: currentAsset.asset_id, &#10;action: dmnResult.action,&#10;from: currentAsset.grid_cell_id,&#10;to: selectedGridCell.gridCellId&#10;}" target="currentEvent" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1io8cvg</bpmn:incoming>
+      <bpmn:outgoing>Flow_1d4kgkw</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=allAssetsToEvaluate" inputElement="currentAsset" outputCollection="evaluatedEvents" outputElement="=currentEvent" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:businessRuleTask>
+    <bpmn:scriptTask id="Activity_1h6cdx5" name="Filter out &#34;NO_ACTION&#34; Events">
+      <bpmn:extensionElements>
+        <zeebe:script expression="=evaluatedEvents[action != &#34;NO_ACTION&#34;]" resultVariable="GridBalancingList" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1d4kgkw</bpmn:incoming>
+      <bpmn:outgoing>Flow_0up0ctk</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:task id="Activity_1xasl7p" name="Declare neighbouring GridCell Analysis">
+      <bpmn:incoming>Flow_0up0ctk</bpmn:incoming>
+      <bpmn:outgoing>Flow_1fy928y</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="GW_EventCreated" name="Grid Balancing&#10;Suggested?">
+      <bpmn:incoming>Flow_1fy928y</bpmn:incoming>
+      <bpmn:outgoing>Flow_EventCreated_No</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0yymzt2</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Activity_18hhwxv" name="Check Grid Balancing">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:assignmentDefinition assignee="demo" />
+        <zeebe:formDefinition formId="Form_Check_GridBalancing" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0yymzt2</bpmn:incoming>
+      <bpmn:outgoing>Flow_1dqu83l</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_1ijo3sb" name="Emit Grid Balancing?">
+      <bpmn:incoming>Flow_1dqu83l</bpmn:incoming>
+      <bpmn:outgoing>Flow_1v3g191</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1esc52s</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Activity_1b3463o" name="Promise Grid Balancing Persistence">
+      <bpmn:incoming>Flow_1v3g191</bpmn:incoming>
+      <bpmn:outgoing>Flow_0vk60ux</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:serviceTask id="Activity_15q8r4u" name="Persist  Grid Balancing" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="noAuth" target="authentication.type" />
+          <zeebe:input source="POST" target="method" />
+          <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/GridBalancingRecommendation/save" target="url" />
+          <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
+          <zeebe:input source="=false" target="storeResponse" />
+          <zeebe:input source="=false" target="followRedirects" />
+          <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
+          <zeebe:input source="=20" target="readTimeoutInSeconds" />
+          <zeebe:input source="=GridBalancingList" target="body" />
+          <zeebe:input source="=false" target="ignoreNullValues" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="13" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
+          <zeebe:header key="resultExpression" value="={&#10;  persistStatus: response.status,&#10;  persistCount: response.body&#10;}" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0vk60ux</bpmn:incoming>
+      <bpmn:outgoing>Flow_0oaybih</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:task id="Activity_19jgtw5" name="Declare Grid Balancing Persistence">
+      <bpmn:incoming>Flow_0oaybih</bpmn:incoming>
+      <bpmn:outgoing>Flow_1eqjb4b</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="Event_0vdbfl1" name="Grid Balancing Emitted">
+      <bpmn:incoming>Flow_1vcd84j</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1eqjb4b" sourceRef="Activity_19jgtw5" targetRef="Activity_13v1bgq" />
+    <bpmn:endEvent id="Event_177fap1" name="Grid Balancing not Emitted">
+      <bpmn:incoming>Flow_1esc52s</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_NoRuleTriggered" name="No Grid Balancing&#10;Suggested">
+      <bpmn:incoming>Flow_EventCreated_No</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Activity_13v1bgq" name="Publish Grid Balancing" zeebe:modelerTemplate="io.camunda.connectors.KAFKA.v1" zeebe:modelerTemplateVersion="6" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nMTgnIGhlaWdodD0nMTgnIHZpZXdCb3g9JzAgMCAyNTYgNDE2JyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHByZXNlcnZlQXNwZWN0UmF0aW89J3hNaWRZTWlkJz4KICAgIDxwYXRoIGQ9J00yMDEuODE2IDIzMC4yMTZjLTE2LjE4NiAwLTMwLjY5NyA3LjE3MS00MC42MzQgMTguNDYxbC0yNS40NjMtMTguMDI2YzIuNzAzLTcuNDQyIDQuMjU1LTE1LjQzMyA0LjI1NS0yMy43OTcgMC04LjIxOS0xLjQ5OC0xNi4wNzYtNC4xMTItMjMuNDA4bDI1LjQwNi0xNy44MzVjOS45MzYgMTEuMjMzIDI0LjQwOSAxOC4zNjUgNDAuNTQ4IDE4LjM2NSAyOS44NzUgMCA1NC4xODQtMjQuMzA1IDU0LjE4NC01NC4xODQgMC0yOS44NzktMjQuMzA5LTU0LjE4NC01NC4xODQtNTQuMTg0LTI5Ljg3NSAwLTU0LjE4NCAyNC4zMDUtNTQuMTg0IDU0LjE4NCAwIDUuMzQ4LjgwOCAxMC41MDUgMi4yNTggMTUuMzg5bC0yNS40MjMgMTcuODQ0Yy0xMC42Mi0xMy4xNzUtMjUuOTExLTIyLjM3NC00My4zMzMtMjUuMTgydi0zMC42NGMyNC41NDQtNS4xNTUgNDMuMDM3LTI2Ljk2MiA0My4wMzctNTMuMDE5QzEyNC4xNzEgMjQuMzA1IDk5Ljg2MiAwIDY5Ljk4NyAwIDQwLjExMiAwIDE1LjgwMyAyNC4zMDUgMTUuODAzIDU0LjE4NGMwIDI1LjcwOCAxOC4wMTQgNDcuMjQ2IDQyLjA2NyA1Mi43Njl2MzEuMDM4QzI1LjA0NCAxNDMuNzUzIDAgMTcyLjQwMSAwIDIwNi44NTRjMCAzNC42MjEgMjUuMjkyIDYzLjM3NCA1OC4zNTUgNjguOTR2MzIuNzc0Yy0yNC4yOTkgNS4zNDEtNDIuNTUyIDI3LjAxMS00Mi41NTIgNTIuODk0IDAgMjkuODc5IDI0LjMwOSA1NC4xODQgNTQuMTg0IDU0LjE4NCAyOS44NzUgMCA1NC4xODQtMjQuMzA1IDU0LjE4NC01NC4xODQgMC0yNS44ODMtMTguMjUzLTQ3LjU1My00Mi41NTItNTIuODk0di0zMi43NzVhNjkuOTY1IDY5Ljk2NSAwIDAgMCA0Mi42LTI0Ljc3NmwyNS42MzMgMTguMTQzYy0xLjQyMyA0Ljg0LTIuMjIgOS45NDYtMi4yMiAxNS4yNCAwIDI5Ljg3OSAyNC4zMDkgNTQuMTg0IDU0LjE4NCA1NC4xODQgMjkuODc1IDAgNTQuMTg0LTI0LjMwNSA1NC4xODQtNTQuMTg0IDAtMjkuODc5LTI0LjMwOS01NC4xODQtNTQuMTg0LTU0LjE4NHptMC0xMjYuNjk1YzE0LjQ4NyAwIDI2LjI3IDExLjc4OCAyNi4yNyAyNi4yNzFzLTExLjc4MyAyNi4yNy0yNi4yNyAyNi4yNy0yNi4yNy0xMS43ODctMjYuMjctMjYuMjdjMC0xNC40ODMgMTEuNzgzLTI2LjI3MSAyNi4yNy0yNi4yNzF6bS0xNTguMS00OS4zMzdjMC0xNC40ODMgMTEuNzg0LTI2LjI3IDI2LjI3MS0yNi4yN3MyNi4yNyAxMS43ODcgMjYuMjcgMjYuMjdjMCAxNC40ODMtMTEuNzgzIDI2LjI3LTI2LjI3IDI2LjI3cy0yNi4yNzEtMTEuNzg3LTI2LjI3MS0yNi4yN3ptNTIuNTQxIDMwNy4yNzhjMCAxNC40ODMtMTEuNzgzIDI2LjI3LTI2LjI3IDI2LjI3cy0yNi4yNzEtMTEuNzg3LTI2LjI3MS0yNi4yN2MwLTE0LjQ4MyAxMS43ODQtMjYuMjcgMjYuMjcxLTI2LjI3czI2LjI3IDExLjc4NyAyNi4yNyAyNi4yN3ptLTI2LjI3Mi0xMTcuOTdjLTIwLjIwNSAwLTM2LjY0Mi0xNi40MzQtMzYuNjQyLTM2LjYzOCAwLTIwLjIwNSAxNi40MzctMzYuNjQyIDM2LjY0Mi0zNi42NDIgMjAuMjA0IDAgMzYuNjQxIDE2LjQzNyAzNi42NDEgMzYuNjQyIDAgMjAuMjA0LTE2LjQzNyAzNi42MzgtMzYuNjQxIDM2LjYzOHptMTMxLjgzMSA2Ny4xNzljLTE0LjQ4NyAwLTI2LjI3LTExLjc4OC0yNi4yNy0yNi4yNzFzMTEuNzgzLTI2LjI3IDI2LjI3LTI2LjI3IDI2LjI3IDExLjc4NyAyNi4yNyAyNi4yN2MwIDE0LjQ4My0xMS43ODMgMjYuMjcxLTI2LjI3IDI2LjI3MXonCiAgICAgICAgICBzdHlsZT0nZmlsbDojMjMxZjIwJy8+Cjwvc3ZnPg==">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda:connector-kafka:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="ec2-32-196-241-98.compute-1.amazonaws.com:9092" target="topic.bootstrapServers" />
+          <zeebe:input source="GridBalancingRecommendation" target="topic.topicName" />
+          <zeebe:input source="noSchema" target="schemaStrategy.type" />
+          <zeebe:input target="message.key" />
+          <zeebe:input source="=string(currentGridBalancingEvent)" target="message.value" />
+          <zeebe:input source="=string(currentGridBalancingEvent.assetId)" target="headers" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="6" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.KAFKA.v1" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1eqjb4b</bpmn:incoming>
+      <bpmn:outgoing>Flow_1vcd84j</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=GridBalancingList" inputElement="currentGridBalancingEvent" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1vcd84j" sourceRef="Activity_13v1bgq" targetRef="Event_0vdbfl1" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_16zbzsv">
       <bpmndi:BPMNShape id="Participant_1fsq7aj_di" bpmnElement="Participant_1fsq7aj" isHorizontal="true">
-        <dc:Bounds x="141" y="125" width="1969" height="375" />
+        <dc:Bounds x="141" y="125" width="2519" height="375" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Lane_181jjgn_di" bpmnElement="Lane_181jjgn" isHorizontal="true">
-        <dc:Bounds x="171" y="125" width="1939" height="210" />
+        <dc:Bounds x="171" y="125" width="2489" height="210" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Lane_0psnoyx_di" bpmnElement="Lane_0psnoyx" isHorizontal="true">
-        <dc:Bounds x="171" y="335" width="1939" height="165" />
+        <dc:Bounds x="171" y="335" width="2489" height="165" />
         <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0164g61_di" bpmnElement="Activity_085gnyk">
-        <dc:Bounds x="920" y="205" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1wjgux1_di" bpmnElement="Event_1wjgux1">
-        <dc:Bounds x="1062" y="137" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1105" y="137" width="70" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0v78gm3_di" bpmnElement="Event_0v78gm3">
-        <dc:Bounds x="712" y="227" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="691" y="181" width="78" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1l4fa3j_di" bpmnElement="Activity_054ts6u">
-        <dc:Bounds x="1290" y="205" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0l5dq1h_di" bpmnElement="Activity_16t05qa" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
-        <dc:Bounds x="1150" y="205" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_0txl3l7_di" bpmnElement="Gateway_0txl3l7" isMarkerVisible="true">
-        <dc:Bounds x="1055" y="220" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1038" y="275" width="84" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_0iqm8sw_di" bpmnElement="Gateway_0iqm8sw" isMarkerVisible="true">
-        <dc:Bounds x="815" y="220" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="798" y="175" width="84" height="40" />
-        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1jpfxhi_di" bpmnElement="Event_1jpfxhi">
         <dc:Bounds x="601" y="227" width="36" height="36" />
@@ -582,76 +622,6 @@
           <dc:Bounds x="428" y="457" width="84" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="GW_EventCreated_di" bpmnElement="GW_EventCreated" isMarkerVisible="true">
-        <dc:Bounds x="1495" y="220" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1416.5" y="231.5" width="73" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EndEvent_NoRuleTriggered_di" bpmnElement="EndEvent_NoRuleTriggered">
-        <dc:Bounds x="1502" y="137" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1543" y="141" width="90" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1m85rj4_di" bpmnElement="Activity_18hhwxv">
-        <dc:Bounds x="1600" y="205" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_1ijo3sb_di" bpmnElement="Gateway_1ijo3sb" isMarkerVisible="true">
-        <dc:Bounds x="1745" y="220" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1743" y="186" width="55" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1b3463o_di" bpmnElement="Activity_1b3463o">
-        <dc:Bounds x="1720" y="385" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_19jgtw5_di" bpmnElement="Activity_19jgtw5">
-        <dc:Bounds x="1990" y="385" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1cxn29q_di" bpmnElement="Activity_15q8r4u" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
-        <dc:Bounds x="1860" y="385" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_177fap1_di" bpmnElement="Event_177fap1">
-        <dc:Bounds x="1892" y="227" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1874" y="190" width="73" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0vdbfl1_di" bpmnElement="Event_0vdbfl1">
-        <dc:Bounds x="2022" y="227" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="2004" y="195" width="73" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1xasl7p_di" bpmnElement="Activity_1xasl7p">
-        <dc:Bounds x="1540" y="385" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1c3b7c5_di" bpmnElement="Activity_0bxqod4" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
-        <dc:Bounds x="1400" y="385" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1vd0eeq_di" bpmnElement="Activity_11ao121" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
-        <dc:Bounds x="1260" y="385" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1uw20r4_di" bpmnElement="Activity_1uw20r4">
-        <dc:Bounds x="1120" y="385" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_12sfntu_di" bpmnElement="Activity_12sfntu">
-        <dc:Bounds x="960" y="385" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1nr4l4x_di" bpmnElement="Activity_0r3gk67" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
-        <dc:Bounds x="820" y="385" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_19omt1k_di" bpmnElement="Activity_08npy1o" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
         <dc:Bounds x="680" y="385" width="100" height="80" />
         <bpmndi:BPMNLabel />
@@ -660,46 +630,129 @@
         <dc:Bounds x="540" y="385" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Flow_1xm4l2t_di" bpmnElement="Flow_1xm4l2t">
-        <di:waypoint x="1360" y="425" />
-        <di:waypoint x="1400" y="425" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1dqu83l_di" bpmnElement="Flow_1dqu83l">
-        <di:waypoint x="1700" y="245" />
-        <di:waypoint x="1745" y="245" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0yymzt2_di" bpmnElement="Flow_0yymzt2">
-        <di:waypoint x="1545" y="245" />
-        <di:waypoint x="1600" y="245" />
+      <bpmndi:BPMNShape id="Activity_1nr4l4x_di" bpmnElement="Activity_0r3gk67" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+        <dc:Bounds x="819" y="385" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0v78gm3_di" bpmnElement="Event_0v78gm3">
+        <dc:Bounds x="712" y="227" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1551" y="227" width="18" height="14" />
+          <dc:Bounds x="691" y="181" width="78" height="40" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_EventCreated_No_di" bpmnElement="Flow_EventCreated_No">
-        <di:waypoint x="1520" y="220" />
-        <di:waypoint x="1520" y="173" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0iqm8sw_di" bpmnElement="Gateway_0iqm8sw" isMarkerVisible="true">
+        <dc:Bounds x="815" y="220" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1500" y="202" width="15" height="14" />
+          <dc:Bounds x="798" y="175" width="84" height="40" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_05aapwz_di" bpmnElement="Flow_05aapwz">
-        <di:waypoint x="1250" y="245" />
-        <di:waypoint x="1290" y="245" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_00w6vh7_di" bpmnElement="Flow_00w6vh7">
-        <di:waypoint x="1105" y="245" />
-        <di:waypoint x="1150" y="245" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0164g61_di" bpmnElement="Activity_085gnyk">
+        <dc:Bounds x="920" y="205" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_12sfntu_di" bpmnElement="Activity_12sfntu">
+        <dc:Bounds x="960" y="385" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1uw20r4_di" bpmnElement="Activity_1uw20r4">
+        <dc:Bounds x="1120" y="385" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0txl3l7_di" bpmnElement="Gateway_0txl3l7" isMarkerVisible="true">
+        <dc:Bounds x="1055" y="220" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1110" y="226" width="18" height="14" />
+          <dc:Bounds x="1038" y="275" width="84" height="40" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0thla12_di" bpmnElement="Flow_0thla12">
-        <di:waypoint x="1080" y="220" />
-        <di:waypoint x="1080" y="173" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0l5dq1h_di" bpmnElement="Activity_16t05qa" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+        <dc:Bounds x="1150" y="205" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1l4fa3j_di" bpmnElement="Activity_054ts6u">
+        <dc:Bounds x="1290" y="205" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1wjgux1_di" bpmnElement="Event_1wjgux1">
+        <dc:Bounds x="1062" y="137" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1060" y="201" width="15" height="14" />
+          <dc:Bounds x="1105" y="137" width="70" height="40" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1vd0eeq_di" bpmnElement="Activity_11ao121" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+        <dc:Bounds x="1250" y="385" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1c3b7c5_di" bpmnElement="Activity_0bxqod4" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+        <dc:Bounds x="1380" y="385" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0fpg8ev_di" bpmnElement="Activity_0rx3oti">
+        <dc:Bounds x="1510" y="385" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_04sgqy1_di" bpmnElement="Activity_0rpaydt">
+        <dc:Bounds x="1640" y="385" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1wqsug4_di" bpmnElement="Activity_05ky24n">
+        <dc:Bounds x="1770" y="385" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1uqj8ds_di" bpmnElement="Activity_1h6cdx5">
+        <dc:Bounds x="1900" y="385" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1xasl7p_di" bpmnElement="Activity_1xasl7p">
+        <dc:Bounds x="2030" y="385" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_EventCreated_di" bpmnElement="GW_EventCreated" isMarkerVisible="true">
+        <dc:Bounds x="1925" y="220" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1913" y="182.5" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1m85rj4_di" bpmnElement="Activity_18hhwxv">
+        <dc:Bounds x="2030" y="205" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1ijo3sb_di" bpmnElement="Gateway_1ijo3sb" isMarkerVisible="true">
+        <dc:Bounds x="2195" y="220" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2193" y="186" width="55" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1b3463o_di" bpmnElement="Activity_1b3463o">
+        <dc:Bounds x="2170" y="385" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1cxn29q_di" bpmnElement="Activity_15q8r4u" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+        <dc:Bounds x="2310" y="385" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_19jgtw5_di" bpmnElement="Activity_19jgtw5">
+        <dc:Bounds x="2450" y="385" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0vdbfl1_di" bpmnElement="Event_0vdbfl1">
+        <dc:Bounds x="2592" y="227" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2574" y="195" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_177fap1_di" bpmnElement="Event_177fap1">
+        <dc:Bounds x="2342" y="227" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2324" y="190" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_NoRuleTriggered_di" bpmnElement="EndEvent_NoRuleTriggered">
+        <dc:Bounds x="1802" y="227" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1775" y="189.5" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0h8zh9g_di" bpmnElement="Activity_13v1bgq">
+        <dc:Bounds x="2450" y="205" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_1vqzwe8_di" bpmnElement="Flow_1vqzwe8">
         <di:waypoint x="1020" y="245" />
         <di:waypoint x="1055" y="245" />
@@ -711,26 +764,15 @@
           <dc:Bounds x="877" y="228" width="18" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0tw3v5c_di" bpmnElement="Flow_0tw3v5c">
-        <di:waypoint x="815" y="245" />
-        <di:waypoint x="748" y="245" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="784" y="228" width="15" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0l3s6ag_di" bpmnElement="Flow_0l3s6ag">
         <di:waypoint x="780" y="425" />
-        <di:waypoint x="820" y="425" />
+        <di:waypoint x="819" y="425" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_093dwk4_di" bpmnElement="Flow_093dwk4">
         <di:waypoint x="1010" y="385" />
         <di:waypoint x="1010" y="355" />
         <di:waypoint x="840" y="355" />
         <di:waypoint x="840" y="270" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_13qq79x_di" bpmnElement="Flow_13qq79x">
-        <di:waypoint x="920" y="425" />
-        <di:waypoint x="960" y="425" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1jxpr3x_di" bpmnElement="Flow_1jxpr3x">
         <di:waypoint x="640" y="425" />
@@ -771,31 +813,20 @@
         <di:waypoint x="409" y="425" />
         <di:waypoint x="444" y="425" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1v3g191_di" bpmnElement="Flow_1v3g191">
-        <di:waypoint x="1770" y="270" />
-        <di:waypoint x="1770" y="385" />
+      <bpmndi:BPMNEdge id="Flow_0y0t8b2_di" bpmnElement="Flow_0y0t8b2">
+        <di:waypoint x="1220" y="425" />
+        <di:waypoint x="1250" y="425" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1xm4l2t_di" bpmnElement="Flow_1xm4l2t">
+        <di:waypoint x="1350" y="425" />
+        <di:waypoint x="1380" y="425" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_00w6vh7_di" bpmnElement="Flow_00w6vh7">
+        <di:waypoint x="1105" y="245" />
+        <di:waypoint x="1150" y="245" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1775" y="288" width="18" height="14" />
+          <dc:Bounds x="1110" y="226" width="18" height="14" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1esc52s_di" bpmnElement="Flow_1esc52s">
-        <di:waypoint x="1795" y="245" />
-        <di:waypoint x="1892" y="245" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1810" y="226" width="15" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0vk60ux_di" bpmnElement="Flow_0vk60ux">
-        <di:waypoint x="1820" y="425" />
-        <di:waypoint x="1860" y="425" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0oaybih_di" bpmnElement="Flow_0oaybih">
-        <di:waypoint x="1960" y="425" />
-        <di:waypoint x="1990" y="425" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_016986i_di" bpmnElement="Flow_016986i">
-        <di:waypoint x="2040" y="385" />
-        <di:waypoint x="2040" y="263" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1tgj7f7_di" bpmnElement="Flow_1tgj7f7">
         <di:waypoint x="1340" y="285" />
@@ -804,19 +835,101 @@
         <di:waypoint x="1090" y="425" />
         <di:waypoint x="1120" y="425" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0y0t8b2_di" bpmnElement="Flow_0y0t8b2">
-        <di:waypoint x="1220" y="425" />
-        <di:waypoint x="1260" y="425" />
+      <bpmndi:BPMNEdge id="Flow_05aapwz_di" bpmnElement="Flow_05aapwz">
+        <di:waypoint x="1250" y="245" />
+        <di:waypoint x="1290" y="245" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0r51khz_di" bpmnElement="Flow_0r51khz">
-        <di:waypoint x="1500" y="425" />
-        <di:waypoint x="1540" y="425" />
+      <bpmndi:BPMNEdge id="Flow_0thla12_di" bpmnElement="Flow_0thla12">
+        <di:waypoint x="1080" y="220" />
+        <di:waypoint x="1080" y="173" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1060" y="201" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13qq79x_di" bpmnElement="Flow_13qq79x">
+        <di:waypoint x="919" y="425" />
+        <di:waypoint x="960" y="425" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0tw3v5c_di" bpmnElement="Flow_0tw3v5c">
+        <di:waypoint x="815" y="245" />
+        <di:waypoint x="748" y="245" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="784" y="228" width="15" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1fy928y_di" bpmnElement="Flow_1fy928y">
-        <di:waypoint x="1590" y="385" />
-        <di:waypoint x="1590" y="360" />
-        <di:waypoint x="1520" y="360" />
-        <di:waypoint x="1520" y="270" />
+        <di:waypoint x="2080" y="385" />
+        <di:waypoint x="2080" y="360" />
+        <di:waypoint x="1950" y="360" />
+        <di:waypoint x="1950" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0yymzt2_di" bpmnElement="Flow_0yymzt2">
+        <di:waypoint x="1975" y="245" />
+        <di:waypoint x="2030" y="245" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1988" y="226" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EventCreated_No_di" bpmnElement="Flow_EventCreated_No">
+        <di:waypoint x="1925" y="245" />
+        <di:waypoint x="1838" y="245" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1897" y="226" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1dqu83l_di" bpmnElement="Flow_1dqu83l">
+        <di:waypoint x="2130" y="245" />
+        <di:waypoint x="2195" y="245" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1v3g191_di" bpmnElement="Flow_1v3g191">
+        <di:waypoint x="2220" y="270" />
+        <di:waypoint x="2220" y="385" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2225" y="289" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1esc52s_di" bpmnElement="Flow_1esc52s">
+        <di:waypoint x="2245" y="245" />
+        <di:waypoint x="2342" y="245" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2261" y="226" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0vk60ux_di" bpmnElement="Flow_0vk60ux">
+        <di:waypoint x="2270" y="425" />
+        <di:waypoint x="2310" y="425" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0oaybih_di" bpmnElement="Flow_0oaybih">
+        <di:waypoint x="2410" y="425" />
+        <di:waypoint x="2450" y="425" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0up0ctk_di" bpmnElement="Flow_0up0ctk">
+        <di:waypoint x="2000" y="425" />
+        <di:waypoint x="2030" y="425" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1oixawr_di" bpmnElement="Flow_1oixawr">
+        <di:waypoint x="1480" y="425" />
+        <di:waypoint x="1510" y="425" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0p5pyrl_di" bpmnElement="Flow_0p5pyrl">
+        <di:waypoint x="1610" y="425" />
+        <di:waypoint x="1640" y="425" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1io8cvg_di" bpmnElement="Flow_1io8cvg">
+        <di:waypoint x="1740" y="425" />
+        <di:waypoint x="1770" y="425" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1d4kgkw_di" bpmnElement="Flow_1d4kgkw">
+        <di:waypoint x="1870" y="425" />
+        <di:waypoint x="1900" y="425" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1eqjb4b_di" bpmnElement="Flow_1eqjb4b">
+        <di:waypoint x="2500" y="385" />
+        <di:waypoint x="2500" y="285" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1vcd84j_di" bpmnElement="Flow_1vcd84j">
+        <di:waypoint x="2550" y="245" />
+        <di:waypoint x="2592" y="245" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

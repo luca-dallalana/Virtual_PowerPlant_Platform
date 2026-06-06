@@ -1,0 +1,41 @@
+{
+  "components": [
+    {
+      "label": "Market Price Level",
+      "values": [
+        {
+          "label": "High",
+          "value": "HIGH"
+        },
+        {
+          "label": "Normal",
+          "value": "NORMAL"
+        },
+        {
+          "label": "Low",
+          "value": "LOW"
+        }
+      ],
+      "type": "select",
+      "layout": {
+        "row": "Row_0gqsz2x",
+        "columns": null
+      },
+      "id": "Field_14nkbhw",
+      "key": "marketPriceLevel",
+      "description": "Select the current Market Price Level",
+      "validate": {
+        "required": true
+      }
+    }
+  ],
+  "type": "default",
+  "id": "Form_Assess_MarketPrice",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.47.0"
+  },
+  "schemaVersion": 19
+}
