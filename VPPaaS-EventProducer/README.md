@@ -45,3 +45,31 @@ Examples of Telemetry_Event messages sent, in JSON, to the discovered topic in K
  }
 }
 ```
+```json
+{
+ "timeStamp":"2026-02-20 13:40:00.000",
+ "asset_type":"SOLAR",
+ "asset_id":"1002",
+ "grid_cell_id":"LISBON-DT",
+ "payload": {
+	"generation_kw":5.2,
+	"daily_yield_kwh":42.1,
+	"ac_voltage_v":230.0,
+	"grid_frequency_hz":50.0
+ }
+}
+```
+```json
+{
+ "timeStamp":"2026-02-20 13:40:10.000",
+ "asset_type":"EV_CHARGER",
+ "asset_id":"1003",
+ "grid_cell_id":"LISBON-DT",
+ "payload": {
+	"connector_status":"CHARGING",
+	"charging_power_kw":11.5,
+	"session_energy_kwh":8.3,
+	"ev_soc_percent":72.0
+ }
+}
+```
