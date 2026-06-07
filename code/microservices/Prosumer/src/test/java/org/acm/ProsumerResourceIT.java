@@ -24,6 +24,7 @@ import java.util.Map;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.startsWith;
 
 @QuarkusTest
@@ -84,7 +85,7 @@ class ProsumerResourceIT {
 
     @Test
     void createProsumer_returnsCreated() {
-        stubPreparedQuery("INSERT INTO Prosumer(name,FiscalNumber,location) VALUES (?,?,?)", rowSetWithRowCount(1));
+        stubPreparedQuery("INSERT INTO Prosumer(name,FiscalNumber,location) VALUES (?,?,?)", rowSetWithInsertedId(42L));
 
         Map<String, Object> body = new HashMap<>();
         body.put("name", "NewProsumer");
@@ -98,7 +99,7 @@ class ProsumerResourceIT {
             .post("/Prosumer")
             .then()
             .statusCode(201)
-            .header("Location", startsWith("/Prosumer/"));
+            .header("Location", endsWith("/Prosumer/42"));
     }
 
     @Test
@@ -191,7 +192,7 @@ class ProsumerResourceIT {
             .post("/Prosumer/1/assets")
             .then()
             .statusCode(201)
-            .header("Location", is("/Prosumer/1/assets/1001"));
+            .header("Location", endsWith("/Prosumer/1/assets/1001"));
     }
 
     @Test
@@ -270,6 +271,15 @@ class ProsumerResourceIT {
             .then()
             .statusCode(200)
             .body("", hasSize(0));
+    }
+
+    private RowSet<Row> rowSetWithInsertedId(Long insertedId) {
+        RowSet<Row> rowSet = Mockito.mock(RowSet.class);
+        Mockito.when(rowSet.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(insertedId);
+        io.vertx.mutiny.sqlclient.RowIterator<Row> iterator =
+                io.vertx.mutiny.sqlclient.RowIterator.newInstance(new ListRowIterator(Collections.emptyList()));
+        Mockito.when(rowSet.iterator()).thenReturn(iterator);
+        return rowSet;
     }
 
     private void stubQuery(String sql, RowSet<Row> rowSet) {
