@@ -15,81 +15,105 @@ Both test classes use Mockito to mock `MySQLPool` so the tests do not need a liv
 
 ### Unit tests: `ProsumerResourceTest`
 
-These tests validate the behavior of the `ProsumerResource` endpoints and the `Prosumer` and `Asset` domain logic in isolation:
+These tests validate the behavior of the `ProsumerResource` endpoints and the `Prosumer` and `Asset` domain logic in isolation.
 
-#### Prosumer Tests
+#### Prosumer tests
 
-- `getProsumers_returnsList`: verifies that `get()` returns a list of `Prosumer` objects mapped from DB `Row` instances, including `id`, `name`, `FiscalNumber`, and `location`.
-- `getProsumerById_returnsEntity`: verifies that `getSingle(id)` returns the matching entity when a row exists and that the `Response` status is `200`.
-- `getProsumerById_returnsNotFound`: verifies that `getSingle(id)` returns `404` when the prepared query returns no rows.
-- `createProsumer_returnsCreated`: verifies that posting a `Prosumer` creates the entity, returns `201 Created`, and sets a non-empty `Location` header under `/Prosumer/`.
-- `deleteProsumer_returnsNoContent`: verifies that deleting an existing `Prosumer` returns `204 No Content`.
-- `deleteProsumer_returnsNotFound`: verifies that deleting a missing `Prosumer` returns `404`.
-- `updateProsumer_returnsNoContent`: verifies that updating an existing `Prosumer` returns `204 No Content`.
-- `updateProsumer_returnsNotFound`: verifies that updating a missing `Prosumer` returns `404`.
+| Test | What it verifies |
+|---|---|
+| `getProsumers_returnsList` | `get()` returns a list of `Prosumer` objects mapped from DB rows, including `id`, `name`, `FiscalNumber`, and `location` |
+| `getProsumerById_returnsEntity` | `getSingle(id)` returns the matching entity with status `200` |
+| `getProsumerById_returnsNotFound` | `getSingle(id)` returns `404` when the query returns no rows |
+| `createProsumer_returnsCreated` | `create()` returns `201 Created` with a `Location` header under `/Prosumer/` |
+| `deleteProsumer_returnsNoContent` | `delete()` on an existing prosumer returns `204 No Content` |
+| `deleteProsumer_returnsNotFound` | `delete()` on a missing prosumer returns `404` |
+| `updateProsumer_returnsNoContent` | `update()` on an existing prosumer returns `204 No Content` |
+| `updateProsumer_returnsNotFound` | `update()` on a missing prosumer returns `404` |
 
-#### Asset Tests
+#### Asset tests
 
-- `getAssets_returnsList`: verifies that `getAssets(prosumerId)` returns the assets mapped from DB rows and filtered by `prosumerId`.
-- `getAssets_returnsEmptyList`: verifies that `getAssets(prosumerId)` returns an empty list when no rows are found.
-- `createAsset_returnsCreated`: verifies that posting an `Asset` under a `Prosumer` returns `201 Created` and sets the `Location` header to `/Prosumer/{prosumerId}/assets/{assetId}`.
-- `deleteAsset_returnsNoContent`: verifies that deleting an existing `Asset` returns `204 No Content`.
-- `deleteAsset_returnsNotFound`: verifies that deleting a missing `Asset` returns `404`.
-- `updateAssetStatus_returnsNoContent`: verifies that updating an existing asset status returns `204 No Content`.
-- `updateAssetStatus_returnsNotFound`: verifies that updating a missing asset status returns `404`.
-
-The unit tests also validate the exact SQL used by the model/resource methods:
-
-**Prosumer SQL:**
-- `SELECT id, name, FiscalNumber , location FROM Prosumer ORDER BY id ASC`
-- `SELECT id, name, FiscalNumber , location FROM Prosumer WHERE id = ?`
-- `INSERT INTO Prosumer(name,FiscalNumber,location) VALUES (?,?,?)`
-- `DELETE FROM Prosumer WHERE id = ?`
-- `UPDATE Prosumer SET name = ?, FiscalNumber = ? , location = ? WHERE id = ?`
-
-**Asset SQL:**
-- `SELECT assetId, prosumerId, assetType, model, status FROM Asset WHERE prosumerId = ?`
-- `INSERT INTO Asset(assetId, prosumerId, assetType, model, status) VALUES (?,?,?,?,?)`
-- `DELETE FROM Asset WHERE assetId = ?`
-- `UPDATE Asset SET status = ? WHERE assetId = ?`
+| Test | What it verifies |
+|---|---|
+| `getAssets_returnsList` | `getAssets(prosumerId)` returns assets mapped from DB rows filtered by `prosumerId` |
+| `getAssets_returnsEmptyList` | `getAssets(prosumerId)` returns an empty list when no rows are found |
+| `createAsset_returnsCreated` | `createAsset()` returns `201 Created` with `Location` pointing to `/Prosumer/{prosumerId}/assets/{assetId}` |
+| `deleteAsset_returnsNoContent` | `deleteAsset()` on an existing asset returns `204 No Content` |
+| `deleteAsset_returnsNotFound` | `deleteAsset()` on a missing asset returns `404` |
+| `updateAssetStatus_returnsNoContent` | `updateAssetStatus()` on an existing asset returns `204 No Content` |
+| `updateAssetStatus_returnsNotFound` | `updateAssetStatus()` on a missing asset returns `404` |
+| `getAllAssets_returnsList` | `getAllAssets()` returns all assets across all prosumers ordered by `assetId` |
+| `getAllAssets_returnsEmptyList` | `getAllAssets()` returns an empty list when no assets exist |
+| `getActiveAssetsByType_returnsList` | `getActiveAssetsByType(type)` returns active assets filtered by type and status |
+| `getActiveAssetsByType_returnsEmptyList` | `getActiveAssetsByType(type)` returns an empty list when no matching assets exist |
+| `getActiveAssetIdsByProsumers_returnsList` | `getActiveAssetIdsByProsumers(ids)` returns asset IDs for a list of prosumer IDs using a dynamic `IN (?,?)` query |
+| `getActiveAssetIdsByProsumers_emptyInput_returnsEmpty` | `getActiveAssetIdsByProsumers([])` short-circuits without hitting the DB and returns an empty list |
 
 ### Integration tests: `ProsumerResourceIT`
 
-These tests exercise the REST resource through HTTP using `@QuarkusTest` and RestAssured:
+These tests exercise the REST resource through HTTP using `@QuarkusTest` and RestAssured. `MySQLPool` is replaced with a Mockito mock via `@InjectMock`.
 
-#### Prosumer Endpoints
+#### Prosumer endpoints
 
-- `getProsumers_returnsList`: verifies `GET /Prosumer` returns a JSON array with all prosumers including `id`, `name`, `FiscalNumber`, and `location`.
-- `getProsumerById_returnsEntity`: verifies `GET /Prosumer/{id}` returns one prosumer when it exists.
-- `getProsumerById_returnsNotFound`: verifies `GET /Prosumer/{id}` returns `404` when no prosumer exists.
-- `createProsumer_returnsCreated`: verifies `POST /Prosumer` with JSON body returns `201 Created` and a `Location` header with the new prosumer id.
-- `deleteProsumer_returnsNoContent`: verifies `DELETE /Prosumer/{id}` returns `204 No Content` when the prosumer exists.
-- `deleteProsumer_returnsNotFound`: verifies `DELETE /Prosumer/{id}` returns `404` when no prosumer exists.
-- `updateProsumer_returnsNoContent`: verifies `PUT /Prosumer/{id}/{name}/{FiscalNumber}/{location}` returns `204 No Content` when the prosumer is found and updated.
-- `updateProsumer_returnsNotFound`: verifies the same update path returns `404` when the prosumer does not exist.
+| Test | Endpoint | What it verifies |
+|---|---|---|
+| `getProsumers_returnsList` | `GET /Prosumer` | Returns a JSON array with `id`, `name`, `FiscalNumber`, and `location` |
+| `getProsumerById_returnsEntity` | `GET /Prosumer/{id}` | Returns the prosumer when it exists |
+| `getProsumerById_returnsNotFound` | `GET /Prosumer/{id}` | Returns `404` when not found |
+| `createProsumer_returnsCreated` | `POST /Prosumer` | Returns `201 Created` with a `Location` header ending in `/Prosumer/{id}` |
+| `deleteProsumer_returnsNoContent` | `DELETE /Prosumer/{id}` | Returns `204 No Content` when the prosumer exists |
+| `deleteProsumer_returnsNotFound` | `DELETE /Prosumer/{id}` | Returns `404` when not found |
+| `updateProsumer_returnsNoContent` | `PUT /Prosumer/{id}/{name}/{FiscalNumber}/{location}` | Returns `204 No Content` when found |
+| `updateProsumer_returnsNotFound` | `PUT /Prosumer/{id}/{name}/{FiscalNumber}/{location}` | Returns `404` when not found |
 
-#### Asset Endpoints
+#### Asset endpoints
 
-- `getAssets_returnsList`: verifies `GET /Prosumer/{prosumerId}/assets` returns assets with matching `prosumerId`.
-- `getAssets_returnsEmptyList`: verifies `GET /Prosumer/{prosumerId}/assets` returns an empty array when no assets exist.
-- `createAsset_returnsCreated`: verifies `POST /Prosumer/{prosumerId}/assets` with JSON body returns `201 Created` and the expected `Location` header pointing to `/Prosumer/{prosumerId}/assets/{assetId}`.
-- `deleteAsset_returnsNoContent`: verifies `DELETE /Prosumer/{prosumerId}/assets/{assetId}` returns `204 No Content`.
-- `deleteAsset_returnsNotFound`: verifies the same delete path returns `404` when the asset is missing.
-- `updateAssetStatus_returnsNoContent`: verifies `PUT /Prosumer/{prosumerId}/assets/{assetId}/status/{status}` returns `204 No Content`.
-- `updateAssetStatus_returnsNotFound`: verifies the same status update returns `404` when the asset is missing.
+| Test | Endpoint | What it verifies |
+|---|---|---|
+| `getAssets_returnsList` | `GET /Prosumer/{prosumerId}/assets` | Returns assets with matching `prosumerId` |
+| `getAssets_returnsEmptyList` | `GET /Prosumer/{prosumerId}/assets` | Returns empty array when no assets exist |
+| `createAsset_returnsCreated` | `POST /Prosumer/{prosumerId}/assets` | Returns `201 Created` with `Location` ending in `/Prosumer/{prosumerId}/assets/{assetId}` |
+| `deleteAsset_returnsNoContent` | `DELETE /Prosumer/{prosumerId}/assets/{assetId}` | Returns `204 No Content` |
+| `deleteAsset_returnsNotFound` | `DELETE /Prosumer/{prosumerId}/assets/{assetId}` | Returns `404` when missing |
+| `updateAssetStatus_returnsNoContent` | `PUT /Prosumer/{prosumerId}/assets/{assetId}/status/{status}` | Returns `204 No Content` |
+| `updateAssetStatus_returnsNotFound` | `PUT /Prosumer/{prosumerId}/assets/{assetId}/status/{status}` | Returns `404` when missing |
+| `getActiveAssetIdsByProsumers_returnsList` | `POST /Prosumer/assets/active/by-prosumers` | Returns a list of active asset IDs for the given prosumer IDs |
+| `getActiveAssetIdsByProsumers_emptyInput_returnsEmpty` | `POST /Prosumer/assets/active/by-prosumers` | Returns an empty array when the input list is empty |
+
+## SQL Verified
+
+All stubs match the production SQL character-for-character. A mismatch causes Mockito to return `null`, which propagates as a `500` at runtime.
+
+**Prosumer:**
+```sql
+SELECT id, name, FiscalNumber , location FROM Prosumer ORDER BY id ASC
+SELECT id, name, FiscalNumber , location FROM Prosumer WHERE id = ?
+INSERT INTO Prosumer(name,FiscalNumber,location) VALUES (?,?,?)
+DELETE FROM Prosumer WHERE id = ?
+UPDATE Prosumer SET name = ?, FiscalNumber = ? , location = ? WHERE id = ?
+```
+
+**Asset:**
+```sql
+SELECT assetId, prosumerId, assetType, model, status FROM Asset WHERE prosumerId = ?
+SELECT assetId, prosumerId, assetType, model, status FROM Asset ORDER BY assetId ASC
+SELECT assetId, prosumerId, assetType FROM Asset WHERE assetType = ? AND status = ?
+SELECT assetId FROM Asset WHERE status = 'ACTIVE' AND prosumerId IN (?, ?)
+INSERT INTO Asset(assetId, prosumerId, assetType, model, status) VALUES (?,?,?,?,?)
+DELETE FROM Asset WHERE assetId = ?
+UPDATE Asset SET status = ? WHERE assetId = ?
+```
 
 ## How To Run
 
 From the `Prosumer` module root:
 
-To run only the unit test class:
-
 ```bash
-mvn test
-```
+# Unit tests only
+./mvnw clean test
 
-Run full verification lifecycle:
-```sh
-./mvnw clean verify -Dquarkus.container-image.push=false
-```
+# Integration tests (excluded by Surefire by default, must be named explicitly)
+./mvnw clean test -Dtest=ProsumerResourceIT
 
+# Both in one command
+./mvnw clean test -Dtest="ProsumerResourceTest,ProsumerResourceIT"
+```
