@@ -51,13 +51,13 @@ Each service is an independent Quarkus application with its own MySQL database. 
 | Service | Port | Database | Kafka (outbound topics) |
 |---|---|---|---|
 | Prosumer | 8080 | prosumer | — |
-| UtilityOperator | 8081 | utilityoperator | — |
-| AssetLink | 8082 | assetlink | — |
-| Telemetry | 8083 | telemetry | dynamic (registered at runtime) |
-| FlexibilityEvent | 8084 | flexibilityevent | `Flexibility-Offers` |
-| GridBalancingRecommendation | 8085 | gridbalancingrecommendation | `GridBalancingRecommendation` |
-| EnergyAnalytics | 8086 | energyanalytics | `Energy-Discharged-Zone`, `Energy-Generated-Prosumer`, `Energy-Consumed-Prosumer`, `Average-SoC` |
-| FlexibilityForecasting | 8087 | flexibilityforecasting | — |
+| UtilityOperator | 8080 | utilityoperator | — |
+| AssetLink | 8080 | assetlink | — |
+| Telemetry | 8080 | telemetry | dynamic (registered at runtime) |
+| FlexibilityEvent | 8080 | flexibilityevent | `Flexibility-Offers` |
+| GridBalancingRecommendation | 8080 | gridbalancingrecommendation | `GridBalancingRecommendation` |
+| EnergyAnalytics | 8080 | energyanalytics | `Energy-Discharged-Zone`, `Energy-Generated-Prosumer`, `Energy-Consumed-Prosumer`, `Average-SoC` |
+| FlexibilityForecasting | 8080 | flexibilityforecasting | — |
 
 ---
 
@@ -133,36 +133,14 @@ Each `src/test/README.md` inside the service documents which tests exist and wha
 - An active AWS account with sufficient EC2 and RDS quotas
 
 ### Automated deployment
+Its needed to set access.sh using your credentials 
 
 From `code/`:
 
 ```bash
 # macOS
 ./DeploymentAutomation-macOS.sh
-
-# Ubuntu/Linux
-./DeploymentAutomation-ubuntu.sh
 ```
-
-These scripts run `terraform apply` for each component in order: RDS → Kafka → Kong → Konga → Ollama → per-service EC2. After infrastructure is up, Kong routes are registered via:
-
-```bash
-./kongCommands-Provisioning.sh
-```
-
-### Manual order (if running Terraform steps individually)
-
-1. `RDS-Terraform/` — provisions the shared MySQL RDS instance
-2. `Kafka/` — provisions the Kafka EC2 cluster and creates all required topics
-3. `KongTerraform/` — provisions the Kong API Gateway instance
-4. `KongaTerraform/` — provisions the Konga admin dashboard
-5. `OllamaTerraform/` — provisions the Ollama LLM instance (required by FlexibilityForecasting)
-6. `Quarkus-Terraform/<service>/` — provisions one EC2 instance per microservice
-7. `Camunda-Terraform/` — provisions the Camunda engine instance
-
-### BPMN deployment
-
-After Camunda is running, deploy the process definitions from `code/BPMN/` through the Camunda Modeler or REST API. The BPMN files define the orchestration flows that drive Flexibility Emission, Grid Balancing, Energy Analytics, and Forecasting.
 
 ### Redeploying a single service
 
@@ -174,6 +152,12 @@ After Camunda is running, deploy the process definitions from `code/BPMN/` throu
 
 ```bash
 ./UndeploymentAutomation-all.sh
+```
+
+### Before redeploying, make sure to run 
+
+```bash
+./RestoreBPMN.sh
 ```
 
 ---
