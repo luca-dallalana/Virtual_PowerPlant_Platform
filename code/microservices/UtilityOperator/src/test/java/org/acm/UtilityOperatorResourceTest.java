@@ -234,6 +234,34 @@ class UtilityOperatorResourceUnitTest {
         MatcherAssert.assertThat(response.getStatus(), is(404));
     }
 
+    @Test
+    void getNeighbourGridCells_returnsList() {
+        Row row1 = gridCellRow("PORTO-IN", 3L, 75.0, "Central Portugal Grid");
+        Row row2 = gridCellRow("SETUBAL-CT", 2L, 40.0, "Central Portugal Grid");
+        stubPreparedQuery(
+            "SELECT gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries FROM GridCell " +
+            "WHERE geographicBoundaries = (SELECT geographicBoundaries FROM GridCell WHERE gridCellId = ?) " +
+            "AND gridCellId != ?",
+            rowSetWithRows(row1, row2));
+
+        List<GridCell> result = resource.getNeighbourGridCells("LISBON-DT").collect().asList().await().indefinitely();
+        MatcherAssert.assertThat(result, hasSize(2));
+        MatcherAssert.assertThat(result.get(0).gridCellId, is("PORTO-IN"));
+        MatcherAssert.assertThat(result.get(1).gridCellId, is("SETUBAL-CT"));
+    }
+
+    @Test
+    void getNeighbourGridCells_returnsEmpty() {
+        stubPreparedQuery(
+            "SELECT gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries FROM GridCell " +
+            "WHERE geographicBoundaries = (SELECT geographicBoundaries FROM GridCell WHERE gridCellId = ?) " +
+            "AND gridCellId != ?",
+            rowSetWithRows());
+
+        List<GridCell> result = resource.getNeighbourGridCells("FARO-RS").collect().asList().await().indefinitely();
+        MatcherAssert.assertThat(result, hasSize(0));
+    }
+
     private void injectClient(UtilityOperatorResource target, MySQLPool pool) {
         try {
             Field field = UtilityOperatorResource.class.getDeclaredField("client");

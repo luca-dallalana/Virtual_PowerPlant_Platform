@@ -255,6 +255,42 @@ class UtilityOperatorResourceIT {
             .statusCode(204);
     }
 
+    @Test
+    void getNeighbourGridCells_returnsList() {
+        Row row1 = gridCellRow("PORTO-IN", 3L, 75.0, "Central Portugal Grid");
+        Row row2 = gridCellRow("SETUBAL-CT", 2L, 40.0, "Central Portugal Grid");
+        stubPreparedQuery(
+            "SELECT gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries FROM GridCell " +
+            "WHERE geographicBoundaries = (SELECT geographicBoundaries FROM GridCell WHERE gridCellId = ?) " +
+            "AND gridCellId != ?",
+            rowSetWithRows(row1, row2));
+
+        given()
+            .when()
+            .get("/UtilityOperator/gridcells/LISBON-DT/neighbours")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(2))
+            .body("[0].gridCellId", is("PORTO-IN"))
+            .body("[1].gridCellId", is("SETUBAL-CT"));
+    }
+
+    @Test
+    void getNeighbourGridCells_returnsEmpty() {
+        stubPreparedQuery(
+            "SELECT gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries FROM GridCell " +
+            "WHERE geographicBoundaries = (SELECT geographicBoundaries FROM GridCell WHERE gridCellId = ?) " +
+            "AND gridCellId != ?",
+            rowSetWithRows());
+
+        given()
+            .when()
+            .get("/UtilityOperator/gridcells/FARO-RS/neighbours")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(0));
+    }
+
     private void stubQuery(String sql, RowSet<Row> rowSet) {
         Query<RowSet<Row>> query = Mockito.mock(Query.class);
         Mockito.when(query.execute()).thenReturn(Uni.createFrom().item(rowSet));
