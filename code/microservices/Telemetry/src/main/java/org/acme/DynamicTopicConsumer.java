@@ -49,7 +49,7 @@ public class DynamicTopicConsumer extends Thread  {
                         record.topic(), record.partition(), record.offset(),
                         record.key(), record.value());				
 
-                        String jsonString = record.value() ; 
+                        String jsonString = record.value() ;
                         JSONObject obj = new JSONObject(jsonString);
                         String timeStamp = obj.getString("timeStamp");
                         String asset_type = obj.getString("asset_type");

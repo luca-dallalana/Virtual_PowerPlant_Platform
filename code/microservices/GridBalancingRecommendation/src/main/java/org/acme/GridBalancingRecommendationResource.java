@@ -64,6 +64,9 @@ public class GridBalancingRecommendationResource {
                 // 13 minutes ago: second evaluation cycle
                 .flatMap(r -> client.query(INS + "(1006,'REDUCE_CHARGING','PORTO-IN','PORTO-IN',NOW()-INTERVAL 13 MINUTE,'STRESSED',NULL,1,'EV_CHARGER')").execute())
                 .flatMap(r -> client.query(INS + "(1007,'REDUCE_CHARGING','PORTO-IN','PORTO-IN',NOW()-INTERVAL 13 MINUTE,'STRESSED',NULL,1,'EV_CHARGER')").execute())
+                // FARO-RS overload scenario — 50 kW charger (1012) reduces + FARO-DW battery (1014) provides relief
+                .flatMap(r -> client.query(INS + "(1012,'REDUCE_CHARGING','FARO-RS','FARO-RS',NOW()-INTERVAL 10 MINUTE,'STRESSED',NULL,1,'EV_CHARGER')").execute())
+                .flatMap(r -> client.query(INS + "(1014,'DISCHARGE','FARO-DW','FARO-RS',NOW()-INTERVAL 10 MINUTE,'SURPLUS',93.5,0,'BATTERY')").execute())
                 .await().indefinitely();
     }
 

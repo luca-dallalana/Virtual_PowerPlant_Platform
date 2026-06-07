@@ -42,6 +42,9 @@ public class UtilityOperatorResource {
         .flatMap(r -> client.query("INSERT INTO GridCell (gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries) VALUES ('PORTO-IN', 3, 75.0, 'Central Portugal Grid')").execute())
         .flatMap(r -> client.query("INSERT INTO GridCell (gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries) VALUES ('SETUBAL-CT', 2, 40.0, 'Central Portugal Grid')").execute())
         .flatMap(r -> client.query("INSERT INTO GridCell (gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries) VALUES ('FARO-RS', 4, 30.0, 'Faro Residential')").execute())
+        // ── FARO-DW: second Faro cell so FARO-RS has a neighbour ──────────────────
+        .flatMap(r -> client.query("INSERT INTO UtilityOperator (name,location) VALUES ('FaroWest','Faro')").execute())
+        .flatMap(r -> client.query("INSERT INTO GridCell (gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries) VALUES ('FARO-DW', 5, 35.0, 'Faro Residential')").execute())
         .await().indefinitely();
     }
     

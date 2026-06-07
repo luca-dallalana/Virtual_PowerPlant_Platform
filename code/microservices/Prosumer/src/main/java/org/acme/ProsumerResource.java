@@ -39,6 +39,8 @@ public class ProsumerResource {
         .flatMap(r -> client.query("INSERT INTO Prosumer (name,FiscalNumber,location) VALUES ('client2','987654','Setúbal')").execute())
         .flatMap(r -> client.query("INSERT INTO Prosumer (name,FiscalNumber,location) VALUES ('client3','123987','OPorto')").execute())
         .flatMap(r -> client.query("INSERT INTO Prosumer (name,FiscalNumber,location) VALUES ('client4','987123','Faro')").execute())
+        .flatMap(r -> client.query("INSERT INTO Prosumer (name,FiscalNumber,location) VALUES ('client5','456789','Faro')").execute())
+        .flatMap(r -> client.query("INSERT INTO Prosumer (name,FiscalNumber,location) VALUES ('client6','654321','Faro')").execute())
         .flatMap(r -> client.query("CREATE TABLE Asset (assetId BIGINT PRIMARY KEY, prosumerId BIGINT UNSIGNED NOT NULL, assetType TEXT NOT NULL, model TEXT NOT NULL, status TEXT NOT NULL, FOREIGN KEY (prosumerId) REFERENCES Prosumer(id) ON DELETE CASCADE)").execute())
         .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1001, 1, 'BATTERY', 'Tesla Powerwall 2', 'ACTIVE')").execute())
         .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1002, 1, 'SOLAR', 'SolarEdge SE7600H', 'ACTIVE')").execute())
@@ -54,6 +56,11 @@ public class ProsumerResource {
         .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1010, 4, 'EV_CHARGER', 'Wallbox Pulsar Plus', 'ACTIVE')").execute())
         // ── Prosumer 2 (Setúbal) — SETUBAL-CT battery (high SoC → ARBITRAGE_SELL) ─
         .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1011, 2, 'BATTERY', 'VARTA Element Backup 13', 'ACTIVE')").execute())
+        // ── Prosumer 5 (Faro) — FARO-RS heavy load (50 kW DC charger → overload scenario) ──
+        .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1012, 5, 'EV_CHARGER', 'ABB Terra 54 CJ', 'ACTIVE')").execute())
+        // ── Prosumer 6 (Faro) — FARO-DW surplus (solar + battery → neighbour relief) ──────
+        .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1013, 6, 'SOLAR', 'SMA Sunny Tripower 10', 'ACTIVE')").execute())
+        .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1014, 6, 'BATTERY', 'BYD Battery-Box Premium HV', 'ACTIVE')").execute())
         .await().indefinitely();
     }
     

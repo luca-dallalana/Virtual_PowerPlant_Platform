@@ -1,10 +1,37 @@
 {
   "components": [
     {
+      "text": "=eventResults",
+      "type": "text",
+      "layout": {
+        "row": "Row_1wiy5f4",
+        "columns": null
+      },
+      "id": "Field_1f9e1a6",
+      "properties": {}
+    },
+    {
+      "type": "separator",
+      "layout": {
+        "row": "Row_0zm7dg9",
+        "columns": null
+      },
+      "id": "Field_1i79wmb"
+    },
+    {
+      "text": "=aggregation",
+      "type": "text",
+      "layout": {
+        "row": "Row_1f1jxgp",
+        "columns": null
+      },
+      "id": "Field_0rj9z9w"
+    },
+    {
       "label": "Is Flexibility Forecasting to be persisted?",
       "type": "checkbox",
       "layout": {
-        "row": "Row_1nt40q7",
+        "row": "Row_06v9i2j",
         "columns": null
       },
       "id": "Field_06y77uv",

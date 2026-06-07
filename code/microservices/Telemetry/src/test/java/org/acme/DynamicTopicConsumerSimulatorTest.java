@@ -83,7 +83,9 @@ class DynamicTopicConsumerSimulatorTest {
         assertEquals("BATTERY", t.getValue(2));
         assertEquals("AUSTIN-DT", t.getValue(3));
         assertEquals(85.5f, (Float) t.getValue(4), 0.01f);
-        assertNull(t.getValue(10));
+        assertEquals("ONLINE", t.getValue(9));  // connection_status present in payload
+        assertNull(t.getValue(10));              // generation_kw not applicable
+        assertNull(t.getValue(14));              // connector_status not applicable
     }
 
     @Test
@@ -106,8 +108,10 @@ class DynamicTopicConsumerSimulatorTest {
         assertEquals("SOLAR-456", t.getValue(1));
         assertEquals("SOLAR", t.getValue(2));
         assertEquals("BERLIN-CE", t.getValue(3));
-        assertNull(t.getValue(4));
+        assertNull(t.getValue(4));               // soc_percent not applicable
+        assertNull(t.getValue(9));               // connection_status not applicable
         assertEquals(5.2f, (Float) t.getValue(10), 0.01f);
+        assertNull(t.getValue(14));              // connector_status not applicable
     }
 
     @Test
@@ -130,7 +134,8 @@ class DynamicTopicConsumerSimulatorTest {
         assertEquals("CHARGER-789", t.getValue(1));
         assertEquals("EV_CHARGER", t.getValue(2));
         assertEquals("LONDON-SE", t.getValue(3));
-        assertNull(t.getValue(4));
+        assertNull(t.getValue(4));               // soc_percent not applicable
+        assertNull(t.getValue(9));               // connection_status not applicable
         assertEquals("CHARGING", t.getValue(14));
         assertEquals(11.5f, (Float) t.getValue(15), 0.01f);
     }

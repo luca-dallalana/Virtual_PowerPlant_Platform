@@ -51,8 +51,10 @@ public class FlexibilityEventResource {
         .flatMap(r -> client.query(INS + "(1001,1,'ARBITRAGE_SELL',93.1,92.5,'DISCHARGE','HIGH','LISBON-DT',NOW()-INTERVAL 14 MINUTE)").execute())
         .flatMap(r -> client.query(INS + "(1011,2,'ARBITRAGE_SELL',96.8,88.0,'DISCHARGE','HIGH','SETUBAL-CT',NOW()-INTERVAL 12 MINUTE)").execute())
         .flatMap(r -> client.query(INS + "(1008,4,'BALANCING_UNAVAILABLE',17.3,75.0,'UNAVAILABLE',NULL,'FARO-RS',NOW()-INTERVAL 10 MINUTE)").execute())
+        .flatMap(r -> client.query(INS + "(1014,6,'ARBITRAGE_SELL',95.7,99.0,'DISCHARGE','HIGH','FARO-DW',NOW()-INTERVAL 8 MINUTE)").execute())
         .flatMap(r -> client.query(INS + "(1001,1,'ARBITRAGE_SELL',91.5,92.5,'DISCHARGE','HIGH','LISBON-DT',NOW()-INTERVAL 6 MINUTE)").execute())
         .flatMap(r -> client.query(INS + "(1011,2,'ARBITRAGE_SELL',94.2,88.0,'DISCHARGE','HIGH','SETUBAL-CT',NOW()-INTERVAL 3 MINUTE)").execute())
+        .flatMap(r -> client.query(INS + "(1014,6,'ARBITRAGE_SELL',93.1,99.0,'DISCHARGE','HIGH','FARO-DW',NOW()-INTERVAL 1 MINUTE)").execute())
         .await().indefinitely();
     }
 
