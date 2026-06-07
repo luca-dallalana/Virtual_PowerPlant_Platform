@@ -11,7 +11,6 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
-import org.acme.dto.AnalyticsResult;
 import org.acme.entities.AverageSoC;
 import org.acme.entities.ConsumedEnergyByProsumer;
 import org.acme.entities.EnergyDischargedByZone;
@@ -266,9 +265,9 @@ class EnergyAnalyticsResourceIT {
 
     @Test
     void persistConsumed_returnsSuccess() {
-        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
+        ConsumedEnergyByProsumer entity = new ConsumedEnergyByProsumer(1L, 1L, 25.0, 1, LocalDateTime.now(), "LAST_30_MIN");
         Mockito.when(analyticsService.persistConsumed(Mockito.anyList()))
-               .thenReturn(Uni.createFrom().item(expectedResult));
+               .thenReturn(Uni.createFrom().item(Arrays.asList(entity)));
 
         Map<String, Object> body = new HashMap<>();
         body.put("consumedByProsumer", Collections.emptyList());
@@ -280,15 +279,15 @@ class EnergyAnalyticsResourceIT {
             .post("/EnergyAnalytics/persist/consume")
             .then()
             .statusCode(200)
-            .body("status", is("SUCCESS"))
-            .body("recordsProcessed", is(1));
+            .body("[0].id", is(1))
+            .body("[0].prosumerId", is(1));
     }
 
     @Test
     void persistGenerated_returnsSuccess() {
-        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
+        GeneratedEnergyByProsumer entity = new GeneratedEnergyByProsumer(2L, 1L, 50.0, 2, LocalDateTime.now(), "LAST_30_MIN");
         Mockito.when(analyticsService.persistGenerated(Mockito.anyList()))
-               .thenReturn(Uni.createFrom().item(expectedResult));
+               .thenReturn(Uni.createFrom().item(Arrays.asList(entity)));
 
         Map<String, Object> body = new HashMap<>();
         body.put("generatedByProsumer", Collections.emptyList());
@@ -300,15 +299,15 @@ class EnergyAnalyticsResourceIT {
             .post("/EnergyAnalytics/persist/generate")
             .then()
             .statusCode(200)
-            .body("status", is("SUCCESS"))
-            .body("recordsProcessed", is(1));
+            .body("[0].id", is(2))
+            .body("[0].prosumerId", is(1));
     }
 
     @Test
     void persistDischarged_returnsSuccess() {
-        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
+        EnergyDischargedByZone entity = new EnergyDischargedByZone(3L, "GRID_A", 10.0, 3, LocalDateTime.now(), "LAST_30_MIN");
         Mockito.when(analyticsService.persistDischarged(Mockito.anyList()))
-               .thenReturn(Uni.createFrom().item(expectedResult));
+               .thenReturn(Uni.createFrom().item(Arrays.asList(entity)));
 
         Map<String, Object> body = new HashMap<>();
         body.put("dischargedByZone", Collections.emptyList());
@@ -320,15 +319,15 @@ class EnergyAnalyticsResourceIT {
             .post("/EnergyAnalytics/persist/discharge")
             .then()
             .statusCode(200)
-            .body("status", is("SUCCESS"))
-            .body("recordsProcessed", is(1));
+            .body("[0].id", is(3))
+            .body("[0].gridCellId", is("GRID_A"));
     }
 
     @Test
     void persistAverage_returnsSuccess() {
-        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
+        AverageSoC avgSoC = new AverageSoC(4L, 80.0, 5, LocalDateTime.now(), "LAST_30_MIN");
         Mockito.when(analyticsService.persistAverageSoC(Mockito.any()))
-               .thenReturn(Uni.createFrom().item(expectedResult));
+               .thenReturn(Uni.createFrom().item(avgSoC));
 
         Map<String, Object> body = new HashMap<>();
         body.put("averageSoC", createAverageSoCMap(80.0, 5));
@@ -340,8 +339,8 @@ class EnergyAnalyticsResourceIT {
             .post("/EnergyAnalytics/persist/average")
             .then()
             .statusCode(200)
-            .body("status", is("SUCCESS"))
-            .body("recordsProcessed", is(1));
+            .body("id", is(4))
+            .body("averageSocPercent", is(80.0f));
     }
 
     private void stubQuery(String sql, RowSet<Row> rowSet) {

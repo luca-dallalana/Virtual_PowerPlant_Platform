@@ -200,70 +200,69 @@ class EnergyAnalyticsResourceTest {
 
     @Test
     void persistConsumed_returnsSuccess() {
-        ConsumedEnergyByProsumer entity = new ConsumedEnergyByProsumer(null, 1L, 25.0, 1, LocalDateTime.now(), "LAST_30_MIN");
+        ConsumedEnergyByProsumer entity = new ConsumedEnergyByProsumer(1L, 1L, 25.0, 1, LocalDateTime.now(), "LAST_30_MIN");
         PersistConsumedRequest request = new PersistConsumedRequest();
         request.consumedByProsumer = Arrays.asList(entity);
 
-        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
         Mockito.when(analyticsService.persistConsumed(Mockito.anyList()))
-               .thenReturn(Uni.createFrom().item(expectedResult));
+               .thenReturn(Uni.createFrom().item(Arrays.asList(entity)));
 
         Response response = resource.persistConsumed(request).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
-        AnalyticsResult result = (AnalyticsResult) response.getEntity();
-        MatcherAssert.assertThat(result.status, is("SUCCESS"));
-        MatcherAssert.assertThat(result.recordsProcessed, is(1));
+        @SuppressWarnings("unchecked")
+        List<ConsumedEnergyByProsumer> result = (List<ConsumedEnergyByProsumer>) response.getEntity();
+        MatcherAssert.assertThat(result.size(), is(1));
+        MatcherAssert.assertThat(result.get(0).id, is(1L));
     }
 
     @Test
     void persistGenerated_returnsSuccess() {
-        GeneratedEnergyByProsumer entity = new GeneratedEnergyByProsumer(null, 1L, 50.0, 2, LocalDateTime.now(), "LAST_30_MIN");
+        GeneratedEnergyByProsumer entity = new GeneratedEnergyByProsumer(2L, 1L, 50.0, 2, LocalDateTime.now(), "LAST_30_MIN");
         PersistGeneratedRequest request = new PersistGeneratedRequest();
         request.generatedByProsumer = Arrays.asList(entity);
 
-        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
         Mockito.when(analyticsService.persistGenerated(Mockito.anyList()))
-               .thenReturn(Uni.createFrom().item(expectedResult));
+               .thenReturn(Uni.createFrom().item(Arrays.asList(entity)));
 
         Response response = resource.persistGenerated(request).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
-        AnalyticsResult result = (AnalyticsResult) response.getEntity();
-        MatcherAssert.assertThat(result.status, is("SUCCESS"));
-        MatcherAssert.assertThat(result.recordsProcessed, is(1));
+        @SuppressWarnings("unchecked")
+        List<GeneratedEnergyByProsumer> result = (List<GeneratedEnergyByProsumer>) response.getEntity();
+        MatcherAssert.assertThat(result.size(), is(1));
+        MatcherAssert.assertThat(result.get(0).id, is(2L));
     }
 
     @Test
     void persistDischarged_returnsSuccess() {
-        EnergyDischargedByZone entity = new EnergyDischargedByZone(null, "GRID_A", 10.0, 3, LocalDateTime.now(), "LAST_30_MIN");
+        EnergyDischargedByZone entity = new EnergyDischargedByZone(3L, "GRID_A", 10.0, 3, LocalDateTime.now(), "LAST_30_MIN");
         PersistDischargedRequest request = new PersistDischargedRequest();
         request.dischargedByZone = Arrays.asList(entity);
 
-        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
         Mockito.when(analyticsService.persistDischarged(Mockito.anyList()))
-               .thenReturn(Uni.createFrom().item(expectedResult));
+               .thenReturn(Uni.createFrom().item(Arrays.asList(entity)));
 
         Response response = resource.persistDischarged(request).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
-        AnalyticsResult result = (AnalyticsResult) response.getEntity();
-        MatcherAssert.assertThat(result.status, is("SUCCESS"));
-        MatcherAssert.assertThat(result.recordsProcessed, is(1));
+        @SuppressWarnings("unchecked")
+        List<EnergyDischargedByZone> result = (List<EnergyDischargedByZone>) response.getEntity();
+        MatcherAssert.assertThat(result.size(), is(1));
+        MatcherAssert.assertThat(result.get(0).id, is(3L));
     }
 
     @Test
     void persistAverage_returnsSuccess() {
-        AverageSoC avgSoC = new AverageSoC(null, 80.0, 5, LocalDateTime.now(), "LAST_30_MIN");
+        AverageSoC avgSoC = new AverageSoC(4L, 80.0, 5, LocalDateTime.now(), "LAST_30_MIN");
         PersistAverageSoCRequest request = new PersistAverageSoCRequest();
         request.averageSoC = avgSoC;
 
-        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
         Mockito.when(analyticsService.persistAverageSoC(Mockito.any()))
-               .thenReturn(Uni.createFrom().item(expectedResult));
+               .thenReturn(Uni.createFrom().item(avgSoC));
 
         Response response = resource.persistAverage(request).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
-        AnalyticsResult result = (AnalyticsResult) response.getEntity();
-        MatcherAssert.assertThat(result.status, is("SUCCESS"));
-        MatcherAssert.assertThat(result.recordsProcessed, is(1));
+        AverageSoC result = (AverageSoC) response.getEntity();
+        MatcherAssert.assertThat(result.id, is(4L));
+        MatcherAssert.assertThat(result.averageSocPercent, is(80.0));
     }
 
     private void injectClient(EnergyAnalyticsResource target, MySQLPool pool) {

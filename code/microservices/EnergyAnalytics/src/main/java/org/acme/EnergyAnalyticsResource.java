@@ -9,7 +9,15 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.acme.dto.*;
+import org.acme.dto.ComputeAverageSoCRequest;
+import org.acme.dto.ComputeConsumedRequest;
+import org.acme.dto.ComputeDischargedRequest;
+import org.acme.dto.ComputeGeneratedRequest;
+import org.acme.dto.EmitAnalyticsRequest;
+import org.acme.dto.PersistAverageSoCRequest;
+import org.acme.dto.PersistConsumedRequest;
+import org.acme.dto.PersistDischargedRequest;
+import org.acme.dto.PersistGeneratedRequest;
 import org.acme.entities.AverageSoC;
 import org.acme.entities.ConsumedEnergyByProsumer;
 import org.acme.entities.EnergyDischargedByZone;
@@ -104,28 +112,28 @@ public class EnergyAnalyticsResource {
     @Path("/persist/consume")
     public Uni<Response> persistConsumed(PersistConsumedRequest request) {
         return analyticsService.persistConsumed(request.consumedByProsumer)
-                .onItem().transform(result -> Response.ok(result).build());
+                .onItem().transform(entities -> Response.ok(entities).build());
     }
 
     @POST
     @Path("/persist/generate")
     public Uni<Response> persistGenerated(PersistGeneratedRequest request) {
         return analyticsService.persistGenerated(request.generatedByProsumer)
-                .onItem().transform(result -> Response.ok(result).build());
+                .onItem().transform(entities -> Response.ok(entities).build());
     }
 
     @POST
     @Path("/persist/discharge")
     public Uni<Response> persistDischarged(PersistDischargedRequest request) {
         return analyticsService.persistDischarged(request.dischargedByZone)
-                .onItem().transform(result -> Response.ok(result).build());
+                .onItem().transform(entities -> Response.ok(entities).build());
     }
 
     @POST
     @Path("/persist/average")
     public Uni<Response> persistAverage(PersistAverageSoCRequest request) {
         return analyticsService.persistAverageSoC(request.averageSoC)
-                .onItem().transform(result -> Response.ok(result).build());
+                .onItem().transform(entity -> Response.ok(entity).build());
     }
 
     @GET

@@ -64,6 +64,9 @@ public class ConsumedEnergyByProsumer {
     public Uni<Long> save(MySQLPool client) {
         return client.preparedQuery("INSERT INTO ConsumedEnergyByProsumer(prosumerId, totalEnergyConsumedKwh, evChargerCount, timestamp, aggregationPeriod) VALUES (?,?,?,?,?)")
                 .execute(Tuple.of(prosumerId, totalEnergyConsumedKwh, evChargerCount, timestamp, aggregationPeriod))
-                .onItem().transform(pgRowSet -> (Long) pgRowSet.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID));
+                .onItem().transform(pgRowSet -> {
+                    this.id = (Long) pgRowSet.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID);
+                    return this.id;
+                });
     }
 }

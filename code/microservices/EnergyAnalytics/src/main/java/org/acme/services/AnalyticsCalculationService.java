@@ -4,7 +4,6 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.mysqlclient.MySQLPool;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.acme.dto.AnalyticsResult;
 import org.acme.dto.AssetDTO;
 import org.acme.dto.GridCellDTO;
 import org.acme.dto.TelemetryDTO;
@@ -132,27 +131,27 @@ public class AnalyticsCalculationService {
         return new AverageSoC(null, avg, avgSocByAsset.size(), timestamp, "LAST_30_MIN");
     }
 
-    public Uni<AnalyticsResult> persistConsumed(List<ConsumedEnergyByProsumer> list) {
-        if (list == null || list.isEmpty()) return Uni.createFrom().item(new AnalyticsResult("SUCCESS", LocalDateTime.now(), 0));
+    public Uni<List<ConsumedEnergyByProsumer>> persistConsumed(List<ConsumedEnergyByProsumer> list) {
+        if (list == null || list.isEmpty()) return Uni.createFrom().item(Collections.emptyList());
         List<Uni<Long>> saves = list.stream().map(c -> c.save(client)).collect(Collectors.toList());
-        return Uni.combine().all().unis(saves).combinedWith(r -> new AnalyticsResult("SUCCESS", LocalDateTime.now(), r.size()));
+        return Uni.combine().all().unis(saves).combinedWith(r -> list);
     }
 
-    public Uni<AnalyticsResult> persistGenerated(List<GeneratedEnergyByProsumer> list) {
-        if (list == null || list.isEmpty()) return Uni.createFrom().item(new AnalyticsResult("SUCCESS", LocalDateTime.now(), 0));
+    public Uni<List<GeneratedEnergyByProsumer>> persistGenerated(List<GeneratedEnergyByProsumer> list) {
+        if (list == null || list.isEmpty()) return Uni.createFrom().item(Collections.emptyList());
         List<Uni<Long>> saves = list.stream().map(g -> g.save(client)).collect(Collectors.toList());
-        return Uni.combine().all().unis(saves).combinedWith(r -> new AnalyticsResult("SUCCESS", LocalDateTime.now(), r.size()));
+        return Uni.combine().all().unis(saves).combinedWith(r -> list);
     }
 
-    public Uni<AnalyticsResult> persistDischarged(List<EnergyDischargedByZone> list) {
-        if (list == null || list.isEmpty()) return Uni.createFrom().item(new AnalyticsResult("SUCCESS", LocalDateTime.now(), 0));
+    public Uni<List<EnergyDischargedByZone>> persistDischarged(List<EnergyDischargedByZone> list) {
+        if (list == null || list.isEmpty()) return Uni.createFrom().item(Collections.emptyList());
         List<Uni<Long>> saves = list.stream().map(d -> d.save(client)).collect(Collectors.toList());
-        return Uni.combine().all().unis(saves).combinedWith(r -> new AnalyticsResult("SUCCESS", LocalDateTime.now(), r.size()));
+        return Uni.combine().all().unis(saves).combinedWith(r -> list);
     }
 
-    public Uni<AnalyticsResult> persistAverageSoC(AverageSoC averageSoC) {
-        if (averageSoC == null) return Uni.createFrom().item(new AnalyticsResult("SUCCESS", LocalDateTime.now(), 0));
-        return averageSoC.save(client).map(id -> new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1));
+    public Uni<AverageSoC> persistAverageSoC(AverageSoC averageSoC) {
+        if (averageSoC == null) return Uni.createFrom().nullItem();
+        return averageSoC.save(client).map(id -> averageSoC);
     }
 
     /** Average power across all readings for the asset, multiplied by the 30-min window (0.5h) to give kWh. */

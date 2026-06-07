@@ -64,6 +64,9 @@ public class EnergyDischargedByZone {
     public Uni<Long> save(MySQLPool client) {
         return client.preparedQuery("INSERT INTO EnergyDischargedByZone(gridCellId, totalEnergyDischargedKwh, batteryCount, timestamp, aggregationPeriod) VALUES (?,?,?,?,?)")
                 .execute(Tuple.of(gridCellId, totalEnergyDischargedKwh, batteryCount, timestamp, aggregationPeriod))
-                .onItem().transform(pgRowSet -> (Long) pgRowSet.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID));
+                .onItem().transform(pgRowSet -> {
+                    this.id = (Long) pgRowSet.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID);
+                    return this.id;
+                });
     }
 }

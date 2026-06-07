@@ -6,7 +6,6 @@ import io.vertx.mutiny.sqlclient.PreparedQuery;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
-import org.acme.dto.AnalyticsResult;
 import org.acme.entities.AverageSoC;
 import org.acme.entities.ConsumedEnergyByProsumer;
 import org.acme.entities.EnergyDischargedByZone;
@@ -43,17 +42,15 @@ class EnergyAnalyticsKafkaTest {
         ConsumedEnergyByProsumer c2 = new ConsumedEnergyByProsumer(null, 2L, 30.0, 2, ts, "LAST_30_MIN");
         stubInsert("INSERT INTO ConsumedEnergyByProsumer(prosumerId, totalEnergyConsumedKwh, evChargerCount, timestamp, aggregationPeriod) VALUES (?,?,?,?,?)", 1L);
 
-        AnalyticsResult result = service.persistConsumed(Arrays.asList(c1, c2)).await().indefinitely();
+        java.util.List<ConsumedEnergyByProsumer> result = service.persistConsumed(Arrays.asList(c1, c2)).await().indefinitely();
 
-        assertThat(result.status, is("SUCCESS"));
-        assertThat(result.recordsProcessed, is(2));
+        assertThat(result.size(), is(2));
     }
 
     @Test
-    void persistConsumed_emptyList_returnsZero() {
-        AnalyticsResult result = service.persistConsumed(Collections.emptyList()).await().indefinitely();
-        assertThat(result.status, is("SUCCESS"));
-        assertThat(result.recordsProcessed, is(0));
+    void persistConsumed_emptyList_returnsEmpty() {
+        java.util.List<ConsumedEnergyByProsumer> result = service.persistConsumed(Collections.emptyList()).await().indefinitely();
+        assertThat(result.size(), is(0));
     }
 
     @Test
@@ -62,17 +59,16 @@ class EnergyAnalyticsKafkaTest {
         GeneratedEnergyByProsumer g1 = new GeneratedEnergyByProsumer(null, 1L, 50.0, 2, ts, "LAST_30_MIN");
         stubInsert("INSERT INTO GeneratedEnergyByProsumer(prosumerId, totalEnergyGeneratedKwh, solarAssetCount, timestamp, aggregationPeriod) VALUES (?,?,?,?,?)", 1L);
 
-        AnalyticsResult result = service.persistGenerated(Collections.singletonList(g1)).await().indefinitely();
+        java.util.List<GeneratedEnergyByProsumer> result = service.persistGenerated(Collections.singletonList(g1)).await().indefinitely();
 
-        assertThat(result.status, is("SUCCESS"));
-        assertThat(result.recordsProcessed, is(1));
+        assertThat(result.size(), is(1));
+        assertThat(result.get(0).id, is(1L));
     }
 
     @Test
-    void persistGenerated_emptyList_returnsZero() {
-        AnalyticsResult result = service.persistGenerated(Collections.emptyList()).await().indefinitely();
-        assertThat(result.status, is("SUCCESS"));
-        assertThat(result.recordsProcessed, is(0));
+    void persistGenerated_emptyList_returnsEmpty() {
+        java.util.List<GeneratedEnergyByProsumer> result = service.persistGenerated(Collections.emptyList()).await().indefinitely();
+        assertThat(result.size(), is(0));
     }
 
     @Test
@@ -81,17 +77,16 @@ class EnergyAnalyticsKafkaTest {
         EnergyDischargedByZone d1 = new EnergyDischargedByZone(null, "GRID_A", 10.0, 3, ts, "LAST_30_MIN");
         stubInsert("INSERT INTO EnergyDischargedByZone(gridCellId, totalEnergyDischargedKwh, batteryCount, timestamp, aggregationPeriod) VALUES (?,?,?,?,?)", 1L);
 
-        AnalyticsResult result = service.persistDischarged(Collections.singletonList(d1)).await().indefinitely();
+        java.util.List<EnergyDischargedByZone> result = service.persistDischarged(Collections.singletonList(d1)).await().indefinitely();
 
-        assertThat(result.status, is("SUCCESS"));
-        assertThat(result.recordsProcessed, is(1));
+        assertThat(result.size(), is(1));
+        assertThat(result.get(0).id, is(1L));
     }
 
     @Test
-    void persistDischarged_emptyList_returnsZero() {
-        AnalyticsResult result = service.persistDischarged(Collections.emptyList()).await().indefinitely();
-        assertThat(result.status, is("SUCCESS"));
-        assertThat(result.recordsProcessed, is(0));
+    void persistDischarged_emptyList_returnsEmpty() {
+        java.util.List<EnergyDischargedByZone> result = service.persistDischarged(Collections.emptyList()).await().indefinitely();
+        assertThat(result.size(), is(0));
     }
 
     @Test
@@ -100,17 +95,16 @@ class EnergyAnalyticsKafkaTest {
         AverageSoC avgSoC = new AverageSoC(null, 80.0, 5, ts, "LAST_30_MIN");
         stubInsert("INSERT INTO AverageSoC(averageSocPercent, batteryCount, timestamp, aggregationPeriod) VALUES (?,?,?,?)", 1L);
 
-        AnalyticsResult result = service.persistAverageSoC(avgSoC).await().indefinitely();
+        AverageSoC result = service.persistAverageSoC(avgSoC).await().indefinitely();
 
-        assertThat(result.status, is("SUCCESS"));
-        assertThat(result.recordsProcessed, is(1));
+        assertThat(result.id, is(1L));
+        assertThat(result.averageSocPercent, is(80.0));
     }
 
     @Test
-    void persistAverageSoC_nullInput_returnsZero() {
-        AnalyticsResult result = service.persistAverageSoC(null).await().indefinitely();
-        assertThat(result.status, is("SUCCESS"));
-        assertThat(result.recordsProcessed, is(0));
+    void persistAverageSoC_nullInput_returnsNull() {
+        AverageSoC result = service.persistAverageSoC(null).await().indefinitely();
+        assertThat(result == null, is(true));
     }
 
     private void stubInsert(String sql, Long insertedId) {
