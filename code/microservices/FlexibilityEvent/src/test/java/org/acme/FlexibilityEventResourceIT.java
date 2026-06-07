@@ -2,6 +2,7 @@ package org.acme;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.InjectMock;
+import io.restassured.http.ContentType;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.mysqlclient.MySQLPool;
 import io.vertx.mutiny.sqlclient.PreparedQuery;
@@ -16,7 +17,10 @@ import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -169,6 +173,65 @@ class FlexibilityEventResourceIT {
             .body("[1].eventType", is("BALANCING_UNAVAILABLE"));
     }
 
+    @Test
+    void getLogsByMinutes_returnsEmptyList() {
+        stubPreparedQuery(
+            "SELECT id, assetId, prosumerId, eventType, soc_percent, soh_percent, " +
+            "recommendedAction, marketPriceLevel, gridCellId, timestamp " +
+            "FROM FlexibilityEvent WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp DESC",
+            rowSetWithRows());
+
+        given()
+            .when()
+            .get("/FlexibilityEvent/logs/20")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(0));
+    }
+
+    @Test
+    void saveBatch_persistsEventsAndReturnsWithIds() {
+        stubPreparedQuery(
+            "INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, soh_percent, " +
+            "recommendedAction, marketPriceLevel, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)",
+            rowSetWithInsertedId(42L));
+
+        Map<String, Object> event = new HashMap<>();
+        event.put("assetId", 1001);
+        event.put("prosumerId", 1);
+        event.put("eventType", "ARBITRAGE_SELL");
+        event.put("soc_percent", 95.0f);
+        event.put("soh_percent", 92.5f);
+        event.put("recommendedAction", "DISCHARGE");
+        event.put("marketPriceLevel", "HIGH");
+        event.put("gridCellId", "LISBON-DT");
+        event.put("timestamp", "2024-01-15T10:30:00");
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(Collections.singletonList(event))
+            .when()
+            .post("/FlexibilityEvent/save")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(1))
+            .body("[0].id", is(42))
+            .body("[0].eventType", is("ARBITRAGE_SELL"))
+            .body("[0].marketPriceLevel", is("HIGH"));
+    }
+
+    @Test
+    void saveBatch_emptyList_returnsEmptyResponse() {
+        given()
+            .contentType(ContentType.JSON)
+            .body(Collections.emptyList())
+            .when()
+            .post("/FlexibilityEvent/save")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(0));
+    }
+
     private void stubQuery(String sql, RowSet<Row> rowSet) {
         Query<RowSet<Row>> query = Mockito.mock(Query.class);
         Mockito.when(query.execute()).thenReturn(Uni.createFrom().item(rowSet));
@@ -179,6 +242,15 @@ class FlexibilityEventResourceIT {
         PreparedQuery<RowSet<Row>> preparedQuery = Mockito.mock(PreparedQuery.class);
         Mockito.when(preparedQuery.execute(Mockito.any(Tuple.class))).thenReturn(Uni.createFrom().item(rowSet));
         Mockito.when(client.preparedQuery(sql)).thenReturn(preparedQuery);
+    }
+
+    private RowSet<Row> rowSetWithInsertedId(Long insertedId) {
+        RowSet<Row> rowSet = Mockito.mock(RowSet.class);
+        Mockito.when(rowSet.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(insertedId);
+        io.vertx.mutiny.sqlclient.RowIterator<Row> iterator =
+                io.vertx.mutiny.sqlclient.RowIterator.newInstance(new ListRowIterator(Collections.emptyList()));
+        Mockito.when(rowSet.iterator()).thenReturn(iterator);
+        return rowSet;
     }
 
     private RowSet<Row> rowSetWithRows(Row... rows) {
