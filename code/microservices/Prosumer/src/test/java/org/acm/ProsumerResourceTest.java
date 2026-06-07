@@ -235,6 +235,30 @@ class ProsumerResourceUnitTest {
     }
 
 
+    @Test
+    void getActiveAssetIdsByProsumers_returnsList() {
+        Row row1 = Mockito.mock(Row.class);
+        Mockito.when(row1.getLong("assetId")).thenReturn(1001L);
+        Row row2 = Mockito.mock(Row.class);
+        Mockito.when(row2.getLong("assetId")).thenReturn(1002L);
+        stubPreparedQuery(
+            "SELECT assetId FROM Asset WHERE status = 'ACTIVE' AND prosumerId IN (?, ?)",
+            rowSetWithRows(row1, row2));
+
+        List<Long> result = resource.getActiveAssetIdsByProsumers(Arrays.asList(1L, 2L))
+                .collect().asList().await().indefinitely();
+        MatcherAssert.assertThat(result, hasSize(2));
+        MatcherAssert.assertThat(result.get(0), is(1001L));
+        MatcherAssert.assertThat(result.get(1), is(1002L));
+    }
+
+    @Test
+    void getActiveAssetIdsByProsumers_emptyInput_returnsEmpty() {
+        List<Long> result = resource.getActiveAssetIdsByProsumers(Collections.emptyList())
+                .collect().asList().await().indefinitely();
+        MatcherAssert.assertThat(result, hasSize(0));
+    }
+
     private void injectClient(ProsumerResource target, MySQLPool pool) {
         try {
             Field field = ProsumerResource.class.getDeclaredField("client");

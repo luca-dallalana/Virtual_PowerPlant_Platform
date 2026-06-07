@@ -238,6 +238,40 @@ class ProsumerResourceIT {
             .statusCode(404);
     }
 
+    @Test
+    void getActiveAssetIdsByProsumers_returnsList() {
+        Row row1 = Mockito.mock(Row.class);
+        Mockito.when(row1.getLong("assetId")).thenReturn(1001L);
+        Row row2 = Mockito.mock(Row.class);
+        Mockito.when(row2.getLong("assetId")).thenReturn(1002L);
+        stubPreparedQuery(
+            "SELECT assetId FROM Asset WHERE status = 'ACTIVE' AND prosumerId IN (?, ?)",
+            rowSetWithRows(row1, row2));
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(Arrays.asList(1L, 2L))
+            .when()
+            .post("/Prosumer/assets/active/by-prosumers")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(2))
+            .body("[0]", is(1001))
+            .body("[1]", is(1002));
+    }
+
+    @Test
+    void getActiveAssetIdsByProsumers_emptyInput_returnsEmpty() {
+        given()
+            .contentType(ContentType.JSON)
+            .body(Collections.emptyList())
+            .when()
+            .post("/Prosumer/assets/active/by-prosumers")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(0));
+    }
+
     private void stubQuery(String sql, RowSet<Row> rowSet) {
         Query<RowSet<Row>> query = Mockito.mock(Query.class);
         Mockito.when(query.execute()).thenReturn(Uni.createFrom().item(rowSet));
