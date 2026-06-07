@@ -135,6 +135,11 @@ Each `src/test/README.md` inside the service documents which tests exist and wha
 ### Automated deployment
 Its needed to set access.sh using your credentials 
 
+From account 1, you need to download the pem key and name it key.pem, and place it on the /kafka directory
+
+From account 2, you need to download the pem key and name it mskey.pem, and place it on the /code directory
+
+
 From `code/`:
 
 ```bash
