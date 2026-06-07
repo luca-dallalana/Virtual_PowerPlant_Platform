@@ -165,6 +165,92 @@ class AssetLinkResourceIT {
             .statusCode(404);
     }
 
+    @Test
+    void getByUtilityOperator_returnsList() {
+        Row row1 = assetLinkRow(1L, 10L, 5L);
+        Row row2 = assetLinkRow(2L, 11L, 5L);
+        stubPreparedQuery(client, "SELECT id, idProsumer, idUtilityOperator FROM AssetLink WHERE idUtilityOperator = ?", rowSetWithRows(row1, row2));
+
+        given()
+            .when()
+            .get("/AssetLink/utilityoperator/5")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(2))
+            .body("[0].idUtilityOperator", is(5))
+            .body("[1].idUtilityOperator", is(5));
+    }
+
+    @Test
+    void getByUtilityOperator_returnsEmptyList() {
+        stubPreparedQuery(client, "SELECT id, idProsumer, idUtilityOperator FROM AssetLink WHERE idUtilityOperator = ?", rowSetWithRows());
+
+        given()
+            .when()
+            .get("/AssetLink/utilityoperator/99")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(0));
+    }
+
+    @Test
+    void getProsumerIdsByOperator_returnsList() {
+        Row row1 = prosumerIdRow(10L);
+        Row row2 = prosumerIdRow(11L);
+        stubPreparedQuery(client, "SELECT idProsumer FROM AssetLink WHERE idUtilityOperator = ?", rowSetWithRows(row1, row2));
+
+        given()
+            .when()
+            .get("/AssetLink/prosumerIds/by-operator/5")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(2))
+            .body("[0]", is(10))
+            .body("[1]", is(11));
+    }
+
+    @Test
+    void getProsumerIdsByOperator_returnsEmptyList() {
+        stubPreparedQuery(client, "SELECT idProsumer FROM AssetLink WHERE idUtilityOperator = ?", rowSetWithRows());
+
+        given()
+            .when()
+            .get("/AssetLink/prosumerIds/by-operator/99")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(0));
+    }
+
+    @Test
+    void getProsumerIdsByOperators_returnsList() {
+        Row row1 = prosumerIdRow(10L);
+        Row row2 = prosumerIdRow(11L);
+        stubPreparedQuery(client, "SELECT DISTINCT idProsumer FROM AssetLink WHERE idUtilityOperator IN (?, ?)", rowSetWithRows(row1, row2));
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(Arrays.asList(1L, 2L))
+            .when()
+            .post("/AssetLink/prosumerIds/by-operators")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(2))
+            .body("[0]", is(10))
+            .body("[1]", is(11));
+    }
+
+    @Test
+    void getProsumerIdsByOperators_emptyInput_returnsEmpty() {
+        given()
+            .contentType(ContentType.JSON)
+            .body(Collections.emptyList())
+            .when()
+            .post("/AssetLink/prosumerIds/by-operators")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(0));
+    }
+
     private void stubQuery(MySQLPool client, String sql, RowSet<Row> rowSet) {
         Query<RowSet<Row>> query = Mockito.mock(Query.class);
         Mockito.when(query.execute()).thenReturn(Uni.createFrom().item(rowSet));
@@ -199,6 +285,12 @@ class AssetLinkResourceIT {
         Mockito.when(row.getLong("id")).thenReturn(id);
         Mockito.when(row.getLong("idProsumer")).thenReturn(idProsumer);
         Mockito.when(row.getLong("idUtilityOperator")).thenReturn(idUtilityOperator);
+        return row;
+    }
+
+    private Row prosumerIdRow(Long idProsumer) {
+        Row row = Mockito.mock(Row.class);
+        Mockito.when(row.getLong("idProsumer")).thenReturn(idProsumer);
         return row;
     }
 

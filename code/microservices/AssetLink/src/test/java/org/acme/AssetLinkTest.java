@@ -183,6 +183,63 @@ class AssetLinkTest {
         MatcherAssert.assertThat(result, is(false));
     }
 
+    @Test
+    void findById2_returnsNullWhenNotFound() {
+        MySQLPool client = Mockito.mock(MySQLPool.class);
+        stubPreparedQuery(client, "SELECT id, idProsumer, idUtilityOperator FROM AssetLink WHERE idProsumer = ? AND idUtilityOperator = ?", rowSetWithRows());
+
+        AssetLink result = AssetLink.findById2(client, 99L, 99L).await().indefinitely();
+
+        MatcherAssert.assertThat(result, is((AssetLink) null));
+    }
+
+    @Test
+    void findProsumerIdsByOperatorId_returnsList() {
+        MySQLPool client = Mockito.mock(MySQLPool.class);
+        Row row1 = prosumerIdRow(10L);
+        Row row2 = prosumerIdRow(11L);
+        stubPreparedQuery(client, "SELECT idProsumer FROM AssetLink WHERE idUtilityOperator = ?", rowSetWithRows(row1, row2));
+
+        List<Long> result = AssetLink.findProsumerIdsByOperatorId(client, 5L).collect().asList().await().indefinitely();
+
+        MatcherAssert.assertThat(result, hasSize(2));
+        MatcherAssert.assertThat(result.get(0), is(10L));
+        MatcherAssert.assertThat(result.get(1), is(11L));
+    }
+
+    @Test
+    void findProsumerIdsByOperatorId_returnsEmptyWhenNoLinks() {
+        MySQLPool client = Mockito.mock(MySQLPool.class);
+        stubPreparedQuery(client, "SELECT idProsumer FROM AssetLink WHERE idUtilityOperator = ?", rowSetWithRows());
+
+        List<Long> result = AssetLink.findProsumerIdsByOperatorId(client, 99L).collect().asList().await().indefinitely();
+
+        MatcherAssert.assertThat(result, hasSize(0));
+    }
+
+    @Test
+    void findProsumerIdsByOperatorIds_returnsList() {
+        MySQLPool client = Mockito.mock(MySQLPool.class);
+        Row row1 = prosumerIdRow(10L);
+        Row row2 = prosumerIdRow(11L);
+        stubPreparedQuery(client, "SELECT DISTINCT idProsumer FROM AssetLink WHERE idUtilityOperator IN (?, ?)", rowSetWithRows(row1, row2));
+
+        List<Long> result = AssetLink.findProsumerIdsByOperatorIds(client, Arrays.asList(1L, 2L)).collect().asList().await().indefinitely();
+
+        MatcherAssert.assertThat(result, hasSize(2));
+        MatcherAssert.assertThat(result.get(0), is(10L));
+        MatcherAssert.assertThat(result.get(1), is(11L));
+    }
+
+    @Test
+    void findProsumerIdsByOperatorIds_emptyInput_returnsEmpty() {
+        MySQLPool client = Mockito.mock(MySQLPool.class);
+
+        List<Long> result = AssetLink.findProsumerIdsByOperatorIds(client, Collections.emptyList()).collect().asList().await().indefinitely();
+
+        MatcherAssert.assertThat(result, hasSize(0));
+    }
+
     private void stubQuery(MySQLPool client, String sql, RowSet<Row> rowSet) {
         Query<RowSet<Row>> query = Mockito.mock(Query.class);
         Mockito.when(query.execute()).thenReturn(Uni.createFrom().item(rowSet));
@@ -217,6 +274,12 @@ class AssetLinkTest {
         Mockito.when(row.getLong("id")).thenReturn(id);
         Mockito.when(row.getLong("idProsumer")).thenReturn(idProsumer);
         Mockito.when(row.getLong("idUtilityOperator")).thenReturn(idUtilityOperator);
+        return row;
+    }
+
+    private Row prosumerIdRow(Long idProsumer) {
+        Row row = Mockito.mock(Row.class);
+        Mockito.when(row.getLong("idProsumer")).thenReturn(idProsumer);
         return row;
     }
 
