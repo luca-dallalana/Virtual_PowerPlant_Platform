@@ -16,59 +16,81 @@ The unit and IT tests use Mockito to mock `MySQLPool` so they do not need a live
 
 ### Unit tests: `KafkaProvisioningResourceTest`
 
-These tests validate the behavior of the `Telemetry` model and `KafkaProvisioningResource` in isolation:
-
-- `get_returnsList`: verifies that `get()` returns a list of `Telemetry` objects mapped from DB `Row` instances, including `id`, `timeStamp`, `asset_id`, `asset_type`, `grid_cell_id`, `State_of_Charge`, `Available_Energy`, `Current_Output`, `Max_Capacity`, `State_of_Health`, `Status`, `Current_Generation`, `Daily_Total`, `Grid_Voltage`, `Frequency`, `Plug_Status`, `Charging_Rate`, `Session_Energy`, and `EV_SoC`.
-- `getSingle_returnsEntity`: verifies that `getSingle(id)` returns the matching entity when a row exists and that the `Response` status is `200`.
-- `getSingle_returnsNotFound`: verifies that `getSingle(id)` returns `404` when the prepared query returns no rows.
-
-The unit tests also validate the exact SQL used by the model/resource methods:
-
-- `SELECT *  FROM Telemetry ORDER BY id ASC`
-- `SELECT * FROM Telemetry WHERE id = ?`
+| Test | What it verifies |
+|---|---|
+| `get_returnsList` | `get(null, null)` returns all rows mapped to `Telemetry` objects via `findAll` |
+| `getSingle_returnsEntity` | `getSingle(id)` returns `200` and the matching entity when a row exists |
+| `getSingle_returnsNotFound` | `getSingle(id)` returns `404` when no row exists |
+| `getLatestByAssetId_returnsEntity` | `getLatestByAssetId(assetId)` returns `200` and the most recent reading |
+| `getLatestByAssetId_returnsNotFound` | `getLatestByAssetId(assetId)` returns `404` when no row exists |
+| `get_withTimeWindow_returnsFiltered` | `get(from, to)` routes to `findByTimeWindow` and returns rows within the time range |
+| `getLatestByAssetType_returnsList` | `getLatestByAssetType(assetType, minutes)` returns the latest reading per asset using the JOIN subquery |
+| `getWindowByAssetType_returnsList` | `getWindowByAssetType(assetType, minutes)` returns all readings within the rolling time window |
+| `getLatestByAssetIds_returnsList` | `getLatestByAssetIds(assetIds, null)` returns the latest reading per asset ID using a dynamic IN query |
+| `getLatestByAssetIds_emptyInput_returnsEmpty` | `getLatestByAssetIds([], null)` short-circuits without hitting the DB and returns an empty list |
 
 ### Integration tests: `KafkaProvisioningResourceIT`
 
-These tests exercise the REST resource through HTTP using `@QuarkusTest` and RestAssured:
-
-- `getTelemetry_returnsList`: verifies `GET /Telemetry` returns a JSON array with all records.
-- `getTelemetryById_returnsEntity`: verifies `GET /Telemetry/{id}` returns one record when it exists.
-- `getTelemetryById_returnsNotFound`: verifies `GET /Telemetry/{id}` returns `404` when no record exists.
-- `postConsumeEndpoint_returnsSuccessMessage`: verifies `POST /Telemetry/Consume` returns `200` and the `New worker started` response when a valid topic payload is provided.
-- `postConsumeEndpoint_withMalformedJson_returns4xx`: verifies malformed JSON posted to `/Telemetry/Consume` fails with a client or server error response.
-
-The integration tests reuse the same mocked database result helpers to verify the response mapping from MySQL rows to JSON.
+| Test | Endpoint | What it verifies |
+|---|---|---|
+| `getTelemetry_returnsList` | `GET /Telemetry` | Returns a JSON array with all records |
+| `getTelemetryById_returnsEntity` | `GET /Telemetry/{id}` | Returns the record when it exists |
+| `getTelemetryById_returnsNotFound` | `GET /Telemetry/{id}` | Returns `404` when not found |
+| `getTelemetry_withTimeWindow_returnsFiltered` | `GET /Telemetry?from=...&to=...` | Returns records within the time window when both query params are present |
+| `getLatestByAssetId_returnsEntity` | `GET /Telemetry/latest/{assetId}` | Returns the most recent reading for the asset |
+| `getLatestByAssetId_returnsNotFound` | `GET /Telemetry/latest/{assetId}` | Returns `404` when no reading exists for the asset |
+| `getLatestByAssetType_returnsList` | `GET /Telemetry/latest/{assetType}/{minutes}` | Returns the latest reading per asset of the given type within the time window |
+| `getWindowByAssetType_returnsList` | `GET /Telemetry/window/{assetType}/{minutes}` | Returns all readings of the given type within the rolling window |
+| `getLatestByAssetIds_returnsList` | `POST /Telemetry/latest/bulk` | Returns the latest reading for each asset ID in the request body |
+| `getLatestByAssetIds_emptyInput_returnsEmpty` | `POST /Telemetry/latest/bulk` | Returns an empty array when the input list is empty |
+| `postConsumeEndpoint_returnsSuccessMessage` | `POST /Telemetry/Consume` | Returns `200` and `"New worker started"` when a valid topic payload is provided |
+| `postConsumeEndpoint_withMalformedJson_returns4xx` | `POST /Telemetry/Consume` | Returns `4xx` or `5xx` when the request body is malformed JSON |
 
 ### Simulator integration tests: `DynamicTopicConsumerSimulatorTest`
 
-These tests validate the full Kafka consumption pipeline of `DynamicTopicConsumer` using a real embedded Kafka broker. Each test starts the consumer thread against the embedded broker, produces a message in the exact JSON format generated by the VPPaaS Event Producer simulator, and verifies that the correct `INSERT INTO Telemetry` query is executed with the correctly parsed field values.
+These tests validate the full Kafka consumption pipeline using a real embedded Kafka broker (Testcontainers). Each test creates a unique UUID-suffixed topic, starts the consumer thread as a daemon, produces a simulator message, and uses `ArgumentCaptor` to verify the `INSERT INTO Telemetry` tuple values.
 
-The simulator produces messages with a nested `payload` object keyed by asset type. The consumer parses these fields and maps them to database columns; these tests confirm that mapping is correct for each asset type.
+| Test | Asset type | Key assertions |
+|---|---|---|
+| `batteryMessage_parsedAndPersistedToDatabase` | `BATTERY` | `State_of_Charge = 85.5`, `Status = "ONLINE"`, SOLAR and EV_CHARGER columns are `null` |
+| `solarMessage_parsedAndPersistedToDatabase` | `SOLAR` | `Current_Generation = 5.2`, BATTERY and EV_CHARGER columns are `null` |
+| `evChargerMessage_parsedAndPersistedToDatabase` | `EV_CHARGER` | `Plug_Status = "CHARGING"`, `Charging_Rate = 11.5`, BATTERY and SOLAR columns are `null` |
 
-- `batteryMessage_parsedAndPersistedToDatabase`: produces a `BATTERY` simulator message with fields `soc_percent` (85.5), `energy_available_kwh`, `active_power_kw`, `max_discharge_power_kw`, `soh_percent`, and `connection_status`. Verifies `client.preparedQuery("INSERT INTO Telemetry ...")` is called and the persisted `Tuple` contains `asset_type = "BATTERY"`, `State_of_Charge = 85.5`, and `null` for all SOLAR and EV_CHARGER columns.
-- `solarMessage_parsedAndPersistedToDatabase`: produces a `SOLAR` simulator message with fields `generation_kw` (5.2), `daily_yield_kwh`, `ac_voltage_v`, and `grid_frequency_hz`. Verifies the persisted `Tuple` contains `asset_type = "SOLAR"`, `Current_Generation = 5.2`, and `null` for all BATTERY and EV_CHARGER columns.
-- `evChargerMessage_parsedAndPersistedToDatabase`: produces an `EV_CHARGER` simulator message with fields `connector_status` ("CHARGING"), `charging_power_kw` (11.5), `session_energy_kwh`, and `ev_soc_percent`. Verifies the persisted `Tuple` contains `asset_type = "EV_CHARGER"`, `Plug_Status = "CHARGING"`, `Charging_Rate = 11.5`, and `null` for all BATTERY and SOLAR columns.
+Each test creates a unique topic (UUID-suffixed) to prevent cross-test consumer group offset interference. The consumer thread is interrupted in `@AfterEach` cleanup.
 
-Each test creates a unique topic (UUID-suffixed) to prevent cross-test consumer group offset interference. The consumer thread is started as a daemon and interrupted in `@AfterEach` cleanup.
+## SQL Verified
+
+All stubs match the production SQL character-for-character. A mismatch causes Mockito to return `null`, which propagates as a `500` at runtime.
+
+```sql
+SELECT *  FROM Telemetry ORDER BY id ASC
+SELECT * FROM Telemetry WHERE id = ?
+SELECT * FROM Telemetry WHERE timeStamp >= ? AND timeStamp <= ? ORDER BY timeStamp ASC
+SELECT * FROM Telemetry WHERE asset_id = ? ORDER BY timeStamp DESC LIMIT 1
+SELECT * FROM Telemetry WHERE asset_type = ? AND timeStamp >= ? ORDER BY asset_id ASC, timeStamp ASC
+SELECT t.* FROM Telemetry t INNER JOIN (SELECT asset_id, MAX(timeStamp) as maxTs FROM Telemetry WHERE asset_type = ? AND timeStamp >= ? GROUP BY asset_id) latest ON t.asset_id = latest.asset_id AND t.timeStamp = latest.maxTs
+SELECT t.* FROM Telemetry t INNER JOIN (SELECT asset_id, MAX(timeStamp) as maxTs FROM Telemetry WHERE asset_id IN (?, ?) GROUP BY asset_id) latest ON t.asset_id = latest.asset_id AND t.timeStamp = latest.maxTs
+```
+
+Note: `SELECT *  FROM Telemetry ORDER BY id ASC` has a double space after `*` — this must match exactly. The `IN (?, ?)` placeholder count in the last SELECT is dynamic and matches the number of asset IDs in the request body; the unit test uses a two-element list to verify the query shape.
 
 ## How To Run
 
 From the `Telemetry` module root:
 
-Run all tests (unit + IT + simulator integration):
-
 ```bash
-./mvnw test
-```
+# Unit tests only
+./mvnw clean test -Dtest=KafkaProvisioningResourceTest
 
-Run only the simulator integration tests (requires Docker for the Kafka container):
+# Integration tests
+./mvnw clean test -Dtest=KafkaProvisioningResourceIT
 
-```bash
-./mvnw test -Dtest=DynamicTopicConsumerSimulatorTest
-```
+# Both in one command
+./mvnw clean test -Dtest="KafkaProvisioningResourceTest,KafkaProvisioningResourceIT"
 
-Run full verification lifecycle:
+# Simulator integration tests (requires Docker for the Kafka container)
+./mvnw clean test -Dtest=DynamicTopicConsumerSimulatorTest
 
-```bash
-./mvnw clean verify
+# All tests
+./mvnw clean test
 ```

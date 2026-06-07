@@ -101,6 +101,54 @@ class KafkaProvisioningResourceTest {
         assertThat(result.get(0).asset_type, is("BATTERY"));
     }
 
+    @Test
+    void getLatestByAssetType_returnsList() {
+        Row row1 = telemetryRow(5L, LocalDateTime.of(2024, 1, 10, 12, 35), 1001L, "BATTERY", "CELL-1");
+        Row row2 = telemetryRow(6L, LocalDateTime.of(2024, 1, 10, 12, 36), 1002L, "BATTERY", "CELL-2");
+        stubPreparedQuery(
+                "SELECT t.* FROM Telemetry t " +
+                "INNER JOIN (SELECT asset_id, MAX(timeStamp) as maxTs FROM Telemetry " +
+                "WHERE asset_type = ? AND timeStamp >= ? GROUP BY asset_id) latest " +
+                "ON t.asset_id = latest.asset_id AND t.timeStamp = latest.maxTs",
+                rowSetWithRows(row1, row2));
+
+        List<Telemetry> result = resource.getLatestByAssetType("BATTERY", 10).collect().asList().await().indefinitely();
+        assertThat(result, hasSize(2));
+        assertThat(result.get(0).asset_type, is("BATTERY"));
+    }
+
+    @Test
+    void getWindowByAssetType_returnsList() {
+        Row row = telemetryRow(3L, LocalDateTime.of(2024, 1, 10, 12, 30), 1001L, "SOLAR", "CELL-1");
+        stubPreparedQuery(
+                "SELECT * FROM Telemetry WHERE asset_type = ? AND timeStamp >= ? ORDER BY asset_id ASC, timeStamp ASC",
+                rowSetWithRows(row));
+
+        List<Telemetry> result = resource.getWindowByAssetType("SOLAR", 30).collect().asList().await().indefinitely();
+        assertThat(result, hasSize(1));
+        assertThat(result.get(0).asset_type, is("SOLAR"));
+    }
+
+    @Test
+    void getLatestByAssetIds_returnsList() {
+        Row row = telemetryRow(5L, LocalDateTime.of(2024, 1, 10, 12, 35), 1001L, "BATTERY", "CELL-1");
+        stubPreparedQuery(
+                "SELECT t.* FROM Telemetry t " +
+                "INNER JOIN (SELECT asset_id, MAX(timeStamp) as maxTs FROM Telemetry " +
+                "WHERE asset_id IN (?, ?) GROUP BY asset_id) latest " +
+                "ON t.asset_id = latest.asset_id AND t.timeStamp = latest.maxTs",
+                rowSetWithRows(row));
+
+        List<Telemetry> result = resource.getLatestByAssetIds(Arrays.asList(1001L, 1002L), null).collect().asList().await().indefinitely();
+        assertThat(result, hasSize(1));
+        assertThat(result.get(0).asset_id, is(1001L));
+    }
+
+    @Test
+    void getLatestByAssetIds_emptyInput_returnsEmpty() {
+        List<Telemetry> result = resource.getLatestByAssetIds(Collections.emptyList(), null).collect().asList().await().indefinitely();
+        assertThat(result, hasSize(0));
+    }
 
     private void stubQuery(String sql, RowSet<Row> rowSet) {
         Query<RowSet<Row>> query = Mockito.mock(Query.class);

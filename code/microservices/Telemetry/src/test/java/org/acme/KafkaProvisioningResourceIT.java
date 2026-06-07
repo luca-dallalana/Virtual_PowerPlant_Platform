@@ -16,6 +16,7 @@ import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
@@ -76,6 +77,115 @@ class KafkaProvisioningResourceIT {
             .get("/Telemetry/999")
             .then()
             .statusCode(404);
+    }
+
+    @Test
+    void getTelemetry_withTimeWindow_returnsFiltered() {
+        Row row = telemetryRow(3L, LocalDateTime.of(2024, 6, 1, 10, 0), 1001L, "BATTERY", "CELL-1");
+        stubPreparedQuery("SELECT * FROM Telemetry WHERE timeStamp >= ? AND timeStamp <= ? ORDER BY timeStamp ASC", rowSetWithRows(row));
+
+        given()
+            .when()
+            .get("/Telemetry?from=2024-06-01T00:00:00&to=2024-06-01T23:59:59")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(1))
+            .body("[0].id", is(3));
+    }
+
+    @Test
+    void getLatestByAssetId_returnsEntity() {
+        Row row = telemetryRow(5L, LocalDateTime.of(2024, 1, 10, 12, 35), 1001L, "BATTERY", "CELL-1");
+        stubPreparedQuery("SELECT * FROM Telemetry WHERE asset_id = ? ORDER BY timeStamp DESC LIMIT 1", rowSetWithRows(row));
+
+        given()
+            .when()
+            .get("/Telemetry/latest/1001")
+            .then()
+            .statusCode(200)
+            .body("id", is(5))
+            .body("asset_id", is(1001))
+            .body("asset_type", is("BATTERY"));
+    }
+
+    @Test
+    void getLatestByAssetId_returnsNotFound() {
+        stubPreparedQuery("SELECT * FROM Telemetry WHERE asset_id = ? ORDER BY timeStamp DESC LIMIT 1", rowSetWithRows());
+
+        given()
+            .when()
+            .get("/Telemetry/latest/9999")
+            .then()
+            .statusCode(404);
+    }
+
+    @Test
+    void getLatestByAssetType_returnsList() {
+        Row row1 = telemetryRow(5L, LocalDateTime.of(2024, 1, 10, 12, 35), 1001L, "BATTERY", "CELL-1");
+        Row row2 = telemetryRow(6L, LocalDateTime.of(2024, 1, 10, 12, 36), 1002L, "BATTERY", "CELL-2");
+        stubPreparedQuery(
+            "SELECT t.* FROM Telemetry t " +
+            "INNER JOIN (SELECT asset_id, MAX(timeStamp) as maxTs FROM Telemetry " +
+            "WHERE asset_type = ? AND timeStamp >= ? GROUP BY asset_id) latest " +
+            "ON t.asset_id = latest.asset_id AND t.timeStamp = latest.maxTs",
+            rowSetWithRows(row1, row2));
+
+        given()
+            .when()
+            .get("/Telemetry/latest/BATTERY/10")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(2))
+            .body("[0].asset_type", is("BATTERY"));
+    }
+
+    @Test
+    void getWindowByAssetType_returnsList() {
+        Row row = telemetryRow(3L, LocalDateTime.of(2024, 1, 10, 12, 30), 1001L, "SOLAR", "CELL-1");
+        stubPreparedQuery(
+            "SELECT * FROM Telemetry WHERE asset_type = ? AND timeStamp >= ? ORDER BY asset_id ASC, timeStamp ASC",
+            rowSetWithRows(row));
+
+        given()
+            .when()
+            .get("/Telemetry/window/SOLAR/30")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(1))
+            .body("[0].asset_type", is("SOLAR"));
+    }
+
+    @Test
+    void getLatestByAssetIds_returnsList() {
+        Row row = telemetryRow(5L, LocalDateTime.of(2024, 1, 10, 12, 35), 1001L, "BATTERY", "CELL-1");
+        stubPreparedQuery(
+            "SELECT t.* FROM Telemetry t " +
+            "INNER JOIN (SELECT asset_id, MAX(timeStamp) as maxTs FROM Telemetry " +
+            "WHERE asset_id IN (?, ?) GROUP BY asset_id) latest " +
+            "ON t.asset_id = latest.asset_id AND t.timeStamp = latest.maxTs",
+            rowSetWithRows(row));
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(Arrays.asList(1001L, 1002L))
+            .when()
+            .post("/Telemetry/latest/bulk")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(1))
+            .body("[0].asset_id", is(1001));
+    }
+
+    @Test
+    void getLatestByAssetIds_emptyInput_returnsEmpty() {
+        given()
+            .contentType(ContentType.JSON)
+            .body(Collections.emptyList())
+            .when()
+            .post("/Telemetry/latest/bulk")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(0));
     }
 
     @Test
