@@ -100,24 +100,18 @@ DeployMicroservice exampleDeployQuarkus
 
 
 cd microservices/FlexibilityEvent/src/main/resources
-sed -i '' "/kafka.bootstrap.servers/d" application.properties
-echo "kafka.bootstrap.servers=$addresskafka:9092" >> application.properties
 CompileCode
 cd Quarkus-Terraform/flexibilityevent
 DeployMicroservice exampleDeployQuarkus
 
 
 cd microservices/GridBalancingRecommendation/src/main/resources
-sed -i '' "/kafka.bootstrap.servers/d" application.properties
-echo "kafka.bootstrap.servers=$addresskafka:9092" >> application.properties
 CompileCode
 cd Quarkus-Terraform/gridbalancingrecommendation
 DeployMicroservice exampleDeployQuarkus
 
 
 cd microservices/EnergyAnalytics/src/main/resources
-sed -i '' "/kafka.bootstrap.servers/d" application.properties
-echo "kafka.bootstrap.servers=$addresskafka:9092" >> application.properties
 CompileCode
 cd Quarkus-Terraform/energyanalytics
 DeployMicroservice exampleDeployQuarkus
@@ -229,8 +223,22 @@ cd ..
 echo "Patching all BPMNs with Kong server address..."
 sed -i '' "s|KONG_SERVER_PLACEHOLDER|${addressKong}|g" BPMN/*.bpmn
 
+echo "Patching all BPMNs with Kafka bootstrap server address..."
+sed -i '' "s|KAFKA_SERVER_PLACEHOLDER|${addresskafka}:9092|g" BPMN/*.bpmn
+
 echo "Deploying all the Camunda forms..."
 for entry in ./BPMN/forms/*.form
+do
+  entry=${entry:2}
+  echo "$entry"
+  curl -L -X POST "http://$addressCamunda:8080/v2/deployments" \
+  -H "Content-Type: multipart/form-data" \
+  -H "Accept: application/json" \
+  -F "resources=@$entry"
+done
+
+echo "Deploying all the Camunda DMN decisions..."
+for entry in ./BPMN/*.dmn
 do
   entry=${entry:2}
   echo "$entry"

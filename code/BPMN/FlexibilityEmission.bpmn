@@ -20,7 +20,6 @@
         <bpmn:flowNodeRef>Activity_0eko9jy</bpmn:flowNodeRef>
       </bpmn:lane>
       <bpmn:lane id="Lane_Flexibility_Manager" name="Flexibility Emission Manager">
-        <bpmn:flowNodeRef>StartEvent_Timer</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_GetAllBatteryAssets</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_DecideEvaluation</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>GW_HasAssets</bpmn:flowNodeRef>
@@ -34,14 +33,9 @@
         <bpmn:flowNodeRef>Activity_1s7akko</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Event_0f6sje0</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_NoRuleTriggered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>StartEvent_Timer</bpmn:flowNodeRef>
       </bpmn:lane>
     </bpmn:laneSet>
-    <bpmn:startEvent id="StartEvent_Timer" name="Every 10 Minutes">
-      <bpmn:outgoing>Flow_Timer_To_GetAssets</bpmn:outgoing>
-      <bpmn:timerEventDefinition id="TED_Timer">
-        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/PT10M</bpmn:timeCycle>
-      </bpmn:timerEventDefinition>
-    </bpmn:startEvent>
     <bpmn:serviceTask id="Task_GetAllBatteryAssets" name="Retrive All Active Battery Assets" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
@@ -113,7 +107,7 @@
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="io.camunda:connector-kafka:1" retries="3" />
         <zeebe:ioMapping>
-          <zeebe:input source="ec2-32-196-241-98.compute-1.amazonaws.com:9092" target="topic.bootstrapServers" />
+          <zeebe:input source="KAFKA_SERVER_PLACEHOLDER" target="topic.bootstrapServers" />
           <zeebe:input source="Flexibility-Offers" target="topic.topicName" />
           <zeebe:input source="noSchema" target="schemaStrategy.type" />
           <zeebe:input source="=string(currentFlexibilityEvent.prosumerId)" target="message.key" />
@@ -259,7 +253,7 @@
           <zeebe:input source="=currentTelemetry.State_of_Charge" target="soc_percent" />
           <zeebe:input source="=currentTelemetry.State_of_Health" target="soh_percent" />
           <zeebe:input source="=marketPriceLevel" target="marketPriceLevel" />
-          <zeebe:output source="={ &#10;assetId: currentTelemetry.asset_id, &#10;prosumerId: (batteryAssetsList[assetId = currentTelemetry.asset_id].prosumerId)[1], &#10;eventType: dmnResult.eventType,&#10;recommendedAction: dmnResult.recommendedAction,&#10;soc_percent: currentTelemetry.State_of_Charge,&#10;soh_percent: currentTelemetry.State_of_Health,&#10;marketPrice: marketPriceLevel, &#10;gridCellId: currentTelemetry.grid_cell_id &#10;}" target="currentEvent" />
+          <zeebe:output source="={ &#10;assetId: currentTelemetry.asset_id, &#10;prosumerId: (batteryAssetsList[assetId = currentTelemetry.asset_id].prosumerId)[1], &#10;eventType: dmnResult.eventType,&#10;recommendedAction: dmnResult.recommendedAction,&#10;soc_percent: currentTelemetry.State_of_Charge,&#10;soh_percent: currentTelemetry.State_of_Health,&#10;marketPriceLevel: marketPriceLevel,&#10;gridCellId: currentTelemetry.grid_cell_id &#10;}" target="currentEvent" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1m8fiaq</bpmn:incoming>
@@ -280,12 +274,16 @@
     <bpmn:userTask id="Activity_0eko9jy" name="Assess Market Price Level">
       <bpmn:extensionElements>
         <zeebe:userTask />
+        <zeebe:formDefinition formId="Form_Assess_MarketPrice" />
+        <zeebe:assignmentDefinition assignee="demo" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0rqtn91</bpmn:incoming>
       <bpmn:outgoing>Flow_1m8fiaq</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:sequenceFlow id="Flow_1go71bu" sourceRef="Task_RetriveLatestTelemetry" targetRef="GW_HasTelemetry" />
-    <bpmn:sequenceFlow id="Flow_0rqtn91" name="Yes" sourceRef="GW_HasTelemetry" targetRef="Activity_0eko9jy" />
+    <bpmn:sequenceFlow id="Flow_0rqtn91" name="Yes" sourceRef="GW_HasTelemetry" targetRef="Activity_0eko9jy">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=hasTelemetry = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_1q0juq7" sourceRef="Activity_0rnx4e6" targetRef="Task_RetriveLatestTelemetry" />
     <bpmn:sequenceFlow id="Flow_1jfxnby" name="Yes" sourceRef="Gateway_0t0mnav" targetRef="Activity_0rnx4e6">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=promise = true</bpmn:conditionExpression>
@@ -296,6 +294,12 @@
     <bpmn:sequenceFlow id="Flow_0p0cpro" sourceRef="Activity_0xtbddh" targetRef="Activity_10bhmpn" />
     <bpmn:sequenceFlow id="Flow_1m8fiaq" sourceRef="Activity_0eko9jy" targetRef="Activity_0hm77ej" />
     <bpmn:sequenceFlow id="Flow_14152q1" sourceRef="Activity_0hm77ej" targetRef="Activity_1mxk2j4" />
+    <bpmn:startEvent id="StartEvent_Timer" name="Every 10 Minutes">
+      <bpmn:outgoing>Flow_Timer_To_GetAssets</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_0t5zmuu">
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/PT10M</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:startEvent>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_FlexibilityEmission">
     <bpmndi:BPMNPlane id="BPMNPlane_FlexibilityEmission" bpmnElement="Collaboration_FlexibilityEmission">
@@ -310,12 +314,6 @@
       <bpmndi:BPMNShape id="Lane_AssetEvaluation_di" bpmnElement="Lane_FlexibilityEvaluation" isHorizontal="true">
         <dc:Bounds x="190" y="260" width="1800" height="160" />
         <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StartEvent_Timer_di" bpmnElement="StartEvent_Timer">
-        <dc:Bounds x="252" y="150" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="228" y="193" width="85" height="14" />
-        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_GetAllBatteryAssets_di" bpmnElement="Task_GetAllBatteryAssets" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
         <dc:Bounds x="330" y="128" width="100" height="80" />
@@ -438,6 +436,12 @@
       <bpmndi:BPMNShape id="Activity_1ql9ulm_di" bpmnElement="Activity_0eko9jy">
         <dc:Bounds x="940" y="310" width="100" height="80" />
         <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_044353a_di" bpmnElement="StartEvent_Timer">
+        <dc:Bounds x="252" y="150" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="228" y="193" width="85" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_Timer_To_GetAssets_di" bpmnElement="Flow_Timer_To_GetAssets">
         <di:waypoint x="288" y="168" />

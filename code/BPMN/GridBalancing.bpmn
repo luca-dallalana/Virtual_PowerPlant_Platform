@@ -33,7 +33,6 @@
         <bpmn:flowNodeRef>Gateway_0txl3l7</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Gateway_0iqm8sw</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Event_1jpfxhi</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_1t14g35</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_18qnknf</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>GW_EventCreated</bpmn:flowNodeRef>
@@ -43,6 +42,7 @@
         <bpmn:flowNodeRef>Event_177fap1</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_NoRuleTriggered</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_13v1bgq</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
       </bpmn:lane>
     </bpmn:laneSet>
     <bpmn:sequenceFlow id="Flow_1vqzwe8" sourceRef="Activity_085gnyk" targetRef="Gateway_0txl3l7" />
@@ -65,12 +65,6 @@
     <bpmn:endEvent id="Event_1jpfxhi" name="Evaluation Not possible">
       <bpmn:incoming>Flow_0xkui0n</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:startEvent id="StartEvent_1" name="Every 15 Minutes">
-      <bpmn:outgoing>Flow_0r22up3</bpmn:outgoing>
-      <bpmn:timerEventDefinition id="TimerEventDefinition_1o3k4h5">
-        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/PT15M</bpmn:timeCycle>
-      </bpmn:timerEventDefinition>
-    </bpmn:startEvent>
     <bpmn:userTask id="Activity_1t14g35" name="Decide the GridCell to Analyse">
       <bpmn:extensionElements>
         <zeebe:userTask />
@@ -367,12 +361,12 @@
             <zeebe:input source="POST" target="method" />
             <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Prosumer/assets/active/by-prosumers" target="url" />
             <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
-            <zeebe:input source="=neighbourProsumerIds" target="body" />
-            <zeebe:input source="=false" target="ignoreNullValues" />
             <zeebe:input source="=false" target="storeResponse" />
             <zeebe:input source="=false" target="followRedirects" />
             <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
             <zeebe:input source="=20" target="readTimeoutInSeconds" />
+            <zeebe:input source="=neighbourProsumerIds" target="body" />
+            <zeebe:input source="=false" target="ignoreNullValues" />
           </zeebe:ioMapping>
           <zeebe:taskHeaders>
             <zeebe:header key="elementTemplateVersion" value="13" />
@@ -392,12 +386,12 @@
             <zeebe:input source="POST" target="method" />
             <zeebe:input source="http://KONG_SERVER_PLACEHOLDER:8000/Telemetry/latest/bulk" target="url" />
             <zeebe:input source="={&#10;  &#34;Content-Type&#34;: &#34;Application/json&#34;,&#10;  &#34;accept&#34;: &#34;Application/json&#34;&#10;}" target="headers" />
-            <zeebe:input source="=neighbourAssetIds" target="body" />
-            <zeebe:input source="=false" target="ignoreNullValues" />
             <zeebe:input source="=false" target="storeResponse" />
             <zeebe:input source="=false" target="followRedirects" />
             <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
             <zeebe:input source="=20" target="readTimeoutInSeconds" />
+            <zeebe:input source="=neighbourAssetIds" target="body" />
+            <zeebe:input source="=false" target="ignoreNullValues" />
           </zeebe:ioMapping>
           <zeebe:taskHeaders>
             <zeebe:header key="elementTemplateVersion" value="13" />
@@ -467,7 +461,7 @@
           <zeebe:input source="=currentAsset.cell_context" target="gridCellContext" />
           <zeebe:input source="=currentAsset.soc_percent" target="socPercent" />
           <zeebe:input source="=currentAsset.is_charging" target="isCharging" />
-          <zeebe:output source="={ &#10;assetId: currentAsset.asset_id, &#10;action: dmnResult.action,&#10;from: currentAsset.grid_cell_id,&#10;to: selectedGridCell.gridCellId&#10;}" target="currentEvent" />
+          <zeebe:output source="={ &#10;assetId: currentAsset.asset_id, &#10;action: dmnResult,&#10;from: currentAsset.grid_cell_id,&#10;to: selectedGridCell.gridCellId,&#10;cellContext: currentAsset.cell_context,&#10;socPercent: currentAsset.soc_percent,&#10;isCharging: currentAsset.is_charging,&#10;assetType: currentAsset.asset_type&#10;}" target="currentEvent" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1io8cvg</bpmn:incoming>
@@ -555,12 +549,11 @@
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="io.camunda:connector-kafka:1" retries="3" />
         <zeebe:ioMapping>
-          <zeebe:input source="ec2-32-196-241-98.compute-1.amazonaws.com:9092" target="topic.bootstrapServers" />
+          <zeebe:input source="KAFKA_SERVER_PLACEHOLDER" target="topic.bootstrapServers" />
           <zeebe:input source="GridBalancingRecommendation" target="topic.topicName" />
           <zeebe:input source="noSchema" target="schemaStrategy.type" />
-          <zeebe:input target="message.key" />
+          <zeebe:input source="=string(currentGridBalancingEvent.assetId)" target="message.key" />
           <zeebe:input source="=string(currentGridBalancingEvent)" target="message.value" />
-          <zeebe:input source="=string(currentGridBalancingEvent.assetId)" target="headers" />
         </zeebe:ioMapping>
         <zeebe:taskHeaders>
           <zeebe:header key="elementTemplateVersion" value="6" />
@@ -577,6 +570,12 @@
       </bpmn:multiInstanceLoopCharacteristics>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="Flow_1vcd84j" sourceRef="Activity_13v1bgq" targetRef="Event_0vdbfl1" />
+    <bpmn:startEvent id="StartEvent_1" name="Every 15 Minutes">
+      <bpmn:outgoing>Flow_0r22up3</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_0cq7lwu">
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/PT15M</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:startEvent>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_16zbzsv">
@@ -598,12 +597,6 @@
           <dc:Bounds x="583" y="195" width="72" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1fig2it_di" bpmnElement="StartEvent_1">
-        <dc:Bounds x="231" y="227" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="207" y="270" width="85" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0lt0jbr_di" bpmnElement="Activity_1t14g35">
         <dc:Bounds x="449" y="205" width="100" height="80" />
         <bpmndi:BPMNLabel />
@@ -620,6 +613,12 @@
         <dc:Bounds x="444" y="400" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="428" y="457" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_16lxoo6_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="231" y="227" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="207" y="270" width="85" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_19omt1k_di" bpmnElement="Activity_08npy1o" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">

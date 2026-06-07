@@ -265,28 +265,83 @@ class EnergyAnalyticsResourceIT {
     }
 
     @Test
-    void emit_withAllData_returnsSuccess() {
-        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 4);
+    void persistConsumed_returnsSuccess() {
+        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
+        Mockito.when(analyticsService.persistConsumed(Mockito.anyList()))
+               .thenReturn(Uni.createFrom().item(expectedResult));
 
-        Mockito.when(analyticsService.emitAnalytics(
-            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+        Map<String, Object> body = new HashMap<>();
+        body.put("consumedByProsumer", Collections.emptyList());
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(body)
+            .when()
+            .post("/EnergyAnalytics/persist/consume")
+            .then()
+            .statusCode(200)
+            .body("status", is("SUCCESS"))
+            .body("recordsProcessed", is(1));
+    }
+
+    @Test
+    void persistGenerated_returnsSuccess() {
+        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
+        Mockito.when(analyticsService.persistGenerated(Mockito.anyList()))
                .thenReturn(Uni.createFrom().item(expectedResult));
 
         Map<String, Object> body = new HashMap<>();
         body.put("generatedByProsumer", Collections.emptyList());
-        body.put("consumedByProsumer", Collections.emptyList());
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(body)
+            .when()
+            .post("/EnergyAnalytics/persist/generate")
+            .then()
+            .statusCode(200)
+            .body("status", is("SUCCESS"))
+            .body("recordsProcessed", is(1));
+    }
+
+    @Test
+    void persistDischarged_returnsSuccess() {
+        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
+        Mockito.when(analyticsService.persistDischarged(Mockito.anyList()))
+               .thenReturn(Uni.createFrom().item(expectedResult));
+
+        Map<String, Object> body = new HashMap<>();
         body.put("dischargedByZone", Collections.emptyList());
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(body)
+            .when()
+            .post("/EnergyAnalytics/persist/discharge")
+            .then()
+            .statusCode(200)
+            .body("status", is("SUCCESS"))
+            .body("recordsProcessed", is(1));
+    }
+
+    @Test
+    void persistAverage_returnsSuccess() {
+        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
+        Mockito.when(analyticsService.persistAverageSoC(Mockito.any()))
+               .thenReturn(Uni.createFrom().item(expectedResult));
+
+        Map<String, Object> body = new HashMap<>();
         body.put("averageSoC", createAverageSoCMap(80.0, 5));
 
         given()
             .contentType(ContentType.JSON)
             .body(body)
             .when()
-            .post("/EnergyAnalytics/emit")
+            .post("/EnergyAnalytics/persist/average")
             .then()
             .statusCode(200)
             .body("status", is("SUCCESS"))
-            .body("recordsProcessed", is(4));
+            .body("recordsProcessed", is(1));
     }
 
     private void stubQuery(String sql, RowSet<Row> rowSet) {

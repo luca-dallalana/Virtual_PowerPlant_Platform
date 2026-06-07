@@ -31,9 +31,6 @@ public class EnergyAnalyticsResource {
     @ConfigProperty(name = "myapp.schema.create", defaultValue = "true")
     boolean schemaCreate;
 
-    @ConfigProperty(name = "kafka.bootstrap.servers")
-    String kafka_servers;
-
     void onStart(@Observes StartupEvent ev) {
         if (schemaCreate) {
             initdb();
@@ -104,14 +101,31 @@ public class EnergyAnalyticsResource {
     }
 
     @POST
-    @Path("/emit")
-    public Uni<Response> emit(EmitAnalyticsRequest request) {
-        return analyticsService.emitAnalytics(
-            request.generatedByProsumer,
-            request.consumedByProsumer,
-            request.dischargedByZone,
-            request.averageSoC
-        ).onItem().transform(result -> Response.ok(result).build());
+    @Path("/persist/consume")
+    public Uni<Response> persistConsumed(PersistConsumedRequest request) {
+        return analyticsService.persistConsumed(request.consumedByProsumer)
+                .onItem().transform(result -> Response.ok(result).build());
+    }
+
+    @POST
+    @Path("/persist/generate")
+    public Uni<Response> persistGenerated(PersistGeneratedRequest request) {
+        return analyticsService.persistGenerated(request.generatedByProsumer)
+                .onItem().transform(result -> Response.ok(result).build());
+    }
+
+    @POST
+    @Path("/persist/discharge")
+    public Uni<Response> persistDischarged(PersistDischargedRequest request) {
+        return analyticsService.persistDischarged(request.dischargedByZone)
+                .onItem().transform(result -> Response.ok(result).build());
+    }
+
+    @POST
+    @Path("/persist/average")
+    public Uni<Response> persistAverage(PersistAverageSoCRequest request) {
+        return analyticsService.persistAverageSoC(request.averageSoC)
+                .onItem().transform(result -> Response.ok(result).build());
     }
 
     @GET

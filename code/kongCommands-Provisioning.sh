@@ -102,9 +102,9 @@ curl -i -X POST \
 --url "http://${KONG_SERVER_ADDRESS}:8001/services/" \
 --data "name=ollama-service" \
 --data "url=${OLLAMA_URL}" \
---data "read_timeout=180000" \
---data "write_timeout=180000" \
---data "connect_timeout=180000"
+--data "read_timeout=300000" \
+--data "write_timeout=300000" \
+--data "connect_timeout=300000"
 
 
 # create routes — strip_path=false so the full path reaches the upstream unchanged
@@ -287,13 +287,13 @@ curl -i -X POST \
 
 curl -i -X POST \
 --url "http://${KONG_SERVER_ADDRESS}:8001/services/flexibilityevent-service/routes" \
---data "paths[]=/FlexibilityEvent/emit" \
+--data "paths[]=/FlexibilityEvent/save" \
 --data "methods[]=POST" \
 --data "strip_path=false"
 
 curl -i -X POST \
 --url "http://${KONG_SERVER_ADDRESS}:8001/services/flexibilityevent-service/routes" \
---data "paths[]=/FlexibilityEvent/logs" \
+--data-urlencode "paths[]=~/FlexibilityEvent/logs/[0-9]+" \
 --data "methods[]=GET" \
 --data "strip_path=false"
 
@@ -325,25 +325,19 @@ curl -i -X POST \
 # GridBalancingRecommendation
 curl -i -X POST \
 --url "http://${KONG_SERVER_ADDRESS}:8001/services/gridbalancing-service/routes" \
---data "paths[]=/GridBalancingRecommendation/evaluate" \
+--data "paths[]=/GridBalancingRecommendation/metrics" \
 --data "methods[]=POST" \
 --data "strip_path=false"
 
 curl -i -X POST \
 --url "http://${KONG_SERVER_ADDRESS}:8001/services/gridbalancing-service/routes" \
---data "paths[]=/GridBalancingRecommendation/evaluateCell" \
+--data "paths[]=/GridBalancingRecommendation/save" \
 --data "methods[]=POST" \
 --data "strip_path=false"
 
 curl -i -X POST \
 --url "http://${KONG_SERVER_ADDRESS}:8001/services/gridbalancing-service/routes" \
---data "paths[]=/GridBalancingRecommendation/emit" \
---data "methods[]=POST" \
---data "strip_path=false"
-
-curl -i -X POST \
---url "http://${KONG_SERVER_ADDRESS}:8001/services/gridbalancing-service/routes" \
---data "paths[]=/GridBalancingRecommendation/recommendations" \
+--data-urlencode "paths[]=~/GridBalancingRecommendation/recommendations/[0-9]+" \
 --data "methods[]=GET" \
 --data "strip_path=false"
 
@@ -395,7 +389,25 @@ curl -i -X POST \
 
 curl -i -X POST \
 --url "http://${KONG_SERVER_ADDRESS}:8001/services/energyanalytics-service/routes" \
---data "paths[]=/EnergyAnalytics/emit" \
+--data "paths[]=/EnergyAnalytics/persist/consume" \
+--data "methods[]=POST" \
+--data "strip_path=false"
+
+curl -i -X POST \
+--url "http://${KONG_SERVER_ADDRESS}:8001/services/energyanalytics-service/routes" \
+--data "paths[]=/EnergyAnalytics/persist/generate" \
+--data "methods[]=POST" \
+--data "strip_path=false"
+
+curl -i -X POST \
+--url "http://${KONG_SERVER_ADDRESS}:8001/services/energyanalytics-service/routes" \
+--data "paths[]=/EnergyAnalytics/persist/discharge" \
+--data "methods[]=POST" \
+--data "strip_path=false"
+
+curl -i -X POST \
+--url "http://${KONG_SERVER_ADDRESS}:8001/services/energyanalytics-service/routes" \
+--data "paths[]=/EnergyAnalytics/persist/average" \
 --data "methods[]=POST" \
 --data "strip_path=false"
 

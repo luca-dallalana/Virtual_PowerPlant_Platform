@@ -23,7 +23,6 @@ import org.mockito.Mockito;
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -200,17 +199,67 @@ class EnergyAnalyticsResourceTest {
     }
 
     @Test
-    void emit_withAllData_returnsSuccess() {
-        AverageSoC avgSoC = new AverageSoC(null, 80.0, 5, LocalDateTime.now(), "LAST_30_MIN");
-        EmitAnalyticsRequest request = new EmitAnalyticsRequest(
-            Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), avgSoC);
+    void persistConsumed_returnsSuccess() {
+        ConsumedEnergyByProsumer entity = new ConsumedEnergyByProsumer(null, 1L, 25.0, 1, LocalDateTime.now(), "LAST_30_MIN");
+        PersistConsumedRequest request = new PersistConsumedRequest();
+        request.consumedByProsumer = Arrays.asList(entity);
 
         AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
-        Mockito.when(analyticsService.emitAnalytics(
-            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+        Mockito.when(analyticsService.persistConsumed(Mockito.anyList()))
                .thenReturn(Uni.createFrom().item(expectedResult));
 
-        Response response = resource.emit(request).await().indefinitely();
+        Response response = resource.persistConsumed(request).await().indefinitely();
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        AnalyticsResult result = (AnalyticsResult) response.getEntity();
+        MatcherAssert.assertThat(result.status, is("SUCCESS"));
+        MatcherAssert.assertThat(result.recordsProcessed, is(1));
+    }
+
+    @Test
+    void persistGenerated_returnsSuccess() {
+        GeneratedEnergyByProsumer entity = new GeneratedEnergyByProsumer(null, 1L, 50.0, 2, LocalDateTime.now(), "LAST_30_MIN");
+        PersistGeneratedRequest request = new PersistGeneratedRequest();
+        request.generatedByProsumer = Arrays.asList(entity);
+
+        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
+        Mockito.when(analyticsService.persistGenerated(Mockito.anyList()))
+               .thenReturn(Uni.createFrom().item(expectedResult));
+
+        Response response = resource.persistGenerated(request).await().indefinitely();
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        AnalyticsResult result = (AnalyticsResult) response.getEntity();
+        MatcherAssert.assertThat(result.status, is("SUCCESS"));
+        MatcherAssert.assertThat(result.recordsProcessed, is(1));
+    }
+
+    @Test
+    void persistDischarged_returnsSuccess() {
+        EnergyDischargedByZone entity = new EnergyDischargedByZone(null, "GRID_A", 10.0, 3, LocalDateTime.now(), "LAST_30_MIN");
+        PersistDischargedRequest request = new PersistDischargedRequest();
+        request.dischargedByZone = Arrays.asList(entity);
+
+        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
+        Mockito.when(analyticsService.persistDischarged(Mockito.anyList()))
+               .thenReturn(Uni.createFrom().item(expectedResult));
+
+        Response response = resource.persistDischarged(request).await().indefinitely();
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        AnalyticsResult result = (AnalyticsResult) response.getEntity();
+        MatcherAssert.assertThat(result.status, is("SUCCESS"));
+        MatcherAssert.assertThat(result.recordsProcessed, is(1));
+    }
+
+    @Test
+    void persistAverage_returnsSuccess() {
+        AverageSoC avgSoC = new AverageSoC(null, 80.0, 5, LocalDateTime.now(), "LAST_30_MIN");
+        PersistAverageSoCRequest request = new PersistAverageSoCRequest();
+        request.averageSoC = avgSoC;
+
+        AnalyticsResult expectedResult = new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1);
+        Mockito.when(analyticsService.persistAverageSoC(Mockito.any()))
+               .thenReturn(Uni.createFrom().item(expectedResult));
+
+        Response response = resource.persistAverage(request).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
         AnalyticsResult result = (AnalyticsResult) response.getEntity();
         MatcherAssert.assertThat(result.status, is("SUCCESS"));

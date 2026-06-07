@@ -57,6 +57,10 @@ locals {
 resource "null_resource" "update_dns" {
   count = var.nBroker
 
+  triggers = {
+    instance_id = aws_instance.exampleKafkaConfiguration[count.index].id
+  }
+
   connection {
     type        = "ssh"
     user        = "ec2-user"
@@ -74,6 +78,10 @@ resource "null_resource" "update_dns" {
 
 resource "null_resource" "create_topics" {
   depends_on = [null_resource.update_dns]
+
+  triggers = {
+    instance_ids = join(",", aws_instance.exampleKafkaConfiguration[*].id)
+  }
 
   connection {
     type        = "ssh"

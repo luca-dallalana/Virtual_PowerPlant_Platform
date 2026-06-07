@@ -8,9 +8,9 @@ public class FlexibilityEventDTO {
     public Long prosumerId;
     public String eventType;
     public Float soc_percent;
+    public Float soh_percent;
     public String recommendedAction;
-    public Float marketPrice;
-    public Float incentiveAmount;
+    public String marketPriceLevel;
     public String gridCellId;
     public LocalDateTime timestamp;
 }

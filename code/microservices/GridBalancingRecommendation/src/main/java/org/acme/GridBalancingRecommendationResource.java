@@ -41,7 +41,7 @@ public class GridBalancingRecommendationResource {
     }
 
     private void initdb() {
-        final String INS = "INSERT INTO BalancingRecommendation (assetId, action, fromCell, toCell, createdAt) VALUES ";
+        final String INS = "INSERT INTO BalancingRecommendation (assetId, action, fromCell, toCell, createdAt, cellContext, socPercent, isCharging, assetType) VALUES ";
 
         client.query("DROP TABLE IF EXISTS BalancingRecommendation").execute()
                 .flatMap(r -> client.query("CREATE TABLE BalancingRecommendation ("
@@ -50,16 +50,20 @@ public class GridBalancingRecommendationResource {
                         + "action VARCHAR(50) NOT NULL, "
                         + "fromCell VARCHAR(100) NOT NULL, "
                         + "toCell VARCHAR(100) NOT NULL, "
-                        + "createdAt DATETIME NOT NULL"
+                        + "createdAt DATETIME NOT NULL, "
+                        + "cellContext VARCHAR(20) NOT NULL, "
+                        + "socPercent FLOAT NULL, "
+                        + "isCharging TINYINT(1) NOT NULL, "
+                        + "assetType VARCHAR(50) NOT NULL"
                         + ")").execute())
                 // Seed: PORTO-IN overload scenario — EV chargers in PORTO-IN recommended to reduce load
-                .flatMap(r -> client.query(INS + "(1006,'REDUCE_CHARGING','PORTO-IN','PORTO-IN',NOW()-INTERVAL 15 MINUTE)").execute())
-                .flatMap(r -> client.query(INS + "(1007,'REDUCE_CHARGING','PORTO-IN','PORTO-IN',NOW()-INTERVAL 15 MINUTE)").execute())
+                .flatMap(r -> client.query(INS + "(1006,'REDUCE_CHARGING','PORTO-IN','PORTO-IN',NOW()-INTERVAL 15 MINUTE,'STRESSED',NULL,1,'EV_CHARGER')").execute())
+                .flatMap(r -> client.query(INS + "(1007,'REDUCE_CHARGING','PORTO-IN','PORTO-IN',NOW()-INTERVAL 15 MINUTE,'STRESSED',NULL,1,'EV_CHARGER')").execute())
                 // LISBON-DT battery discharging to supply PORTO-IN
-                .flatMap(r -> client.query(INS + "(1001,'DISCHARGE','LISBON-DT','PORTO-IN',NOW()-INTERVAL 15 MINUTE)").execute())
+                .flatMap(r -> client.query(INS + "(1001,'DISCHARGE','LISBON-DT','PORTO-IN',NOW()-INTERVAL 15 MINUTE,'SURPLUS',75.0,0,'BATTERY')").execute())
                 // 13 minutes ago: second evaluation cycle
-                .flatMap(r -> client.query(INS + "(1006,'REDUCE_CHARGING','PORTO-IN','PORTO-IN',NOW()-INTERVAL 13 MINUTE)").execute())
-                .flatMap(r -> client.query(INS + "(1007,'REDUCE_CHARGING','PORTO-IN','PORTO-IN',NOW()-INTERVAL 13 MINUTE)").execute())
+                .flatMap(r -> client.query(INS + "(1006,'REDUCE_CHARGING','PORTO-IN','PORTO-IN',NOW()-INTERVAL 13 MINUTE,'STRESSED',NULL,1,'EV_CHARGER')").execute())
+                .flatMap(r -> client.query(INS + "(1007,'REDUCE_CHARGING','PORTO-IN','PORTO-IN',NOW()-INTERVAL 13 MINUTE,'STRESSED',NULL,1,'EV_CHARGER')").execute())
                 .await().indefinitely();
     }
 
@@ -106,12 +110,10 @@ public class GridBalancingRecommendationResource {
     }
 
     @GET
-    @Path("recommendations")
-    public Multi<BalancingRecommendation> getByTimeWindow(
-            @QueryParam("from") String from,
-            @QueryParam("to") String to) {
-        LocalDateTime toTime = (to != null) ? LocalDateTime.parse(to) : LocalDateTime.now();
-        LocalDateTime fromTime = (from != null) ? LocalDateTime.parse(from) : toTime.minusMinutes(20);
+    @Path("recommendations/{minutes}")
+    public Multi<BalancingRecommendation> getByMinutes(@PathParam("minutes") int minutes) {
+        LocalDateTime toTime = LocalDateTime.now();
+        LocalDateTime fromTime = toTime.minusMinutes(minutes);
         return BalancingRecommendation.findByTimeWindow(client, fromTime, toTime);
     }
 
@@ -136,7 +138,11 @@ public class GridBalancingRecommendationResource {
                         recommendation.action,
                         recommendation.fromCell,
                         recommendation.toCell,
-                        recommendation.createdAt)
+                        recommendation.createdAt,
+                        recommendation.cellContext,
+                        recommendation.socPercent,
+                        recommendation.isCharging,
+                        recommendation.assetType)
                 .onItem().transform(updated -> updated ? Response.Status.NO_CONTENT : Response.Status.NOT_FOUND)
                 .onItem().transform(status -> Response.status(status).build());
     }

@@ -38,9 +38,9 @@ public class UtilityOperatorResource {
         .flatMap(r -> client.query("INSERT INTO UtilityOperator (name,location) VALUES ('PracadaBoavista','Porto')").execute())
         .flatMap(r -> client.query("INSERT INTO UtilityOperator (name,location) VALUES ('PracaDomFranciscoGomes','Faro')").execute())
         .flatMap(r -> client.query("CREATE TABLE GridCell (gridCellId VARCHAR(100) PRIMARY KEY, utilityOperatorId BIGINT UNSIGNED NOT NULL, maxCapacity DOUBLE NOT NULL, geographicBoundaries TEXT NOT NULL, FOREIGN KEY (utilityOperatorId) REFERENCES UtilityOperator(id))").execute())
-        .flatMap(r -> client.query("INSERT INTO GridCell (gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries) VALUES ('LISBON-DT', 1, 50.0, 'Lisbon Downtown Area')").execute())
-        .flatMap(r -> client.query("INSERT INTO GridCell (gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries) VALUES ('PORTO-IN', 3, 75.0, 'Porto Industrial Zone')").execute())
-        .flatMap(r -> client.query("INSERT INTO GridCell (gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries) VALUES ('SETUBAL-CT', 2, 40.0, 'Setubal Central')").execute())
+        .flatMap(r -> client.query("INSERT INTO GridCell (gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries) VALUES ('LISBON-DT', 1, 50.0, 'Central Portugal Grid')").execute())
+        .flatMap(r -> client.query("INSERT INTO GridCell (gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries) VALUES ('PORTO-IN', 3, 75.0, 'Central Portugal Grid')").execute())
+        .flatMap(r -> client.query("INSERT INTO GridCell (gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries) VALUES ('SETUBAL-CT', 2, 40.0, 'Central Portugal Grid')").execute())
         .flatMap(r -> client.query("INSERT INTO GridCell (gridCellId, utilityOperatorId, maxCapacity, geographicBoundaries) VALUES ('FARO-RS', 4, 30.0, 'Faro Residential')").execute())
         .await().indefinitely();
     }
@@ -104,9 +104,6 @@ public class UtilityOperatorResource {
     @POST
     @Path("gridcells")
     public Uni<Response> createGridCell(GridCell gridCell) {
-        if (gridCell.gridCellId == null || gridCell.gridCellId.isEmpty()) {
-            gridCell.gridCellId = UUID.randomUUID().toString();
-        }
         return gridCell.save(client, gridCell.gridCellId, gridCell.utilityOperatorId, gridCell.maxCapacity, gridCell.geographicBoundaries)
                 .onItem().transform(saved -> URI.create("/UtilityOperator/gridcells/" + gridCell.gridCellId))
                 .onItem().transform(uri -> Response.created(uri).build());

@@ -1,23 +1,38 @@
 #!/bin/bash
 
-# JAVA path
+# JAVA path (macOS) — adjust for your platform if running on Linux
 export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
 export PATH=/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home/bin:"$PATH"
 
-# aws access variables 
-aws_access_key_id=
-aws_secret_access_key=
-aws_session_token=
-
-# docker access variables
+# Docker credentials
 yourDockerUsername=
 yourDockerPassword=
-
-# exporting all variables to be used by next scripts
-export AWS_ACCESS_KEY_ID=$aws_access_key_id
-export AWS_SECRET_ACCESS_KEY=$aws_secret_access_key
-export AWS_SESSION_TOKEN=$aws_session_token
 export DockerUsername=$yourDockerUsername
 export DockerPassword=$yourDockerPassword
 
+# ── Account 1: infrastructure (RDS, Kafka, Camunda, Ollama, Kong, Konga) ──────
+account1_access_key_id=
+account1_secret_access_key=
+account1_session_token=
 
+# ── Account 2: services (all 8 Quarkus microservices) ─────────────────────────
+account2_access_key_id=
+account2_secret_access_key=
+account2_session_token=
+
+use_account1() {
+    export AWS_ACCESS_KEY_ID=$account1_access_key_id
+    export AWS_SECRET_ACCESS_KEY=$account1_secret_access_key
+    export AWS_SESSION_TOKEN=$account1_session_token
+    echo "[AWS] Switched to Account 1 (infrastructure)"
+}
+
+use_account2() {
+    export AWS_ACCESS_KEY_ID=$account2_access_key_id
+    export AWS_SECRET_ACCESS_KEY=$account2_secret_access_key
+    export AWS_SESSION_TOKEN=$account2_session_token
+    echo "[AWS] Switched to Account 2 (services)"
+}
+
+# Default to Account 1
+use_account1

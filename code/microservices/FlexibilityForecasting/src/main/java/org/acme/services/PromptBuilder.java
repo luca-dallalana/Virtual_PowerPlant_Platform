@@ -139,15 +139,17 @@ Input context:
             FlexibilityEventDTO e = cee.event;
             sample.append(String.format(
                     "{\"timestamp\": %s, \"assetId\": %s, \"prosumerId\": %s, \"eventType\": %s, "
-                            + "\"recommendedAction\": %s, \"soc_percent\": %s, \"marketPrice\": %s, "
-                            + "\"gridCellId\": %s, \"correlated_outcomes\": %d, \"solar_generation_kw\": %s}\n",
+                            + "\"recommendedAction\": %s, \"soc_percent\": %s, \"soh_percent\": %s, "
+                            + "\"marketPriceLevel\": %s, \"gridCellId\": %s, \"correlated_outcomes\": %d, "
+                            + "\"solar_generation_kw\": %s}\n",
                     jsonString(e.timestamp != null ? e.timestamp.toString() : null),
                     jsonNumber(e.assetId),
                     jsonNumber(e.prosumerId),
                     jsonString(e.eventType),
                     jsonString(e.recommendedAction),
                     jsonNumber(e.soc_percent),
-                    jsonNumber(e.marketPrice),
+                    jsonNumber(e.soh_percent),
+                    jsonString(e.marketPriceLevel),
                     jsonString(e.gridCellId),
                     cee.recommendations != null ? cee.recommendations.size() : 0,
                     jsonNumber(cee.solarGenerationKw)));

@@ -82,10 +82,10 @@ public class FlexibilityEventResource {
     }
 
     @GET
-    @Path("logs")
-    public Multi<FlexibilityEvent> getLogs(@QueryParam("from") String from, @QueryParam("to") String to) {
-        LocalDateTime toTime = (to != null) ? LocalDateTime.parse(to) : LocalDateTime.now();
-        LocalDateTime fromTime = (from != null) ? LocalDateTime.parse(from) : toTime.minusMinutes(20);
+    @Path("logs/{minutes}")
+    public Multi<FlexibilityEvent> getLogsByMinutes(@PathParam("minutes") int minutes) {
+        LocalDateTime toTime = LocalDateTime.now();
+        LocalDateTime fromTime = toTime.minusMinutes(minutes);
         return FlexibilityEvent.findByTimeWindow(client, fromTime, toTime);
     }
 

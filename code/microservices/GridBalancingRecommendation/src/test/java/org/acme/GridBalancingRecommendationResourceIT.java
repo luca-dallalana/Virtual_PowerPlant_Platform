@@ -45,7 +45,7 @@ class GridBalancingRecommendationResourceIT {
         LocalDateTime ts2 = LocalDateTime.of(2024, 1, 15, 11, 30);
         Row row1 = recommendationRow(1L, 1006L, "REDUCE_CHARGING", "PORTO-IN", "PORTO-IN", ts1);
         Row row2 = recommendationRow(2L, 1001L, "DISCHARGE", "LISBON-DT", "PORTO-IN", ts2);
-        stubQuery("SELECT id, assetId, action, fromCell, toCell, createdAt "
+        stubQuery("SELECT id, assetId, action, fromCell, toCell, createdAt, cellContext, socPercent, isCharging, assetType "
                 + "FROM BalancingRecommendation ORDER BY createdAt DESC", rowSetWithRows(row1, row2));
 
         given()
@@ -66,7 +66,7 @@ class GridBalancingRecommendationResourceIT {
     void getById_returnsEntity() {
         LocalDateTime ts = LocalDateTime.of(2024, 1, 15, 10, 30);
         Row row = recommendationRow(1L, 1006L, "REDUCE_CHARGING", "PORTO-IN", "PORTO-IN", ts);
-        stubPreparedQuery("SELECT id, assetId, action, fromCell, toCell, createdAt "
+        stubPreparedQuery("SELECT id, assetId, action, fromCell, toCell, createdAt, cellContext, socPercent, isCharging, assetType "
                 + "FROM BalancingRecommendation WHERE id = ?", rowSetWithRows(row));
 
         given()
@@ -83,7 +83,7 @@ class GridBalancingRecommendationResourceIT {
 
     @Test
     void getById_returnsNotFound() {
-        stubPreparedQuery("SELECT id, assetId, action, fromCell, toCell, createdAt "
+        stubPreparedQuery("SELECT id, assetId, action, fromCell, toCell, createdAt, cellContext, socPercent, isCharging, assetType "
                 + "FROM BalancingRecommendation WHERE id = ?", rowSetWithRows());
 
         given()
@@ -98,7 +98,7 @@ class GridBalancingRecommendationResourceIT {
         LocalDateTime ts = LocalDateTime.of(2024, 1, 15, 10, 30);
         Row row1 = recommendationRow(1L, 1006L, "REDUCE_CHARGING", "PORTO-IN", "PORTO-IN", ts);
         Row row2 = recommendationRow(2L, 1007L, "REDUCE_CHARGING", "PORTO-IN", "PORTO-IN", ts);
-        stubPreparedQuery("SELECT id, assetId, action, fromCell, toCell, createdAt "
+        stubPreparedQuery("SELECT id, assetId, action, fromCell, toCell, createdAt, cellContext, socPercent, isCharging, assetType "
                 + "FROM BalancingRecommendation WHERE fromCell = ? ORDER BY createdAt DESC", rowSetWithRows(row1, row2));
 
         given()
@@ -112,11 +112,33 @@ class GridBalancingRecommendationResourceIT {
     }
 
     @Test
+    void getByMinutes_returnsList() {
+        LocalDateTime ts1 = LocalDateTime.of(2024, 1, 15, 10, 30);
+        LocalDateTime ts2 = LocalDateTime.of(2024, 1, 15, 11, 30);
+        Row row1 = recommendationRow(1L, 1006L, "REDUCE_CHARGING", "PORTO-IN", "PORTO-IN", ts1);
+        Row row2 = recommendationRow(2L, 1001L, "DISCHARGE", "LISBON-DT", "PORTO-IN", ts2);
+        stubPreparedQuery("SELECT id, assetId, action, fromCell, toCell, createdAt, cellContext, socPercent, isCharging, assetType "
+                + "FROM BalancingRecommendation WHERE createdAt >= ? AND createdAt <= ? ORDER BY createdAt DESC",
+                rowSetWithRows(row1, row2));
+
+        given()
+            .when()
+            .get("/GridBalancingRecommendation/recommendations/20")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(2))
+            .body("[0].id", is(1))
+            .body("[0].action", is("REDUCE_CHARGING"))
+            .body("[1].id", is(2))
+            .body("[1].action", is("DISCHARGE"));
+    }
+
+    @Test
     void create_withValidData_returns201() {
         RowSet<Row> insertResult = rowSetWithRowCount(1);
         Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID))
                .thenReturn(42L);
-        stubPreparedQuery("INSERT INTO BalancingRecommendation (assetId, action, fromCell, toCell, createdAt) VALUES (?,?,?,?,?)", insertResult);
+        stubPreparedQuery("INSERT INTO BalancingRecommendation (assetId, action, fromCell, toCell, createdAt, cellContext, socPercent, isCharging, assetType) VALUES (?,?,?,?,?,?,?,?,?)", insertResult);
 
         Map<String, Object> body = new HashMap<>();
         body.put("assetId", 1006);
@@ -124,6 +146,9 @@ class GridBalancingRecommendationResourceIT {
         body.put("fromCell", "PORTO-IN");
         body.put("toCell", "PORTO-IN");
         body.put("createdAt", "2024-01-15T10:30:00");
+        body.put("cellContext", "STRESSED");
+        body.put("isCharging", true);
+        body.put("assetType", "EV_CHARGER");
 
         given()
             .contentType(ContentType.JSON)
@@ -139,7 +164,7 @@ class GridBalancingRecommendationResourceIT {
     void update_withExistingId_returns204() {
         RowSet<Row> updateResult = rowSetWithRowCount(1);
         stubPreparedQuery("UPDATE BalancingRecommendation SET assetId = ?, action = ?, "
-                + "fromCell = ?, toCell = ?, createdAt = ? WHERE id = ?", updateResult);
+                + "fromCell = ?, toCell = ?, createdAt = ?, cellContext = ?, socPercent = ?, isCharging = ?, assetType = ? WHERE id = ?", updateResult);
 
         Map<String, Object> body = new HashMap<>();
         body.put("assetId", 1006);
@@ -147,6 +172,9 @@ class GridBalancingRecommendationResourceIT {
         body.put("fromCell", "PORTO-IN");
         body.put("toCell", "PORTO-IN");
         body.put("createdAt", "2024-01-15T10:30:00");
+        body.put("cellContext", "STRESSED");
+        body.put("isCharging", true);
+        body.put("assetType", "EV_CHARGER");
 
         given()
             .contentType(ContentType.JSON)
@@ -161,7 +189,7 @@ class GridBalancingRecommendationResourceIT {
     void update_withNonExistingId_returns404() {
         RowSet<Row> updateResult = rowSetWithRowCount(0);
         stubPreparedQuery("UPDATE BalancingRecommendation SET assetId = ?, action = ?, "
-                + "fromCell = ?, toCell = ?, createdAt = ? WHERE id = ?", updateResult);
+                + "fromCell = ?, toCell = ?, createdAt = ?, cellContext = ?, socPercent = ?, isCharging = ?, assetType = ? WHERE id = ?", updateResult);
 
         Map<String, Object> body = new HashMap<>();
         body.put("assetId", 1006);
@@ -169,6 +197,9 @@ class GridBalancingRecommendationResourceIT {
         body.put("fromCell", "PORTO-IN");
         body.put("toCell", "PORTO-IN");
         body.put("createdAt", "2024-01-15T10:30:00");
+        body.put("cellContext", "STRESSED");
+        body.put("isCharging", true);
+        body.put("assetType", "EV_CHARGER");
 
         given()
             .contentType(ContentType.JSON)
@@ -241,13 +272,16 @@ class GridBalancingRecommendationResourceIT {
         RowSet<Row> insertResult = rowSetWithRowCount(1);
         Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID))
                .thenReturn(10L);
-        stubPreparedQuery("INSERT INTO BalancingRecommendation (assetId, action, fromCell, toCell, createdAt) VALUES (?,?,?,?,?)", insertResult);
+        stubPreparedQuery("INSERT INTO BalancingRecommendation (assetId, action, fromCell, toCell, createdAt, cellContext, socPercent, isCharging, assetType) VALUES (?,?,?,?,?,?,?,?,?)", insertResult);
 
         List<Map<String, Object>> body = List.of(Map.of(
                 "assetId", 1006,
                 "action", "REDUCE_CHARGING",
                 "from", "PORTO-IN",
-                "to", "PORTO-IN"
+                "to", "PORTO-IN",
+                "cellContext", "STRESSED",
+                "isCharging", true,
+                "assetType", "EV_CHARGER"
         ));
 
         given()
@@ -296,6 +330,10 @@ class GridBalancingRecommendationResourceIT {
         Mockito.when(row.getString("fromCell")).thenReturn(fromCell);
         Mockito.when(row.getString("toCell")).thenReturn(toCell);
         Mockito.when(row.getLocalDateTime("createdAt")).thenReturn(createdAt);
+        Mockito.when(row.getString("cellContext")).thenReturn("STRESSED");
+        Mockito.when(row.getFloat("socPercent")).thenReturn(null);
+        Mockito.when(row.getBoolean("isCharging")).thenReturn(false);
+        Mockito.when(row.getString("assetType")).thenReturn("EV_CHARGER");
         return row;
     }
 

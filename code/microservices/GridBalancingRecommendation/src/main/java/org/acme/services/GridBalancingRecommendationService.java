@@ -56,7 +56,7 @@ public class GridBalancingRecommendationService {
         LocalDateTime now = LocalDateTime.now();
         List<Uni<BalancingRecommendation>> operations = dtos.stream()
                 .map(dto -> {
-                    BalancingRecommendation rec = new BalancingRecommendation(null, dto.assetId, dto.action, dto.from, dto.to, now);
+                    BalancingRecommendation rec = new BalancingRecommendation(null, dto.assetId, dto.action, dto.from, dto.to, now, dto.cellContext, dto.socPercent, dto.isCharging, dto.assetType);
                     return rec.save(client)
                             .onItem().invoke(id -> rec.id = id)
                             .onItem().transform(id -> rec);

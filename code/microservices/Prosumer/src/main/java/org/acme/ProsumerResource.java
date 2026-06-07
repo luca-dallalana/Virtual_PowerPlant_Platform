@@ -44,6 +44,16 @@ public class ProsumerResource {
         .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1002, 1, 'SOLAR', 'SolarEdge SE7600H', 'ACTIVE')").execute())
         .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1003, 2, 'EV_CHARGER', 'ChargePoint Home Flex', 'ACTIVE')").execute())
         .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1004, 3, 'BATTERY', 'LG Chem RESU10H', 'MAINTENANCE')").execute())
+        // ── Prosumer 3 (OPorto) — PORTO-IN assets (overload scenario) ─────────────
+        .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1005, 3, 'SOLAR', 'SolarEdge SE10000H', 'ACTIVE')").execute())
+        .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1006, 3, 'EV_CHARGER', 'ABB Terra 184 DC', 'ACTIVE')").execute())
+        .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1007, 3, 'EV_CHARGER', 'Mennekes AMTRON 22', 'ACTIVE')").execute())
+        // ── Prosumer 4 (Faro) — FARO-RS battery + SETUBAL-CT solar & charger ──────
+        .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1008, 4, 'BATTERY', 'Pylontech US5000C', 'ACTIVE')").execute())
+        .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1009, 4, 'SOLAR', 'Fronius Symo 3.7-3-S', 'ACTIVE')").execute())
+        .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1010, 4, 'EV_CHARGER', 'Wallbox Pulsar Plus', 'ACTIVE')").execute())
+        // ── Prosumer 2 (Setúbal) — SETUBAL-CT battery (high SoC → ARBITRAGE_SELL) ─
+        .flatMap(r -> client.query("INSERT INTO Asset (assetId, prosumerId, assetType, model, status) VALUES (1011, 2, 'BATTERY', 'VARTA Element Backup 13', 'ACTIVE')").execute())
         .await().indefinitely();
     }
     

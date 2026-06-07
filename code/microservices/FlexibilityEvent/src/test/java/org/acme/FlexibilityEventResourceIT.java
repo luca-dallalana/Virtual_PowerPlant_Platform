@@ -133,6 +133,30 @@ class FlexibilityEventResourceIT {
     }
 
     @Test
+    void getLogsByMinutes_returnsList() {
+        LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
+        LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
+        Row row1 = flexibilityEventRow(1L, 1L, 1L, "ARBITRAGE_SELL", 95.0f, "DISCHARGE", 150.0f, 10.0f, "GRID_A", timestamp1);
+        Row row2 = flexibilityEventRow(2L, 2L, 1L, "BALANCING_UNAVAILABLE", 15.0f, "UNAVAILABLE", null, null, "GRID_B", timestamp2);
+        stubPreparedQuery(
+            "SELECT id, assetId, prosumerId, eventType, soc_percent, soh_percent, " +
+            "recommendedAction, marketPriceLevel, gridCellId, timestamp " +
+            "FROM FlexibilityEvent WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp DESC",
+            rowSetWithRows(row1, row2));
+
+        given()
+            .when()
+            .get("/FlexibilityEvent/logs/20")
+            .then()
+            .statusCode(200)
+            .body("", hasSize(2))
+            .body("[0].id", is(1))
+            .body("[0].eventType", is("ARBITRAGE_SELL"))
+            .body("[1].id", is(2))
+            .body("[1].eventType", is("BALANCING_UNAVAILABLE"));
+    }
+
+    @Test
     void evaluateTelemetry_highSoC_createsEvent() {
         RowSet<Row> insertResult = rowSetWithRowCount(1);
         Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(123L);

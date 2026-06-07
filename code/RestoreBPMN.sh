@@ -1,20 +1,29 @@
 #!/bin/bash
 
-# Restores KONG_SERVER_PLACEHOLDER in BPMN files before a fresh deployment.
-# The deployment script replaces the placeholder with the live Kong DNS each run,
-# so this must be run before redeploying to allow the new Kong address to be patched in.
+# Restores KONG_SERVER_PLACEHOLDER and KAFKA_SERVER_PLACEHOLDER in BPMN files
+# before a fresh deployment. The deployment script replaces placeholders with
+# live EC2 DNS each run, so this must be run before redeploying.
+#
+# Kafka bootstrap servers appear as bare "hostname:9092" (no http scheme).
+# Kong URLs appear as "http://hostname:8000/..." so the hostname alone is matched
+# after Kafka is already restored. Order matters: restore :9092 first.
 
 BPMN_DIR="./BPMN"
 
-if ! grep -q "amazonaws\.com" "$BPMN_DIR"/*.bpmn 2>/dev/null; then
-    echo "BPMN files are already clean — KONG_SERVER_PLACEHOLDER is in place."
+EC2_PATTERN="ec2-[0-9]*-[0-9]*-[0-9]*-[0-9]*\.compute-1\.amazonaws\.com"
+
+if ! grep -qE "$EC2_PATTERN" "$BPMN_DIR"/*.bpmn 2>/dev/null; then
+    echo "BPMN files are already clean — placeholders are in place."
     exit 0
 fi
 
-echo "Restoring KONG_SERVER_PLACEHOLDER in BPMN files..."
-sed -i '' 's/ec2-[0-9]*-[0-9]*-[0-9]*-[0-9]*\.compute-1\.amazonaws\.com/KONG_SERVER_PLACEHOLDER/g' "$BPMN_DIR"/*.bpmn
+echo "Restoring KAFKA_SERVER_PLACEHOLDER in BPMN files..."
+sed -i '' "s/${EC2_PATTERN}:9092/KAFKA_SERVER_PLACEHOLDER/g" "$BPMN_DIR"/*.bpmn
 
-if grep -q "amazonaws\.com" "$BPMN_DIR"/*.bpmn 2>/dev/null; then
+echo "Restoring KONG_SERVER_PLACEHOLDER in BPMN files..."
+sed -i '' "s/${EC2_PATTERN}/KONG_SERVER_PLACEHOLDER/g" "$BPMN_DIR"/*.bpmn
+
+if grep -qE "$EC2_PATTERN" "$BPMN_DIR"/*.bpmn 2>/dev/null; then
     echo "ERROR: Some EC2 addresses still remain in BPMN files — check manually."
     exit 1
 fi

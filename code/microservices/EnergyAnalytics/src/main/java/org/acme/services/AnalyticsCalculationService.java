@@ -1,7 +1,6 @@
 package org.acme.services;
 
 import io.smallrye.mutiny.Uni;
-import io.smallrye.reactive.messaging.kafka.api.OutgoingKafkaRecordMetadata;
 import io.vertx.mutiny.mysqlclient.MySQLPool;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -13,9 +12,6 @@ import org.acme.entities.AverageSoC;
 import org.acme.entities.ConsumedEnergyByProsumer;
 import org.acme.entities.EnergyDischargedByZone;
 import org.acme.entities.GeneratedEnergyByProsumer;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.eclipse.microprofile.reactive.messaging.Message;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -29,22 +25,6 @@ public class AnalyticsCalculationService {
 
     @Inject
     MySQLPool client;
-
-    @Inject
-    @Channel("energy-discharged-zone")
-    Emitter<String> dischargedZoneEmitter;
-
-    @Inject
-    @Channel("energy-generated-prosumer")
-    Emitter<String> generatedProsumerEmitter;
-
-    @Inject
-    @Channel("energy-consumed-prosumer")
-    Emitter<String> consumedProsumerEmitter;
-
-    @Inject
-    @Channel("average-soc")
-    Emitter<String> averageSocEmitter;
 
     public List<GeneratedEnergyByProsumer> computeGeneratedByProsumer(List<AssetDTO> assets, List<TelemetryDTO> telemetry) {
         LocalDateTime timestamp = LocalDateTime.now();
@@ -152,49 +132,27 @@ public class AnalyticsCalculationService {
         return new AverageSoC(null, avg, avgSocByAsset.size(), timestamp, "LAST_30_MIN");
     }
 
-    public Uni<AnalyticsResult> emitAnalytics(
-            List<GeneratedEnergyByProsumer> generated,
-            List<ConsumedEnergyByProsumer> consumed,
-            List<EnergyDischargedByZone> discharged,
-            AverageSoC averageSoC) {
+    public Uni<AnalyticsResult> persistConsumed(List<ConsumedEnergyByProsumer> list) {
+        if (list == null || list.isEmpty()) return Uni.createFrom().item(new AnalyticsResult("SUCCESS", LocalDateTime.now(), 0));
+        List<Uni<Long>> saves = list.stream().map(c -> c.save(client)).collect(Collectors.toList());
+        return Uni.combine().all().unis(saves).combinedWith(r -> new AnalyticsResult("SUCCESS", LocalDateTime.now(), r.size()));
+    }
 
-        LocalDateTime timestamp = LocalDateTime.now();
-        List<Uni<Long>> saveOps = new ArrayList<>();
+    public Uni<AnalyticsResult> persistGenerated(List<GeneratedEnergyByProsumer> list) {
+        if (list == null || list.isEmpty()) return Uni.createFrom().item(new AnalyticsResult("SUCCESS", LocalDateTime.now(), 0));
+        List<Uni<Long>> saves = list.stream().map(g -> g.save(client)).collect(Collectors.toList());
+        return Uni.combine().all().unis(saves).combinedWith(r -> new AnalyticsResult("SUCCESS", LocalDateTime.now(), r.size()));
+    }
 
-        if (generated != null) {
-            for (GeneratedEnergyByProsumer g : generated) {
-                saveOps.add(g.save(client).invoke(() ->
-                    publishGeneratedProsumerEvent(g.prosumerId, g.totalEnergyGeneratedKwh, g.solarAssetCount, g.timestamp)));
-            }
-        }
-        if (consumed != null) {
-            for (ConsumedEnergyByProsumer c : consumed) {
-                saveOps.add(c.save(client).invoke(() ->
-                    publishConsumedProsumerEvent(c.prosumerId, c.totalEnergyConsumedKwh, c.evChargerCount, c.timestamp)));
-            }
-        }
-        if (discharged != null) {
-            for (EnergyDischargedByZone d : discharged) {
-                saveOps.add(d.save(client).invoke(() ->
-                    publishDischargedZoneEvent(d.gridCellId, d.totalEnergyDischargedKwh, d.batteryCount, d.timestamp)));
-            }
-        }
-        if (averageSoC != null) {
-            saveOps.add(averageSoC.save(client).invoke(() ->
-                publishAverageSocEvent(averageSoC.averageSocPercent, averageSoC.batteryCount, averageSoC.timestamp)));
-        }
+    public Uni<AnalyticsResult> persistDischarged(List<EnergyDischargedByZone> list) {
+        if (list == null || list.isEmpty()) return Uni.createFrom().item(new AnalyticsResult("SUCCESS", LocalDateTime.now(), 0));
+        List<Uni<Long>> saves = list.stream().map(d -> d.save(client)).collect(Collectors.toList());
+        return Uni.combine().all().unis(saves).combinedWith(r -> new AnalyticsResult("SUCCESS", LocalDateTime.now(), r.size()));
+    }
 
-        if (saveOps.isEmpty()) {
-            return Uni.createFrom().item(new AnalyticsResult("SUCCESS", timestamp, 0));
-        }
-
-        int totalRecords = (generated != null ? generated.size() : 0)
-            + (consumed != null ? consumed.size() : 0)
-            + (discharged != null ? discharged.size() : 0)
-            + (averageSoC != null ? 1 : 0);
-
-        return Uni.combine().all().unis(saveOps).combinedWith(results ->
-            new AnalyticsResult("SUCCESS", timestamp, totalRecords));
+    public Uni<AnalyticsResult> persistAverageSoC(AverageSoC averageSoC) {
+        if (averageSoC == null) return Uni.createFrom().item(new AnalyticsResult("SUCCESS", LocalDateTime.now(), 0));
+        return averageSoC.save(client).map(id -> new AnalyticsResult("SUCCESS", LocalDateTime.now(), 1));
     }
 
     /** Average power across all readings for the asset, multiplied by the 30-min window (0.5h) to give kWh. */
@@ -210,41 +168,5 @@ public class AnalyticsCalculationService {
         if (assets == null) return Collections.emptyMap();
         return assets.stream()
             .collect(Collectors.toMap(a -> a.assetId, a -> a.prosumerId, (a, b) -> a));
-    }
-
-    private void publishDischargedZoneEvent(String gridCellId, double totalDischarge, int batteryCount, LocalDateTime timestamp) {
-        String json = String.format(
-            "{\"gridCellId\":\"%s\",\"totalDischargeKwh\":%.4f,\"batteryCount\":%d,\"timestamp\":\"%s\"}",
-            gridCellId, totalDischarge, batteryCount, timestamp.toString()
-        );
-        dischargedZoneEmitter.send(Message.of(json)
-            .addMetadata(OutgoingKafkaRecordMetadata.builder().withKey(gridCellId).build()));
-    }
-
-    private void publishGeneratedProsumerEvent(Long prosumerId, double totalGeneration, int assetCount, LocalDateTime timestamp) {
-        String json = String.format(
-            "{\"prosumerId\":%d,\"totalGenerationKwh\":%.4f,\"assetCount\":%d,\"timestamp\":\"%s\"}",
-            prosumerId, totalGeneration, assetCount, timestamp.toString()
-        );
-        generatedProsumerEmitter.send(Message.of(json)
-            .addMetadata(OutgoingKafkaRecordMetadata.builder().withKey(prosumerId.toString()).build()));
-    }
-
-    private void publishConsumedProsumerEvent(Long prosumerId, double totalConsumption, int chargerCount, LocalDateTime timestamp) {
-        String json = String.format(
-            "{\"prosumerId\":%d,\"totalConsumptionKwh\":%.4f,\"chargerCount\":%d,\"timestamp\":\"%s\"}",
-            prosumerId, totalConsumption, chargerCount, timestamp.toString()
-        );
-        consumedProsumerEmitter.send(Message.of(json)
-            .addMetadata(OutgoingKafkaRecordMetadata.builder().withKey(prosumerId.toString()).build()));
-    }
-
-    private void publishAverageSocEvent(double averageSoC, int batteryCount, LocalDateTime timestamp) {
-        String json = String.format(
-            "{\"averageSoC\":%.2f,\"batteryCount\":%d,\"timestamp\":\"%s\"}",
-            averageSoC, batteryCount, timestamp.toString()
-        );
-        averageSocEmitter.send(Message.of(json)
-            .addMetadata(OutgoingKafkaRecordMetadata.builder().withKey("system").build()));
     }
 }

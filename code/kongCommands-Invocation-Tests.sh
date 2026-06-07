@@ -15,8 +15,8 @@ echo ""
 echo "=== GET /Prosumer ==="
 curl -s -X GET "$P/Prosumer"
 
-echo -e "\n=== GET /Prosumer/AssetBatteries ==="
-curl -s -X GET "$P/Prosumer/AssetBatteries"
+echo -e "\n=== GET /Prosumer/assets/active/BATTERY ==="
+curl -s -X GET "$P/Prosumer/assets/active/BATTERY"
 
 echo -e "\n=== GET /Prosumer/assets/active ==="
 curl -s -X GET "$P/Prosumer/assets/active"
@@ -42,11 +42,21 @@ curl -s -X GET "$P/Telemetry/window/SOLAR/20"
 echo -e "\n=== GET /FlexibilityEvent ==="
 curl -s -X GET "$P/FlexibilityEvent"
 
-echo -e "\n=== GET /FlexibilityEvent/logs ==="
-curl -s -X GET "$P/FlexibilityEvent/logs"
+echo -e "\n=== GET /FlexibilityEvent/logs/20 ==="
+curl -s -X GET "$P/FlexibilityEvent/logs/20"
 
-echo -e "\n=== GET /GridBalancingRecommendation/recommendations ==="
-curl -s -X GET "$P/GridBalancingRecommendation/recommendations"
+echo -e "\n=== GET /GridBalancingRecommendation/recommendations/20 ==="
+curl -s -X GET "$P/GridBalancingRecommendation/recommendations/20"
+
+echo -e "\n=== POST /GridBalancingRecommendation/metrics ==="
+curl -s -X POST "$P/GridBalancingRecommendation/metrics" \
+  -H "Content-Type: application/json" \
+  -d '{"gridCell":{"gridCellId":"PORTO-IN","utilityOperatorId":1},"telemetryData":[]}'
+
+echo -e "\n=== POST /GridBalancingRecommendation/save ==="
+curl -s -X POST "$P/GridBalancingRecommendation/save" \
+  -H "Content-Type: application/json" \
+  -d '[{"assetId":1001,"action":"DISCHARGE","from":"LISBON-DT","to":"PORTO-IN"}]'
 
 echo -e "\n=== GET /EnergyAnalytics/discharged-by-zone ==="
 curl -s -X GET "$P/EnergyAnalytics/discharged-by-zone"
@@ -59,6 +69,26 @@ curl -s -X GET "$P/EnergyAnalytics/consumed-by-prosumer"
 
 echo -e "\n=== GET /EnergyAnalytics/average-soc ==="
 curl -s -X GET "$P/EnergyAnalytics/average-soc"
+
+echo -e "\n=== POST /EnergyAnalytics/persist/consume ==="
+curl -s -X POST "$P/EnergyAnalytics/persist/consume" \
+  -H "Content-Type: application/json" \
+  -d '{"consumedByProsumer":[{"prosumerId":1,"totalEnergyConsumedKwh":5.2,"evChargerCount":1,"timestamp":"2024-01-01T10:00:00","aggregationPeriod":"30m"}]}'
+
+echo -e "\n=== POST /EnergyAnalytics/persist/generate ==="
+curl -s -X POST "$P/EnergyAnalytics/persist/generate" \
+  -H "Content-Type: application/json" \
+  -d '{"generatedByProsumer":[{"prosumerId":1,"totalEnergyGeneratedKwh":3.5,"solarAssetCount":1,"timestamp":"2024-01-01T10:00:00","aggregationPeriod":"30m"}]}'
+
+echo -e "\n=== POST /EnergyAnalytics/persist/discharge ==="
+curl -s -X POST "$P/EnergyAnalytics/persist/discharge" \
+  -H "Content-Type: application/json" \
+  -d '{"dischargedByZone":[{"gridCellId":"PORTO-IN","totalEnergyDischargedKwh":10.0,"batteryCount":2,"timestamp":"2024-01-01T10:00:00","aggregationPeriod":"30m"}]}'
+
+echo -e "\n=== POST /EnergyAnalytics/persist/average ==="
+curl -s -X POST "$P/EnergyAnalytics/persist/average" \
+  -H "Content-Type: application/json" \
+  -d '{"averageSoC":{"averageSocPercent":72.5,"batteryCount":3,"timestamp":"2024-01-01T10:00:00","aggregationPeriod":"30m"}}'
 
 echo -e "\n=== GET /FlexibilityForecasting/history ==="
 curl -s -X GET "$P/FlexibilityForecasting/history"

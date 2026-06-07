@@ -252,9 +252,9 @@ class FlexibilityForecastingResourceTest {
         dto.prosumerId = 10L;
         dto.eventType = "ARBITRAGE_SELL";
         dto.soc_percent = 92.0f;
+        dto.soh_percent = 85.0f;
         dto.recommendedAction = "DISCHARGE";
-        dto.marketPrice = 150.0f;
-        dto.incentiveAmount = 4.0f;
+        dto.marketPriceLevel = "HIGH";
         dto.gridCellId = gridCellId;
         dto.timestamp = LocalDateTime.now();
         return dto;

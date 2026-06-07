@@ -9,23 +9,16 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.sqlclient.RowIterator;
 import jakarta.ws.rs.core.Response;
-import org.acme.dto.BatchEvaluateRequest;
-import org.acme.dto.TelemetryDTO;
-import org.acme.dto.BatchEvaluateResponse;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.acme.dto.BatteryAssetDTO;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -35,25 +28,26 @@ class FlexibilityEventResourceTest {
 
     FlexibilityEventResource resource;
     private MySQLPool client;
-    private Emitter<String> flexibilityEmitter;
 
     @BeforeEach
     void setup() {
         resource = new FlexibilityEventResource();
         client = Mockito.mock(MySQLPool.class);
-        flexibilityEmitter = Mockito.mock(Emitter.class);
         injectClient(resource, client);
         injectSchemaCreate(resource, false);
-        injectEmitter(resource, flexibilityEmitter);
     }
 
     @Test
     void getFlexibilityEvents_returnsList() {
         LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
-        Row row1 = flexibilityEventRow(1L, 1L, 1L, "ARBITRAGE_SELL", 95.0f, "DISCHARGE", 150.0f, 10.0f, "GRID_A", timestamp1);
-        Row row2 = flexibilityEventRow(2L, 2L, 1L, "BALANCING_UNAVAILABLE", 15.0f, "UNAVAILABLE", null, null, "GRID_B", timestamp2);
-        stubQuery("SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp FROM FlexibilityEvent ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
+        Row row1 = flexibilityEventRow(1L, 1L, 1L, "ARBITRAGE_SELL", 95.0f, 92.5f, "DISCHARGE", "HIGH", "GRID_A", timestamp1);
+        Row row2 = flexibilityEventRow(2L, 2L, 1L, "BALANCING_UNAVAILABLE", 15.0f, 80.0f, "UNAVAILABLE", null, "GRID_B", timestamp2);
+        stubQuery(
+            "SELECT id, assetId, prosumerId, eventType, soc_percent, soh_percent, " +
+            "recommendedAction, marketPriceLevel, gridCellId, timestamp " +
+            "FROM FlexibilityEvent ORDER BY timestamp DESC",
+            rowSetWithRows(row1, row2));
 
         List<FlexibilityEvent> result = resource.get().collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(2));
@@ -62,9 +56,9 @@ class FlexibilityEventResourceTest {
         MatcherAssert.assertThat(result.get(0).prosumerId, is(1L));
         MatcherAssert.assertThat(result.get(0).eventType, is("ARBITRAGE_SELL"));
         MatcherAssert.assertThat(result.get(0).soc_percent, is(95.0f));
+        MatcherAssert.assertThat(result.get(0).soh_percent, is(92.5f));
         MatcherAssert.assertThat(result.get(0).recommendedAction, is("DISCHARGE"));
-        MatcherAssert.assertThat(result.get(0).marketPrice, is(150.0f));
-        MatcherAssert.assertThat(result.get(0).incentiveAmount, is(10.0f));
+        MatcherAssert.assertThat(result.get(0).marketPriceLevel, is("HIGH"));
         MatcherAssert.assertThat(result.get(0).gridCellId, is("GRID_A"));
         MatcherAssert.assertThat(result.get(0).timestamp, is(timestamp1));
     }
@@ -72,8 +66,12 @@ class FlexibilityEventResourceTest {
     @Test
     void getFlexibilityEventById_returnsEntity() {
         LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-        Row row = flexibilityEventRow(1L, 5L, 2L, "ARBITRAGE_SELL", 95.0f, "DISCHARGE", 150.0f, 10.0f, "GRID_A", timestamp);
-        stubPreparedQuery("SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp FROM FlexibilityEvent WHERE id = ?", rowSetWithRows(row));
+        Row row = flexibilityEventRow(1L, 5L, 2L, "ARBITRAGE_SELL", 95.0f, 92.5f, "DISCHARGE", "HIGH", "GRID_A", timestamp);
+        stubPreparedQuery(
+            "SELECT id, assetId, prosumerId, eventType, soc_percent, soh_percent, " +
+            "recommendedAction, marketPriceLevel, gridCellId, timestamp " +
+            "FROM FlexibilityEvent WHERE id = ?",
+            rowSetWithRows(row));
 
         Response response = resource.getSingle(1L).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(200));
@@ -84,16 +82,20 @@ class FlexibilityEventResourceTest {
         MatcherAssert.assertThat(entity.prosumerId, is(2L));
         MatcherAssert.assertThat(entity.eventType, is("ARBITRAGE_SELL"));
         MatcherAssert.assertThat(entity.soc_percent, is(95.0f));
+        MatcherAssert.assertThat(entity.soh_percent, is(92.5f));
         MatcherAssert.assertThat(entity.recommendedAction, is("DISCHARGE"));
-        MatcherAssert.assertThat(entity.marketPrice, is(150.0f));
-        MatcherAssert.assertThat(entity.incentiveAmount, is(10.0f));
+        MatcherAssert.assertThat(entity.marketPriceLevel, is("HIGH"));
         MatcherAssert.assertThat(entity.gridCellId, is("GRID_A"));
         MatcherAssert.assertThat(entity.timestamp, is(timestamp));
     }
 
     @Test
     void getFlexibilityEventById_returnsNotFound() {
-        stubPreparedQuery("SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp FROM FlexibilityEvent WHERE id = ?", rowSetWithRows());
+        stubPreparedQuery(
+            "SELECT id, assetId, prosumerId, eventType, soc_percent, soh_percent, " +
+            "recommendedAction, marketPriceLevel, gridCellId, timestamp " +
+            "FROM FlexibilityEvent WHERE id = ?",
+            rowSetWithRows());
 
         Response response = resource.getSingle(99L).await().indefinitely();
         MatcherAssert.assertThat(response.getStatus(), is(404));
@@ -103,9 +105,13 @@ class FlexibilityEventResourceTest {
     void getFlexibilityEventsByAssetId_returnsList() {
         LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
-        Row row1 = flexibilityEventRow(1L, 5L, 1L, "ARBITRAGE_SELL", 95.0f, "DISCHARGE", 150.0f, 10.0f, "GRID_A", timestamp1);
-        Row row2 = flexibilityEventRow(2L, 5L, 2L, "BALANCING_UNAVAILABLE", 15.0f, "UNAVAILABLE", null, null, "GRID_B", timestamp2);
-        stubPreparedQuery("SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp FROM FlexibilityEvent WHERE assetId = ? ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
+        Row row1 = flexibilityEventRow(1L, 5L, 1L, "ARBITRAGE_SELL", 95.0f, 92.5f, "DISCHARGE", "HIGH", "GRID_A", timestamp1);
+        Row row2 = flexibilityEventRow(2L, 5L, 2L, "BALANCING_UNAVAILABLE", 15.0f, 75.0f, "UNAVAILABLE", null, "GRID_B", timestamp2);
+        stubPreparedQuery(
+            "SELECT id, assetId, prosumerId, eventType, soc_percent, soh_percent, " +
+            "recommendedAction, marketPriceLevel, gridCellId, timestamp " +
+            "FROM FlexibilityEvent WHERE assetId = ? ORDER BY timestamp DESC",
+            rowSetWithRows(row1, row2));
 
         List<FlexibilityEvent> result = resource.getByAsset(5L).collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(2));
@@ -117,9 +123,13 @@ class FlexibilityEventResourceTest {
     void getFlexibilityEventsByEventType_returnsList() {
         LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
-        Row row1 = flexibilityEventRow(1L, 1L, 1L, "ARBITRAGE_SELL", 95.0f, "DISCHARGE", 150.0f, 10.0f, "GRID_A", timestamp1);
-        Row row2 = flexibilityEventRow(2L, 2L, 1L, "ARBITRAGE_SELL", 92.0f, "DISCHARGE", 150.0f, 4.0f, "GRID_B", timestamp2);
-        stubPreparedQuery("SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp FROM FlexibilityEvent WHERE eventType = ? ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
+        Row row1 = flexibilityEventRow(1L, 1L, 1L, "ARBITRAGE_SELL", 95.0f, 92.5f, "DISCHARGE", "HIGH", "GRID_A", timestamp1);
+        Row row2 = flexibilityEventRow(2L, 2L, 1L, "ARBITRAGE_SELL", 92.0f, 88.0f, "DISCHARGE", "HIGH", "GRID_B", timestamp2);
+        stubPreparedQuery(
+            "SELECT id, assetId, prosumerId, eventType, soc_percent, soh_percent, " +
+            "recommendedAction, marketPriceLevel, gridCellId, timestamp " +
+            "FROM FlexibilityEvent WHERE eventType = ? ORDER BY timestamp DESC",
+            rowSetWithRows(row1, row2));
 
         List<FlexibilityEvent> result = resource.getByType("ARBITRAGE_SELL").collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(2));
@@ -128,218 +138,18 @@ class FlexibilityEventResourceTest {
     }
 
     @Test
-    void evaluateBatch_highSoC_returnsArbitrageSellEvent() {
-        BatchEvaluateRequest request = new BatchEvaluateRequest();
-        request.batteryAssets = List.of(new BatteryAssetDTO(1L, 1L));
-        request.telemetryList = List.of(createTelemetryDTO(1L, 95.0f, "GRID_A"));
-
-        Response response = resource.evaluateBatch(request);
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
-        MatcherAssert.assertThat(body.eventCreated, hasSize(1));
-        FlexibilityEvent event = body.eventCreated.get(0);
-        MatcherAssert.assertThat(event.id, is((Long) null));
-        MatcherAssert.assertThat(event.eventType, is("ARBITRAGE_SELL"));
-        MatcherAssert.assertThat(event.recommendedAction, is("DISCHARGE"));
-        MatcherAssert.assertThat(event.marketPrice, is(150.0f));
-        MatcherAssert.assertThat(event.incentiveAmount, is(10.0f));
-
-        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
-    }
-
-    @Test
-    void evaluateBatch_lowSoC_returnsBalancingUnavailableEvent() {
-        BatchEvaluateRequest request = new BatchEvaluateRequest();
-        request.batteryAssets = List.of(new BatteryAssetDTO(1L, 1L));
-        request.telemetryList = List.of(createTelemetryDTO(1L, 15.0f, "GRID_A"));
-
-        Response response = resource.evaluateBatch(request);
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
-        MatcherAssert.assertThat(body.eventCreated, hasSize(1));
-        FlexibilityEvent event = body.eventCreated.get(0);
-        MatcherAssert.assertThat(event.id, is((Long) null));
-        MatcherAssert.assertThat(event.eventType, is("BALANCING_UNAVAILABLE"));
-        MatcherAssert.assertThat(event.recommendedAction, is("UNAVAILABLE"));
-        MatcherAssert.assertThat(event.marketPrice, is((Float) null));
-        MatcherAssert.assertThat(event.incentiveAmount, is((Float) null));
-
-        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
-    }
-
-    @Test
-    void evaluateBatch_normalSoC_returnsEmptyList() {
-        BatchEvaluateRequest request = new BatchEvaluateRequest();
-        request.batteryAssets = List.of(new BatteryAssetDTO(1L, 1L));
-        request.telemetryList = List.of(createTelemetryDTO(1L, 50.0f, "GRID_A"));
-
-        Response response = resource.evaluateBatch(request);
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
-        MatcherAssert.assertThat(body.eventCreated, hasSize(0));
-
-        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
-    }
-
-    @Test
-    void evaluateBatch_nullSoC_returnsEmptyList() {
-        BatchEvaluateRequest request = new BatchEvaluateRequest();
-        request.batteryAssets = List.of(new BatteryAssetDTO(1L, 1L));
-        request.telemetryList = List.of(createTelemetryDTO(1L, null, "GRID_A"));
-
-        Response response = resource.evaluateBatch(request);
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
-        MatcherAssert.assertThat(body.eventCreated, hasSize(0));
-
-        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
-    }
-
-    @Test
-    void evaluateBatch_doesNotSaveOrPublishToKafka() {
-        BatchEvaluateRequest request = new BatchEvaluateRequest();
-        request.batteryAssets = List.of(new BatteryAssetDTO(1L, 1L));
-        request.telemetryList = List.of(createTelemetryDTO(1L, 95.0f, "GRID_A"));
-
-        resource.evaluateBatch(request);
-
-        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
-    }
-
-    @Test
-    void evaluateBatch_highSoC_returnsSellOffer() {
-        BatchEvaluateRequest request = new BatchEvaluateRequest();
-        request.batteryAssets = List.of(new BatteryAssetDTO(1L, 1001L));
-        request.telemetryList = List.of(createTelemetryDTO(1001L, 95.0f, "GRID_A"));
-
-        Response response = resource.evaluateBatch(request);
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
-        MatcherAssert.assertThat(body.eventCreated, hasSize(1));
-        MatcherAssert.assertThat(body.eventCreated.get(0).eventType, is("ARBITRAGE_SELL"));
-        MatcherAssert.assertThat(body.eventCreated.get(0).assetId, is(1001L));
-        MatcherAssert.assertThat(body.eventCreated.get(0).prosumerId, is(1L));
-        MatcherAssert.assertThat(body.eventCreated.get(0).id, is((Long) null));
-        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
-    }
-
-    @Test
-    void evaluateBatch_lowSoC_returnsUnavailableOffer() {
-        BatchEvaluateRequest request = new BatchEvaluateRequest();
-        request.batteryAssets = List.of(new BatteryAssetDTO(2L, 1003L));
-        request.telemetryList = List.of(createTelemetryDTO(1003L, 10.0f, "GRID_B"));
-
-        Response response = resource.evaluateBatch(request);
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
-        MatcherAssert.assertThat(body.eventCreated, hasSize(1));
-        MatcherAssert.assertThat(body.eventCreated.get(0).eventType, is("BALANCING_UNAVAILABLE"));
-        MatcherAssert.assertThat(body.eventCreated.get(0).prosumerId, is(2L));
-        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
-    }
-
-    @Test
-    void evaluateBatch_normalSoC_returnsEmptyOffers() {
-        BatchEvaluateRequest request = new BatchEvaluateRequest();
-        request.batteryAssets = List.of(new BatteryAssetDTO(1L, 1001L));
-        request.telemetryList = List.of(createTelemetryDTO(1001L, 50.0f, "GRID_A"));
-
-        Response response = resource.evaluateBatch(request);
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
-        MatcherAssert.assertThat(body.eventCreated, hasSize(0));
-        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
-    }
-
-    @Test
-    void evaluateBatch_multipleAssets_returnsCorrectOffers() {
-        BatchEvaluateRequest request = new BatchEvaluateRequest();
-        request.batteryAssets = List.of(
-            new BatteryAssetDTO(1L, 1001L),
-            new BatteryAssetDTO(1L, 1002L),
-            new BatteryAssetDTO(2L, 1003L)
-        );
-        request.telemetryList = List.of(
-            createTelemetryDTO(1001L, 95.0f, "GRID_A"),
-            createTelemetryDTO(1002L, 50.0f, "GRID_A"),
-            createTelemetryDTO(1003L, 10.0f, "GRID_B")
-        );
-
-        Response response = resource.evaluateBatch(request);
-        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
-        MatcherAssert.assertThat(body.eventCreated, hasSize(2));
-        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
-    }
-
-    @Test
-    void emitFlexibilityOffers_savesAndPublishesToKafka() {
-        FlexibilityEvent event = new FlexibilityEvent();
-        event.assetId = 1L;
-        event.prosumerId = 1L;
-        event.eventType = "ARBITRAGE_SELL";
-        event.recommendedAction = "DISCHARGE";
-        event.timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-
-        RowSet<Row> insertResult = rowSetWithRowCount(1);
-        Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(42L);
-        stubPreparedQuery("INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)", insertResult);
-
-        BatchEvaluateResponse request = new BatchEvaluateResponse(List.of(event));
-        Response response = resource.emitFlexibilityOffers(request).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
-        MatcherAssert.assertThat(body.eventCreated, hasSize(1));
-        MatcherAssert.assertThat(body.eventCreated.get(0).id, is(42L));
-        Mockito.verify(flexibilityEmitter, Mockito.times(1)).send(Mockito.anyString());
-    }
-
-    @Test
-    void emitFlexibilityOffers_publishesCorrectKafkaMessage() {
-        FlexibilityEvent event = new FlexibilityEvent();
-        event.assetId = 1L;
-        event.prosumerId = 1L;
-        event.eventType = "ARBITRAGE_SELL";
-        event.recommendedAction = "DISCHARGE";
-        event.timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-
-        RowSet<Row> insertResult = rowSetWithRowCount(1);
-        Mockito.when(insertResult.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(42L);
-        stubPreparedQuery("INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)", insertResult);
-
-        resource.emitFlexibilityOffers(new BatchEvaluateResponse(List.of(event))).await().indefinitely();
-
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        Mockito.verify(flexibilityEmitter).send(captor.capture());
-        String message = captor.getValue();
-        MatcherAssert.assertThat(message.contains("\"eventId\":42"), is(true));
-        MatcherAssert.assertThat(message.contains("\"assetId\":1"), is(true));
-        MatcherAssert.assertThat(message.contains("\"prosumerId\":1"), is(true));
-        MatcherAssert.assertThat(message.contains("\"eventType\":\"ARBITRAGE_SELL\""), is(true));
-        MatcherAssert.assertThat(message.contains("\"recommendedAction\":\"DISCHARGE\""), is(true));
-        MatcherAssert.assertThat(message.contains("\"timestamp\":"), is(true));
-    }
-
-    @Test
-    void emitFlexibilityOffers_emptyList_returnsEmptyResponse() {
-        BatchEvaluateResponse request = new BatchEvaluateResponse(new ArrayList<>());
-        Response response = resource.emitFlexibilityOffers(request).await().indefinitely();
-        MatcherAssert.assertThat(response.getStatus(), is(200));
-        BatchEvaluateResponse body = (BatchEvaluateResponse) response.getEntity();
-        MatcherAssert.assertThat(body.eventCreated, hasSize(0));
-        Mockito.verify(flexibilityEmitter, Mockito.never()).send(Mockito.anyString());
-    }
-
-    @Test
-    void getLogs_withTimeWindow_returnsList() {
-        LocalDateTime from = LocalDateTime.of(2024, 1, 1, 0, 0);
-        LocalDateTime to = LocalDateTime.of(2024, 12, 31, 23, 59);
+    void getLogsByMinutes_returnsList() {
         LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
         LocalDateTime timestamp2 = LocalDateTime.of(2024, 6, 20, 14, 0);
-        Row row1 = flexibilityEventRow(1L, 1L, 1L, "ARBITRAGE_SELL", 95.0f, "DISCHARGE", 150.0f, 10.0f, "GRID_A", timestamp1);
-        Row row2 = flexibilityEventRow(2L, 2L, 1L, "BALANCING_UNAVAILABLE", 15.0f, "UNAVAILABLE", null, null, "GRID_B", timestamp2);
-        stubPreparedQuery("SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp FROM FlexibilityEvent WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp DESC", rowSetWithRows(row1, row2));
+        Row row1 = flexibilityEventRow(1L, 1L, 1L, "ARBITRAGE_SELL", 95.0f, 92.5f, "DISCHARGE", "HIGH", "GRID_A", timestamp1);
+        Row row2 = flexibilityEventRow(2L, 2L, 1L, "BALANCING_UNAVAILABLE", 15.0f, 75.0f, "UNAVAILABLE", null, "GRID_B", timestamp2);
+        stubPreparedQuery(
+            "SELECT id, assetId, prosumerId, eventType, soc_percent, soh_percent, " +
+            "recommendedAction, marketPriceLevel, gridCellId, timestamp " +
+            "FROM FlexibilityEvent WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp DESC",
+            rowSetWithRows(row1, row2));
 
-        List<FlexibilityEvent> result = resource.getLogs(from.toString(), to.toString()).collect().asList().await().indefinitely();
+        List<FlexibilityEvent> result = resource.getLogsByMinutes(20).collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(2));
         MatcherAssert.assertThat(result.get(0).id, is(1L));
         MatcherAssert.assertThat(result.get(0).eventType, is("ARBITRAGE_SELL"));
@@ -348,14 +158,79 @@ class FlexibilityEventResourceTest {
     }
 
     @Test
-    void getLogs_withTimeWindow_returnsEmptyList() {
-        LocalDateTime from = LocalDateTime.of(2020, 1, 1, 0, 0);
-        LocalDateTime to = LocalDateTime.of(2020, 12, 31, 23, 59);
-        stubPreparedQuery("SELECT id, assetId, prosumerId, eventType, soc_percent, recommendedAction, marketPrice, incentiveAmount, gridCellId, timestamp FROM FlexibilityEvent WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp DESC", rowSetWithRows());
+    void getLogsByMinutes_returnsEmptyList() {
+        stubPreparedQuery(
+            "SELECT id, assetId, prosumerId, eventType, soc_percent, soh_percent, " +
+            "recommendedAction, marketPriceLevel, gridCellId, timestamp " +
+            "FROM FlexibilityEvent WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp DESC",
+            rowSetWithRows());
 
-        List<FlexibilityEvent> result = resource.getLogs(from.toString(), to.toString()).collect().asList().await().indefinitely();
+        List<FlexibilityEvent> result = resource.getLogsByMinutes(20).collect().asList().await().indefinitely();
         MatcherAssert.assertThat(result, hasSize(0));
     }
+
+    @Test
+    void saveBatch_persistsEventsAndReturnsWithIds() {
+        FlexibilityEvent event = new FlexibilityEvent();
+        event.assetId = 1001L;
+        event.prosumerId = 1L;
+        event.eventType = "ARBITRAGE_SELL";
+        event.recommendedAction = "DISCHARGE";
+        event.soc_percent = 95.0f;
+        event.soh_percent = 92.5f;
+        event.marketPriceLevel = "HIGH";
+        event.gridCellId = "LISBON-DT";
+        event.timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
+
+        RowSet<Row> insertResult = rowSetWithInsertedId(42L);
+        stubPreparedQuery(
+            "INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, soh_percent, " +
+            "recommendedAction, marketPriceLevel, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)",
+            insertResult);
+
+        Response response = resource.saveBatch(List.of(event)).await().indefinitely();
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        @SuppressWarnings("unchecked")
+        List<FlexibilityEvent> saved = (List<FlexibilityEvent>) response.getEntity();
+        MatcherAssert.assertThat(saved, hasSize(1));
+        MatcherAssert.assertThat(saved.get(0).id, is(42L));
+        MatcherAssert.assertThat(saved.get(0).eventType, is("ARBITRAGE_SELL"));
+        MatcherAssert.assertThat(saved.get(0).marketPriceLevel, is("HIGH"));
+    }
+
+    @Test
+    void saveBatch_emptyList_returnsEmptyResponse() {
+        Response response = resource.saveBatch(Collections.emptyList()).await().indefinitely();
+        MatcherAssert.assertThat(response.getStatus(), is(200));
+        @SuppressWarnings("unchecked")
+        List<FlexibilityEvent> saved = (List<FlexibilityEvent>) response.getEntity();
+        MatcherAssert.assertThat(saved, hasSize(0));
+    }
+
+    @Test
+    void saveBatch_nullTimestamp_getsAutoPopulated() {
+        FlexibilityEvent event = new FlexibilityEvent();
+        event.assetId = 1001L;
+        event.prosumerId = 1L;
+        event.eventType = "ARBITRAGE_SELL";
+        event.recommendedAction = "DISCHARGE";
+        event.soc_percent = 95.0f;
+        event.soh_percent = 92.5f;
+        event.marketPriceLevel = "HIGH";
+        event.gridCellId = "LISBON-DT";
+        // timestamp intentionally left null
+
+        RowSet<Row> insertResult = rowSetWithInsertedId(10L);
+        stubPreparedQuery(
+            "INSERT INTO FlexibilityEvent(assetId, prosumerId, eventType, soc_percent, soh_percent, " +
+            "recommendedAction, marketPriceLevel, gridCellId, timestamp) VALUES (?,?,?,?,?,?,?,?,?)",
+            insertResult);
+
+        resource.saveBatch(List.of(event)).await().indefinitely();
+        MatcherAssert.assertThat(event.timestamp, notNullValue());
+    }
+
+    // --- helpers ---
 
     private void injectClient(FlexibilityEventResource target, MySQLPool pool) {
         try {
@@ -374,16 +249,6 @@ class FlexibilityEventResourceTest {
             field.set(target, value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IllegalStateException("Failed to inject schemaCreate", e);
-        }
-    }
-
-    private void injectEmitter(FlexibilityEventResource target, Emitter<String> emitter) {
-        try {
-            Field field = FlexibilityEventResource.class.getDeclaredField("flexibilityEmitter");
-            field.setAccessible(true);
-            field.set(target, emitter);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IllegalStateException("Failed to inject flexibilityEmitter", e);
         }
     }
 
@@ -407,9 +272,9 @@ class FlexibilityEventResourceTest {
         return rowSet;
     }
 
-    private RowSet<Row> rowSetWithRowCount(int rowCount) {
+    private RowSet<Row> rowSetWithInsertedId(Long insertedId) {
         RowSet<Row> rowSet = Mockito.mock(RowSet.class);
-        Mockito.when(rowSet.rowCount()).thenReturn(rowCount);
+        Mockito.when(rowSet.property(io.vertx.mutiny.mysqlclient.MySQLClient.LAST_INSERTED_ID)).thenReturn(insertedId);
         io.vertx.mutiny.sqlclient.RowIterator<Row> iterator =
                 io.vertx.mutiny.sqlclient.RowIterator.newInstance(new ListRowIterator(Collections.emptyList()));
         Mockito.when(rowSet.iterator()).thenReturn(iterator);
@@ -417,30 +282,20 @@ class FlexibilityEventResourceTest {
     }
 
     private Row flexibilityEventRow(Long id, Long assetId, Long prosumerId, String eventType,
-                                   Float soc_percent, String recommendedAction, Float marketPrice,
-                                   Float incentiveAmount, String gridCellId, LocalDateTime timestamp) {
+                                    Float soc_percent, Float soh_percent, String recommendedAction,
+                                    String marketPriceLevel, String gridCellId, LocalDateTime timestamp) {
         Row row = Mockito.mock(Row.class);
         Mockito.when(row.getLong("id")).thenReturn(id);
         Mockito.when(row.getLong("assetId")).thenReturn(assetId);
         Mockito.when(row.getLong("prosumerId")).thenReturn(prosumerId);
         Mockito.when(row.getString("eventType")).thenReturn(eventType);
         Mockito.when(row.getFloat("soc_percent")).thenReturn(soc_percent);
+        Mockito.when(row.getFloat("soh_percent")).thenReturn(soh_percent);
         Mockito.when(row.getString("recommendedAction")).thenReturn(recommendedAction);
-        Mockito.when(row.getFloat("marketPrice")).thenReturn(marketPrice);
-        Mockito.when(row.getFloat("incentiveAmount")).thenReturn(incentiveAmount);
+        Mockito.when(row.getString("marketPriceLevel")).thenReturn(marketPriceLevel);
         Mockito.when(row.getString("gridCellId")).thenReturn(gridCellId);
         Mockito.when(row.getLocalDateTime("timestamp")).thenReturn(timestamp);
         return row;
-    }
-
-    private TelemetryDTO createTelemetryDTO(Long assetId, Float soc, String gridCellId) {
-        TelemetryDTO dto = new TelemetryDTO();
-        dto.asset_id = assetId;
-        dto.State_of_Charge = soc;
-        dto.grid_cell_id = gridCellId;
-        dto.asset_type = "BATTERY";
-        dto.timeStamp = LocalDateTime.now();
-        return dto;
     }
 
     private static final class ListRowIterator implements RowIterator<Row> {
