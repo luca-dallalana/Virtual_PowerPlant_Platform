@@ -17,10 +17,7 @@ import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -42,11 +39,11 @@ class FlexibilityForecastingResourceIT {
 
     @Test
     void getHistory_returnsList() {
-        LocalDateTime timestamp1 = LocalDateTime.of(2024, 1, 15, 10, 30);
-        LocalDateTime timestamp2 = LocalDateTime.of(2024, 1, 15, 11, 30);
-        Row row1 = forecastingResultRow(1L, "Forecast A", "2024-01-15T10:00", "2024-01-15T10:30", 5, 3, timestamp1);
-        Row row2 = forecastingResultRow(2L, "Forecast B", "2024-01-15T11:00", "2024-01-15T11:30", 8, 4, timestamp2);
-        stubQuery("SELECT * FROM ForecastingResult ORDER BY createdAt DESC", rowSetWithRows(row1, row2));
+        LocalDateTime ts1 = LocalDateTime.of(2026, 6, 7, 10, 0);
+        LocalDateTime ts2 = LocalDateTime.of(2026, 6, 7, 11, 0);
+        Row row1 = forecastRow(1L, 83.3f, "POSITIVE", 6, "[1,2,3]", ts1);
+        Row row2 = forecastRow(2L, 50.0f, "NEUTRAL",  2, "[4,5]",   ts2);
+        stubQuery("SELECT * FROM ForecastingResult ORDER BY createdAt DESC", rowSetOf(row1, row2));
 
         given()
             .when()
@@ -55,15 +52,16 @@ class FlexibilityForecastingResourceIT {
             .statusCode(200)
             .body("", hasSize(2))
             .body("[0].id", is(1))
-            .body("[0].forecastResult", is("Forecast A"))
-            .body("[0].flexibilityEventsCount", is(5));
+            .body("[0].successRate", is(83.3f))
+            .body("[0].dominantSentiment", is("POSITIVE"))
+            .body("[0].totalEventsAnalyzed", is(6));
     }
 
     @Test
     void getById_returnsEntity() {
-        LocalDateTime timestamp = LocalDateTime.of(2024, 1, 15, 10, 30);
-        Row row = forecastingResultRow(1L, "Forecast A", "2024-01-15T10:00", "2024-01-15T10:30", 5, 3, timestamp);
-        stubPreparedQuery("SELECT * FROM ForecastingResult WHERE id = ?", rowSetWithRows(row));
+        LocalDateTime ts = LocalDateTime.of(2026, 6, 7, 10, 0);
+        Row row = forecastRow(1L, 83.3f, "POSITIVE", 6, "[1,2,3]", ts);
+        stubPreparedQuery("SELECT * FROM ForecastingResult WHERE id = ?", rowSetOf(row));
 
         given()
             .when()
@@ -71,13 +69,15 @@ class FlexibilityForecastingResourceIT {
             .then()
             .statusCode(200)
             .body("id", is(1))
-            .body("forecastResult", is("Forecast A"))
-            .body("flexibilityEventsCount", is(5));
+            .body("successRate", is(83.3f))
+            .body("dominantSentiment", is("POSITIVE"))
+            .body("totalEventsAnalyzed", is(6))
+            .body("analyzedEventIds", is("[1,2,3]"));
     }
 
     @Test
     void getById_returnsNotFound() {
-        stubPreparedQuery("SELECT * FROM ForecastingResult WHERE id = ?", rowSetWithRows());
+        stubPreparedQuery("SELECT * FROM ForecastingResult WHERE id = ?", rowSetOf());
         given()
             .when()
             .get("/FlexibilityForecasting/history/99")
@@ -85,76 +85,33 @@ class FlexibilityForecastingResourceIT {
             .statusCode(404);
     }
 
-    // ── POST /evaluate-correlation ────────────────────────────────────────────
-
-    @Test
-    void evaluateCorrelation_emptyInputs_returnsZeroStats() {
-        given()
-            .contentType(ContentType.JSON)
-            .body("{\"flexibilityLogs\":[],\"gridBalancingLogs\":[],\"solarAssets\":[],\"solarTelemetry\":[]}")
-            .when()
-            .post("/FlexibilityForecasting/evaluate-correlation")
-            .then()
-            .statusCode(200)
-            .body("totalFlexibilityEvents", is(0))
-            .body("solarAssetCount", is(0));
-    }
-
-    @Test
-    void evaluateCorrelation_withEvents_returnsStats() {
-        Map<String, Object> event = new HashMap<>();
-        event.put("assetId", 100);
-        event.put("prosumerId", 10);
-        event.put("eventType", "ARBITRAGE_SELL");
-        event.put("recommendedAction", "DISCHARGE");
-        event.put("soc_percent", 92.0);
-        event.put("gridCellId", "GRID_A");
-        event.put("timestamp", "2024-01-15T10:30:00");
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("flexibilityLogs", Collections.singletonList(event));
-        body.put("gridBalancingLogs", Collections.emptyList());
-        body.put("solarAssets", Collections.emptyList());
-        body.put("solarTelemetry", Collections.emptyList());
-
-        given()
-            .contentType(ContentType.JSON)
-            .body(body)
-            .when()
-            .post("/FlexibilityForecasting/evaluate-correlation")
-            .then()
-            .statusCode(200)
-            .body("totalFlexibilityEvents", is(1))
-            .body("correlatedEvents", hasSize(1));
-    }
-
     // ── POST /build-prompt ───────────────────────────────────────────────────
 
     @Test
     void buildPrompt_returnsPromptString() {
-        Map<String, Object> correlation = new HashMap<>();
-        correlation.put("flexibilityLogs", Collections.emptyList());
-        correlation.put("gridBalancingLogs", Collections.emptyList());
-        correlation.put("solarAssets", Collections.emptyList());
-        correlation.put("solarTelemetry", Collections.emptyList());
-        correlation.put("correlatedEvents", Collections.emptyList());
-        correlation.put("solarGenerationByGridCell", Collections.emptyMap());
-        correlation.put("totalFlexibilityEvents", 0);
-        correlation.put("totalGridBalancingLogs", 0);
-        correlation.put("correlatedOutcomes", 0);
-        correlation.put("successRate", 0.0);
-        correlation.put("solarAssetCount", 0);
-        correlation.put("avgCurrentGenerationKw", 0.0);
-        correlation.put("totalDailyGenerationKwh", 0.0);
-
         given()
             .contentType(ContentType.JSON)
-            .body(correlation)
+            .body("{" +
+                "\"eventId\":1," +
+                "\"assetId\":1001," +
+                "\"eventType\":\"ARBITRAGE_SELL\"," +
+                "\"recommendedAction\":\"DISCHARGE\"," +
+                "\"socAtEventTime\":95.2," +
+                "\"sohAtEventTime\":92.5," +
+                "\"marketPriceLevel\":\"HIGH\"," +
+                "\"gridCellId\":\"LISBON-DT\"," +
+                "\"currentSoc\":90.9," +
+                "\"currentOutputKw\":5.5," +
+                "\"currentStatus\":\"ONLINE\"" +
+                "}")
             .when()
             .post("/FlexibilityForecasting/build-prompt")
             .then()
             .statusCode(200)
-            .body("prompt", notNullValue());
+            .body("prompt", notNullValue())
+            .body("prompt", org.hamcrest.Matchers.containsString("1001"))
+            .body("prompt", org.hamcrest.Matchers.containsString("DISCHARGE"))
+            .body("prompt", org.hamcrest.Matchers.containsString("LISBON-DT"));
     }
 
     // ── POST /forecast ────────────────────────────────────────────────────────
@@ -163,11 +120,18 @@ class FlexibilityForecastingResourceIT {
     void persistForecast_returnsId() {
         RowSet<Row> insertResult = Mockito.mock(RowSet.class);
         Mockito.when(insertResult.property(Mockito.any())).thenReturn(99L);
-        stubPreparedInsert("INSERT INTO ForecastingResult(forecastResult, windowStart, windowEnd, flexibilityEventsCount, gridBalancingCount, createdAt) VALUES (?,?,?,?,?,?)", insertResult);
+        stubPreparedInsert(
+            "INSERT INTO ForecastingResult(successRate, dominantSentiment, totalEventsAnalyzed, analyzedEventIds, createdAt) VALUES (?,?,?,?,?)",
+            insertResult);
 
         given()
             .contentType(ContentType.JSON)
-            .body("{\"forecastResult\":\"{\\\"summary\\\":\\\"all good\\\"}\"}")
+            .body("{" +
+                "\"successRate\":83.3," +
+                "\"dominantSentiment\":\"POSITIVE\"," +
+                "\"totalEventsAnalyzed\":6," +
+                "\"analyzedEventIds\":\"1,2,3,4,5,6\"" +
+                "}")
             .when()
             .post("/FlexibilityForecasting/forecast")
             .then()
@@ -179,7 +143,7 @@ class FlexibilityForecastingResourceIT {
 
     @Test
     void delete_withExistingId_returns204() {
-        stubPreparedQuery("DELETE FROM ForecastingResult WHERE id = ?", rowSetWithRowCount(1));
+        stubPreparedQuery("DELETE FROM ForecastingResult WHERE id = ?", rowSetWithCount(1));
         given()
             .when()
             .delete("/FlexibilityForecasting/history/1")
@@ -189,7 +153,7 @@ class FlexibilityForecastingResourceIT {
 
     @Test
     void delete_withNonExistingId_returns404() {
-        stubPreparedQuery("DELETE FROM ForecastingResult WHERE id = ?", rowSetWithRowCount(0));
+        stubPreparedQuery("DELETE FROM ForecastingResult WHERE id = ?", rowSetWithCount(0));
         given()
             .when()
             .delete("/FlexibilityForecasting/history/99")
@@ -199,10 +163,22 @@ class FlexibilityForecastingResourceIT {
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
+    private Row forecastRow(Long id, Float successRate, String sentiment, Integer total,
+                            String eventIds, LocalDateTime createdAt) {
+        Row row = Mockito.mock(Row.class);
+        Mockito.when(row.getLong("id")).thenReturn(id);
+        Mockito.when(row.getFloat("successRate")).thenReturn(successRate);
+        Mockito.when(row.getString("dominantSentiment")).thenReturn(sentiment);
+        Mockito.when(row.getInteger("totalEventsAnalyzed")).thenReturn(total);
+        Mockito.when(row.getString("analyzedEventIds")).thenReturn(eventIds);
+        Mockito.when(row.getLocalDateTime("createdAt")).thenReturn(createdAt);
+        return row;
+    }
+
     private void stubQuery(String sql, RowSet<Row> rowSet) {
-        Query<RowSet<Row>> query = Mockito.mock(Query.class);
-        Mockito.when(query.execute()).thenReturn(Uni.createFrom().item(rowSet));
-        Mockito.when(client.query(sql)).thenReturn(query);
+        Query<RowSet<Row>> q = Mockito.mock(Query.class);
+        Mockito.when(q.execute()).thenReturn(Uni.createFrom().item(rowSet));
+        Mockito.when(client.query(sql)).thenReturn(q);
     }
 
     private void stubPreparedQuery(String sql, RowSet<Row> rowSet) {
@@ -217,44 +193,24 @@ class FlexibilityForecastingResourceIT {
         Mockito.when(client.preparedQuery(sql)).thenReturn(pq);
     }
 
-    private RowSet<Row> rowSetWithRows(Row... rows) {
-        RowSet<Row> rowSet = Mockito.mock(RowSet.class);
-        io.vertx.mutiny.sqlclient.RowIterator<Row> iterator =
+    private RowSet<Row> rowSetOf(Row... rows) {
+        RowSet<Row> rs = Mockito.mock(RowSet.class);
+        io.vertx.mutiny.sqlclient.RowIterator<Row> it =
                 io.vertx.mutiny.sqlclient.RowIterator.newInstance(new ListRowIterator(Arrays.asList(rows)));
-        Mockito.when(rowSet.iterator()).thenReturn(iterator);
-        return rowSet;
+        Mockito.when(rs.iterator()).thenReturn(it);
+        return rs;
     }
 
-    private RowSet<Row> rowSetWithRowCount(int count) {
-        RowSet<Row> rowSet = Mockito.mock(RowSet.class);
-        Mockito.when(rowSet.rowCount()).thenReturn(count);
-        return rowSet;
-    }
-
-    private Row forecastingResultRow(Long id, String forecastResult, String windowStart, String windowEnd,
-                                     Integer flexibilityEventsCount, Integer gridBalancingCount, LocalDateTime createdAt) {
-        Row row = Mockito.mock(Row.class);
-        Mockito.when(row.getLong("id")).thenReturn(id);
-        Mockito.when(row.getString("forecastResult")).thenReturn(forecastResult);
-        Mockito.when(row.getString("windowStart")).thenReturn(windowStart);
-        Mockito.when(row.getString("windowEnd")).thenReturn(windowEnd);
-        Mockito.when(row.getInteger("flexibilityEventsCount")).thenReturn(flexibilityEventsCount);
-        Mockito.when(row.getInteger("gridBalancingCount")).thenReturn(gridBalancingCount);
-        Mockito.when(row.getLocalDateTime("createdAt")).thenReturn(createdAt);
-        return row;
+    private RowSet<Row> rowSetWithCount(int count) {
+        RowSet<Row> rs = Mockito.mock(RowSet.class);
+        Mockito.when(rs.rowCount()).thenReturn(count);
+        return rs;
     }
 
     private static final class ListRowIterator implements RowIterator<Row> {
-        private final java.util.Iterator<Row> iterator;
-
-        private ListRowIterator(List<Row> rows) {
-            this.iterator = rows.iterator();
-        }
-
-        @Override
-        public boolean hasNext() { return iterator.hasNext(); }
-
-        @Override
-        public Row next() { return iterator.next(); }
+        private final java.util.Iterator<Row> it;
+        ListRowIterator(List<Row> rows) { this.it = rows.iterator(); }
+        @Override public boolean hasNext() { return it.hasNext(); }
+        @Override public Row next() { return it.next(); }
     }
 }

@@ -13,11 +13,10 @@ import java.util.Arrays;
 public class ForecastingResult {
 
     public Long id;
-    public String forecastResult;
-    public String windowStart;
-    public String windowEnd;
-    public Integer flexibilityEventsCount;
-    public Integer gridBalancingCount;
+    public Float successRate;
+    public String dominantSentiment;
+    public Integer totalEventsAnalyzed;
+    public String analyzedEventIds;
     public LocalDateTime createdAt;
 
     public ForecastingResult() {}
@@ -25,19 +24,18 @@ public class ForecastingResult {
     private static ForecastingResult from(Row row) {
         ForecastingResult r = new ForecastingResult();
         r.id = row.getLong("id");
-        r.forecastResult = row.getString("forecastResult");
-        r.windowStart = row.getString("windowStart");
-        r.windowEnd = row.getString("windowEnd");
-        r.flexibilityEventsCount = row.getInteger("flexibilityEventsCount");
-        r.gridBalancingCount = row.getInteger("gridBalancingCount");
+        r.successRate = row.getFloat("successRate");
+        r.dominantSentiment = row.getString("dominantSentiment");
+        r.totalEventsAnalyzed = row.getInteger("totalEventsAnalyzed");
+        r.analyzedEventIds = row.getString("analyzedEventIds");
         r.createdAt = row.getLocalDateTime("createdAt");
         return r;
     }
 
     public Uni<Long> save(MySQLPool client) {
         return client.preparedQuery(
-                "INSERT INTO ForecastingResult(forecastResult, windowStart, windowEnd, flexibilityEventsCount, gridBalancingCount, createdAt) VALUES (?,?,?,?,?,?)")
-                .execute(Tuple.from(Arrays.asList(forecastResult, windowStart, windowEnd, flexibilityEventsCount, gridBalancingCount, createdAt)))
+                "INSERT INTO ForecastingResult(successRate, dominantSentiment, totalEventsAnalyzed, analyzedEventIds, createdAt) VALUES (?,?,?,?,?)")
+                .execute(Tuple.from(Arrays.asList(successRate, dominantSentiment, totalEventsAnalyzed, analyzedEventIds, createdAt)))
                 .onItem().transform(rs -> (Long) rs.property(MySQLClient.LAST_INSERTED_ID));
     }
 
@@ -57,6 +55,6 @@ public class ForecastingResult {
     public static Uni<Boolean> delete(MySQLPool client, Long id) {
         return client.preparedQuery("DELETE FROM ForecastingResult WHERE id = ?")
                 .execute(Tuple.of(id))
-                .onItem().transform(pgRowSet -> pgRowSet.rowCount() == 1);
+                .onItem().transform(rs -> rs.rowCount() == 1);
     }
 }

@@ -120,7 +120,7 @@ public class Telemetry
     }
 
     public static Uni<Telemetry> findLatestByAssetId(MySQLPool client, Long assetId) {
-        return client.preparedQuery("SELECT * FROM Telemetry WHERE asset_id = ? AND timeStamp >= NOW() - INTERVAL 10 MINUTE ORDER BY timeStamp DESC LIMIT 1")
+        return client.preparedQuery("SELECT * FROM Telemetry WHERE asset_id = ? ORDER BY timeStamp DESC LIMIT 1")
                 .execute(Tuple.of(assetId))
                 .onItem().transform(RowSet::iterator)
                 .onItem().transform(iterator -> iterator.hasNext() ? from(iterator.next()) : null);

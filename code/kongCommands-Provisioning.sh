@@ -445,12 +445,6 @@ curl -i -X POST \
 # FlexibilityForecasting
 curl -i -X POST \
 --url "http://${KONG_SERVER_ADDRESS}:8001/services/flexforecasting-service/routes" \
---data "paths[]=/FlexibilityForecasting/evaluate-correlation" \
---data "methods[]=POST" \
---data "strip_path=false"
-
-curl -i -X POST \
---url "http://${KONG_SERVER_ADDRESS}:8001/services/flexforecasting-service/routes" \
 --data "paths[]=/FlexibilityForecasting/build-prompt" \
 --data "methods[]=POST" \
 --data "strip_path=false"

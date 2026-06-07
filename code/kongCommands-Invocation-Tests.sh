@@ -90,8 +90,24 @@ curl -s -X POST "$P/EnergyAnalytics/persist/average" \
   -H "Content-Type: application/json" \
   -d '{"averageSoC":{"averageSocPercent":72.5,"batteryCount":3,"timestamp":"2024-01-01T10:00:00","aggregationPeriod":"30m"}}'
 
+echo -e "\n=== GET /Telemetry/latest/1001 ==="
+curl -s -X GET "$P/Telemetry/latest/1001"
+
 echo -e "\n=== GET /FlexibilityForecasting/history ==="
 curl -s -X GET "$P/FlexibilityForecasting/history"
+
+echo -e "\n=== GET /FlexibilityForecasting/history/1 ==="
+curl -s -X GET "$P/FlexibilityForecasting/history/1"
+
+echo -e "\n=== POST /FlexibilityForecasting/build-prompt ==="
+curl -s -X POST "$P/FlexibilityForecasting/build-prompt" \
+  -H "Content-Type: application/json" \
+  -d '{"eventId":1,"assetId":1001,"eventType":"DISCHARGE","recommendedAction":"DISCHARGE","socAtEventTime":72.5,"sohAtEventTime":95.0,"marketPriceLevel":"HIGH","gridCellId":"PORTO-IN","currentSoc":68.0,"currentOutputKw":3.5,"currentStatus":"ACTIVE"}'
+
+echo -e "\n=== POST /FlexibilityForecasting/forecast ==="
+curl -s -X POST "$P/FlexibilityForecasting/forecast" \
+  -H "Content-Type: application/json" \
+  -d '{"successRate":80.0,"dominantSentiment":"POSITIVE","totalEventsAnalyzed":5,"analyzedEventIds":"1,2,3,4,5"}'
 
 echo -e "\n=== GET /api/tags (Ollama) ==="
 curl -s -X GET "$P/api/tags"

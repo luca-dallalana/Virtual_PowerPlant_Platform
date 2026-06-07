@@ -71,7 +71,7 @@ class KafkaProvisioningResourceTest {
     @Test
     void getLatestByAssetId_returnsEntity() {
         Row row = telemetryRow(5L, LocalDateTime.of(2024, 1, 10, 12, 35), 1001L, "BATTERY", "CELL-1");
-        stubPreparedQuery("SELECT * FROM Telemetry WHERE asset_id = ? AND timeStamp >= NOW() - INTERVAL 10 MINUTE ORDER BY timeStamp DESC LIMIT 1", rowSetWithRows(row));
+        stubPreparedQuery("SELECT * FROM Telemetry WHERE asset_id = ? ORDER BY timeStamp DESC LIMIT 1", rowSetWithRows(row));
 
         Response response = resource.getLatestByAssetId(1001L).await().indefinitely();
         assertThat(response.getStatus(), is(200));
@@ -84,7 +84,7 @@ class KafkaProvisioningResourceTest {
 
     @Test
     void getLatestByAssetId_returnsNotFound() {
-        stubPreparedQuery("SELECT * FROM Telemetry WHERE asset_id = ? AND timeStamp >= NOW() - INTERVAL 10 MINUTE ORDER BY timeStamp DESC LIMIT 1", rowSetWithRows());
+        stubPreparedQuery("SELECT * FROM Telemetry WHERE asset_id = ? ORDER BY timeStamp DESC LIMIT 1", rowSetWithRows());
 
         Response response = resource.getLatestByAssetId(9999L).await().indefinitely();
         assertThat(response.getStatus(), is(404));
