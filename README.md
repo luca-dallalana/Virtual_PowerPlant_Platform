@@ -1,125 +1,71 @@
 # VPPaaS — Virtual Power Plant as a Service
 
-IST Enterprise Integration — Group 9
-
-A distributed microservices platform for real-time energy management. The system ingests telemetry from prosumer assets (batteries, solar panels, EV chargers), evaluates flexibility and grid balancing conditions through Camunda-orchestrated BPMN processes, and publishes aggregated analytics to downstream Kafka consumers. Eight independent Quarkus services communicate through a Kong API Gateway, with all business orchestration driven by Camunda 8 BPMN processes.
+VPPaaS is an energy management platform that ingests real-time telemetry from prosumer assets (batteries, solar panels, EV chargers), evaluates grid flexibility and balancing conditions through Camunda-orchestrated BPMN processes, and publishes aggregated analytics to downstream Kafka consumers. Eight independent Quarkus microservices communicate exclusively through a Kong API Gateway — no direct service-to-service HTTP calls exist in the system. Business logic lives in BPMN process definitions deployed to Camunda 8, with Zeebe service tasks making every inter-service call through Kong. The full stack — RDS, a 3-broker Kafka KRaft cluster, Camunda, Ollama, Kong, and all eight services — deploys to AWS across two accounts with a single script.
 
 ---
 
-## Tech Stack
+## Two Engineering Decisions
 
-**Backend**
-- Java 17, Quarkus 3.27.2 (reactive REST with RESTEasy Jackson)
-- Mutiny + Vert.x reactive MySQL client (non-blocking DB access throughout)
+### Dynamic Kafka consumer model
 
-**Database**
-- MySQL — one database per service, auto-created on startup via `MySQLPool`
-- AWS RDS (`db.t4g.micro`) in production
+SmallRye Reactive Messaging, Quarkus's default Kafka integration, reads topic names from configuration at startup and binds channels at that point. There is no supported path to subscribe to an additional topic after the application is running. That is a hard constraint for VPPaaS: asset owners register their own Kafka topics after the platform is already deployed, so the topic names are unknown at startup time.
 
-**Messaging**
-- Apache Kafka — 3-broker cluster, topics with 3 partitions and replication factor 3
+The options were: require a service restart for each new topic registration (operationally unacceptable), maintain a single catch-all topic and route within the service (would couple asset owners to a shared namespace), or bypass the framework's consumer lifecycle entirely. VPPaaS takes the third path: a `POST /Telemetry/Consume` request instantiates a `DynamicTopicConsumer extends Thread`, passes it the topic name, Kafka bootstrap servers, and the reactive `MySQLPool`, and calls `worker.start()`. The thread creates a raw `KafkaConsumer<String, String>`, subscribes to the single topic, and runs a `while(true)` poll loop at 100ms intervals. Each polled record is parsed by asset type (`BATTERY`, `SOLAR`, `EV_CHARGER`) and written to MySQL via `client.preparedQuery(query).execute(params).await().indefinitely()`.
 
-**Orchestration**
-- Camunda 8 (c8run 8.8.9) — BPMN 2.0 processes and DMN decision tables
-- Zeebe service tasks make HTTP calls to microservices through Kong
+The trade-offs are concrete and worth naming. The poll loop has no interrupt path, calling `Thread.interrupt()` on the worker has no effect because nothing checks the interrupted flag. Any exception inside the loop is caught and printed (`System.out.println`), then the loop continues, meaning a persistent failure produces no alerting and no backpressure. The `.await().indefinitely()` call inside a raw thread blocks on each database write, which means write latency directly stalls message consumption for that topic. All dynamically spawned consumers also share the hardcoded `group.id="your-group-id"`, so adding a second consumer to the same topic triggers a Kafka rebalance rather than independent consumption. What this model does deliver is full runtime flexibility with no framework ceremony, a topic can be registered with a single curl call against a running service, and the consumer is active within milliseconds.
 
-**API Gateway**
-- Kong Gateway (proxy on port 8000) + Konga dashboard (port 1337)
+### BPMN deployment patching pipeline
 
-**AI / LLM**
-- Ollama running Llama 3.2 on an EC2 instance (port 11434)
-- Used by the FlexibilityForecasting BPMN to evaluate past flexibility events
+Camunda 8's BPMN process files embed service task URLs as literal strings inside the XML. Those URLs must point to Kong's address, which is only known after Terraform provisions the Kong EC2 instance. Similarly, Kafka connector tasks embed the bootstrap server address. The BPMN files cannot be parameterized at the Camunda level, what gets deployed is the XML as written.
 
-**Infrastructure**
-- AWS EC2 (us-east-1), AWS RDS, Terraform (one `.tf` file per component)
-- Docker — each microservice is packaged as a container image and deployed with `docker run`
+The deployment pipeline solves this with a bidirectional sed/regex cycle. BPMN files are committed with two placeholder strings: `KONG_SERVER_PLACEHOLDER` for service task base URLs and `KAFKA_SERVER_PLACEHOLDER:9092` for Kafka bootstrap addresses. After Terraform completes, `DeploymentAutomation-macOS.sh` extracts the live EC2 DNS names from `terraform state show`, then runs `sed -i '' "s|KONG_SERVER_PLACEHOLDER|${addressKong}|g"` across all BPMN files, followed by the Kafka equivalent. The patched files are uploaded to Camunda's deployment API. For subsequent deploys, `RestoreBPMN.sh` regexes the EC2 DNS patterns back to placeholders (`ec2-[0-9]*-[0-9]*-[0-9]*-[0-9]*\.compute-1\.amazonaws\.com`) before the next patch cycle. The Kafka restore must run before the Kong restore because the Kafka addresses carry a `:9092` suffix that the Kong regex would otherwise partially match.
 
-**Testing**
-- JUnit 5, RestAssured, Mockito (`mockito-inline`)
+This is fragile by design: the round-trip depends on EC2 DNS names matching the expected pattern, on sed succeeding silently if a placeholder is already replaced, and on the restore script running before every redeploy. The alternative was templating tools like Helm or a custom Camunda connector that resolves addresses at runtime. Both required infrastructure not available in the target environment. In practice the pipeline has been reliable for the deployment sequence documented below, but it is not suited to any topology where EC2 DNS names diverge from the `compute-1.amazonaws.com` pattern.
 
 ---
 
-## Features
+## Architecture
 
-- Ingest real-time telemetry from heterogeneous prosumer assets (BATTERY, SOLAR, EV_CHARGER) via dynamically provisioned Kafka consumer threads — each registered at runtime via a REST call, no static config binding
-- Evaluate battery flexibility per asset using BPMN-driven rules: emit `ARBITRAGE_SELL` when SoC > 90%, or `BALANCING_UNAVAILABLE` when SoC < 20%, based on DMN decision tables
-- Compute grid balancing recommendations per grid cell by calculating net load (demand − supply) and headroom against a configurable capacity threshold, with cross-zone load shift recommendations
-- Aggregate energy analytics over a 30-minute sliding window: solar generation per prosumer, EV consumption per prosumer, battery discharge per zone, and fleet-wide average SoC
-- AI-assisted flexibility forecasting: build structured LLM prompts from event context, evaluate them against a self-hosted Llama 3.2 instance via Ollama, and persist forecast outcomes (success rate, dominant sentiment, event IDs)
-- Orchestrate all business logic through Camunda 8 BPMN processes with Zeebe service tasks, user tasks, and exclusive gateways backed by DMN decisions
-- Route all external traffic through Kong API Gateway with automated service/route provisioning and end-to-end smoke tests
-- One-command cloud deployment: provision all infrastructure (EC2, RDS, Kafka, Ollama, Kong, Camunda, 8 microservices), patch BPMN files with live addresses, build and push Docker images, configure Kong, and upload processes to Camunda in a single script
+No service shares a schema or reads another service's tables directly. All orchestration is externalized to Camunda 8 BPMN processes, where Zeebe service tasks call each service through Kong. Kong is the only ingress point, Camunda, the event producer, and all BPMN processes address services exclusively through the Kong proxy on port 8000.
 
----
+| Service | Port | Database | Core responsibility | Kafka outbound |
+|---|---|---|---|---|
+| Prosumer | 8080 | prosumer | Register prosumers and their assets | — |
+| UtilityOperator | 8080 | utilityoperator | Manage utility operators and grid cells | — |
+| AssetLink | 8080 | assetlink | Link prosumer assets to operators and grid cells | — |
+| Telemetry | 8080 | telemetry | Ingest asset telemetry via dynamic Kafka consumers | — |
+| FlexibilityEvent | 8080 | flexibilityevent | Evaluate per-asset flexibility via DMN; publish offers | `Flexibility-Offers` |
+| GridBalancingRecommendation | 8080 | gridbalancingrecommendation | Compute net load and headroom per grid cell | `GridBalancingRecommendation` |
+| EnergyAnalytics | 8080 | energyanalytics | 30-min sliding window aggregations | `Energy-Discharged-Zone`, `Energy-Generated-Prosumer`, `Energy-Consumed-Prosumer`, `Average-SoC` |
+| FlexibilityForecasting | 8080 | flexibilityforecasting | Build LLM prompts from event history; persist forecasts | — |
 
-## Architecture / How It Works
+**FlexibilityEvent DMN rules.** A DMN decision table (`Decision_FlexibilityOffer`) evaluates each active battery asset against three ordered rules: SoC ≤ 20% → `BALANCING_UNAVAILABLE`; SoH < 70% → `DEGRADED_ASSET`; SoH ≥ 70% AND market price `HIGH` AND SoC ≥ 90% → `ARBITRAGE_SELL`. Assets not matching any rule receive `NO_ACTION` and are filtered before the Kafka publish step.
 
-Each microservice owns its own MySQL database (database-per-service pattern) and exposes a REST API. There is no direct service-to-service HTTP communication — all orchestration is externalized to Camunda 8 BPMN processes, which call each service through Kong using Zeebe HTTP service tasks.
+**EnergyAnalytics window.** The 30-minute sliding window averages power readings within the window and multiplies by 0.5 h to produce kWh figures. Results are grouped by prosumer (solar generation, EV consumption) and by grid zone (battery discharge). Each BPMN run pushes computed results to four Kafka topics.
 
-**Telemetry ingestion** uses a dynamic thread model. Quarkus's SmallRye Reactive Messaging would require topic names at startup, which conflicts with the requirement to register topics at runtime. Instead, a `POST /Telemetry/Consume` request spawns a raw `KafkaConsumer` thread (`DynamicTopicConsumer`) for the given topic. That thread polls continuously, parses each message's JSON payload by asset type (BATTERY / SOLAR / EV_CHARGER), and inserts into the Telemetry table using the reactive MySQL client.
-
-**Energy analytics** computes a 30-minute sliding window: for each asset, it averages the power readings within the window and multiplies by 0.5 h to get kWh. Results are grouped by prosumer (solar generation, EV consumption) and by grid zone (battery discharge). Each BPMN run pushes computed results to four Kafka topics for downstream consumers.
-
-**Grid balancing** per zone: net load = max(0, EV demand + battery charging − solar generation − battery discharge); headroom = maxCapacity − netLoad. A DMN table maps headroom and load conditions to a recommended action (e.g., shift charging load from PORTO-IN to LISBON-DT).
-
-**Flexibility forecasting** is the AI-integrated process. The BPMN fetches recent `FlexibilityEvent` logs, iterates over each event, calls `POST /FlexibilityForecasting/build-prompt` to construct a structured LLM prompt with event context (SoC at event time, SoH, market price level, current output), sends that prompt to Ollama's `llama3.2` model, parses the three-line response (`SENTIMENT / SUCCESS / REASONING`), and finally calls `POST /FlexibilityForecasting/forecast` to persist an aggregated result with success rate and dominant sentiment.
-
-**Deployment automation** (`DeploymentAutomation-macOS.sh`) runs the full pipeline in sequence across two AWS accounts: provision infrastructure with Terraform, extract live EC2 DNS names from `terraform state show`, patch the BPMN XML files in-place with `sed` to replace `KONG_SERVER_PLACEHOLDER` and `KAFKA_SERVER_PLACEHOLDER`, build and push Docker images via `mvnw clean package`, provision each microservice's EC2 instance, configure Kong routes, and upload BPMN/DMN/form files to Camunda's deployment API.
+**GridBalancing formula.** Net load per zone = `max(0, EV demand + battery charging − solar generation − battery discharge)`. Headroom = `maxCapacity − netLoad`. A DMN table maps headroom and load conditions to a recommended cross-zone load shift action.
 
 ---
 
-## Repository Structure
+## AI-Assisted Forecasting Pipeline
 
-```
-SEI_project/
-├── code/
-│   ├── microservices/          # 8 Quarkus microservices
-│   │   ├── Prosumer/
-│   │   ├── UtilityOperator/
-│   │   ├── AssetLink/
-│   │   ├── Telemetry/
-│   │   ├── FlexibilityEvent/
-│   │   ├── GridBalancingRecommendation/
-│   │   ├── EnergyAnalytics/
-│   │   └── FlexibilityForecasting/
-│   ├── BPMN/                   # Camunda BPMN and DMN process definitions
-│   ├── Kafka/                  # Kafka topic creation scripts and Terraform
-│   ├── Quarkus-Terraform/      # Per-service EC2 provisioning (one folder per service)
-│   ├── KongTerraform/          # Kong API Gateway EC2 provisioning
-│   ├── KongaTerraform/         # Konga dashboard provisioning
-│   ├── Camunda-Terraform/      # Camunda Engine EC2 provisioning
-│   ├── OllamaTerraform/        # Ollama LLM EC2 provisioning
-│   ├── RDS-Terraform/          # AWS RDS MySQL provisioning
-│   ├── docker-compose.yml      # Local Kafka cluster (3 brokers + Zookeeper)
-│   ├── kongCommands-Provisioning.sh     # Registers all routes on Kong
-│   ├── kongCommands-Invocation-Tests.sh # Smoke tests through Kong
-│   ├── DeploymentAutomation-macOS.sh    # Full cloud deploy from macOS
-│   ├── DeploymentAutomation-ubuntu.sh   # Full cloud deploy from Ubuntu
-│   ├── HotRedeploy.sh          # Rebuild and redeploy a single service
-│   ├── UndeploymentAutomation-all.sh    # Tear down all infrastructure
-│   └── access.sh               # SSH shortcuts for EC2 instances
-├── VPPaaS-EventProducer/       # Simulator: produces Kafka telemetry messages
-├── UML/                        # Sequence diagrams (PNG + UML source) per service
-├── SEI_Report.md               # Project report
-└── README.md                   # This file
-```
+The FlexibilityForecasting BPMN runs on a 20-minute timer. It fetches recent FlexibilityEvent logs, then iterates over each event in a multi-instance subprocess. For each event, a service task calls `POST /FlexibilityForecasting/build-prompt`, which constructs a structured prompt string from the event context: asset ID, event type, SoC and SoH at event time, market price level, current output in kW, current status, and grid cell. The prompt instructs the model to respond with exactly three lines — `SENTIMENT: POSITIVE|NEGATIVE|NEUTRAL`, `SUCCESS: YES|NO`, `REASONING: one short sentence` — and to produce no other output.
+
+That prompt string is sent to the Ollama API (`POST /api/generate`, model `llama3.2`) via a Zeebe HTTP connector. Ollama runs on a dedicated EC2 instance and is proxied through Kong with a 300-second timeout. The raw response text is collected per event. A BPMN script task then processes the collected responses: it counts `YES` occurrences for the success rate, determines dominant sentiment by majority vote, and joins the analyzed event IDs as a comma-separated string. A final service task persists the aggregated result, success rate, dominant sentiment, total events analyzed, event ID list, via `POST /FlexibilityForecasting/forecast`.
+
+This is a structured prompt pipeline, not a trained model or fine-tuned classifier. The LLM's output is parsed by string matching against fixed response templates. The accuracy of the success rate and sentiment aggregation depends entirely on the model following the response format consistently, which it does not always do. There is no validation of the raw response before the script task attempts to parse it.
 
 ---
 
-## Microservices
+## Infrastructure and Deployment
 
-Each service is an independent Quarkus application with its own MySQL database. All use Java 17, reactive `MySQLPool` + Mutiny, and expose a REST API.
+The platform runs across two AWS accounts. Account 1 holds shared infrastructure: an RDS MySQL instance (`db.t4g.micro`), a 3-broker Kafka cluster in KRaft mode (`t3.small`, Kafka 4.1.1), Camunda 8 (`c8run 8.8.9`), an Ollama instance (`llama3.2`), Kong Gateway (port 8000, admin 8001), and the Konga dashboard (port 1337). Account 2 holds the eight Quarkus microservices, each on its own `t4g.small` ARM EC2 instance (AMI `ami-0bb7267a511c0a8e8`). The split was driven by per-account EC2 instance quotas in the target environment; it maps cleanly onto a real infrastructure-account/workload-account boundary.
 
-| Service | Port | Database | Kafka (outbound topics) |
-|---|---|---|---|
-| Prosumer | 8080 | prosumer | — |
-| UtilityOperator | 8080 | utilityoperator | — |
-| AssetLink | 8080 | assetlink | — |
-| Telemetry | 8080 | telemetry | dynamic (registered at runtime) |
-| FlexibilityEvent | 8080 | flexibilityevent | `Flexibility-Offers` |
-| GridBalancingRecommendation | 8080 | gridbalancingrecommendation | `GridBalancingRecommendation` |
-| EnergyAnalytics | 8080 | energyanalytics | `Energy-Discharged-Zone`, `Energy-Generated-Prosumer`, `Energy-Consumed-Prosumer`, `Average-SoC` |
-| FlexibilityForecasting | 8080 | flexibilityforecasting | — |
+Each component has its own Terraform configuration in `code/`. Infrastructure is provisioned sequentially: RDS first (the connection string is needed by all services), then Kafka, then Camunda, Ollama, Kong, and Konga on Account 1, then the eight services on Account 2. After all EC2 DNS names are known, `DeploymentAutomation-macOS.sh` runs the BPMN patching cycle described above and uploads the patched files to Camunda. Kong routes are provisioned by `kongCommands-Provisioning.sh`, which registers all nine services (8 microservices + Ollama) with regex path patterns and `strip_path=false`.
+
+For single-service updates, `HotRedeploy.sh` resolves the target service's EC2 DNS from `terraform state show` without touching Terraform state, SSHes into the instance, and runs `docker stop / rm / run` with the new image. No `terraform taint` or instance recreation is needed.
+
+All Kafka topics are created with 3 partitions and replication factor 3. The local development environment replaces the KRaft cluster with a Docker Compose file running 3 brokers on ports 29092, 29093, 29094 with ZooKeeper (`KAFKA_MIN_INSYNC_REPLICAS: 2`, `KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3`).
 
 ---
 
@@ -127,12 +73,11 @@ Each service is an independent Quarkus application with its own MySQL database. 
 
 ### Prerequisites
 
-- Java 17
+- Java 17, Maven Wrapper (`./mvnw` included per service)
 - Docker and Docker Compose
-- MySQL (local instance or via a local container)
-- Maven Wrapper (`./mvnw`) included in each service directory
+- Local MySQL instance on port 3306, credentials `teste` / `testeteste`
 
-### 1. Start the Kafka cluster
+### Start the local Kafka cluster
 
 From `code/`:
 
@@ -140,140 +85,84 @@ From `code/`:
 docker-compose up -d
 ```
 
-This starts a 3-broker Kafka cluster (ports 29092, 29093, 29094) and Zookeeper.
+Three brokers start on ports 29092, 29093, 29094.
 
-### 2. Start each microservice
+### Start a microservice
 
-From any service directory under `code/microservices/<ServiceName>/`:
+From `code/microservices/<ServiceName>/`:
 
 ```bash
 ./mvnw compile quarkus:dev
 ```
 
-Each service auto-creates its database schema on startup (`myapp.schema.create=true`). The default datasource credentials are `teste` / `testeteste` against `localhost:3306`.
+Each service auto-creates its database schema on startup. Run one terminal per service.
 
-To start all services, open a terminal per service (or use a process manager). Each runs on its own fixed port (see table above).
-
-### 3. Running the event producer simulator
-
-The `VPPaaS-EventProducer/` directory contains a standalone Java application that produces telemetry messages in the format expected by the Telemetry service. Run it after registering a Kafka topic consumer via:
-
-```bash
-POST /Telemetry/Consume
-{"TopicName": "<your-topic>"}
-```
-
-Then start the producer pointing at the same topic and `localhost:29092`.
-
----
-
-## Running Tests
-
-From any service directory:
-
-```bash
-# Unit tests
-./mvnw clean test
-
-# Integration tests (QuarkusTest + RestAssured)
-./mvnw clean test -Dtest=<ServiceName>ResourceIT
-
-# Both
-./mvnw clean test -Dtest="<ServiceName>Test,<ServiceName>ResourceIT"
-```
-
-Each `src/test/README.md` inside the service documents which tests exist and what SQL they verify.
-
----
-
-## Usage
-
-All requests below go through the Kong proxy (`http://<KONG_HOST>:8000`). In local dev, call the service directly on its port instead.
-
-**Register a Kafka telemetry consumer at runtime**
+### Register a Kafka consumer at runtime
 
 ```bash
 curl -X POST http://localhost:8080/Telemetry/Consume \
   -H "Content-Type: application/json" \
-  -d '{"TopicName": "my-asset-topic"}'
+  -d '{"TopicName": "asset-telemetry-1001"}'
 ```
 
-**Query flexibility events from the last 20 minutes**
+Then start the event producer in `VPPaaS-EventProducer/` pointing at the same topic and `localhost:29092`.
+
+### Run tests
+
+From any service directory:
 
 ```bash
-curl http://<KONG_HOST>:8000/FlexibilityEvent/logs/20
+./mvnw clean test
 ```
 
-**Compute grid cell metrics and retrieve balancing recommendations**
-
-```bash
-# Get all recommendations issued in the last 20 minutes
-curl http://<KONG_HOST>:8000/GridBalancingRecommendation/recommendations/20
-
-# Compute real-time metrics for a specific grid cell with telemetry payload
-curl -X POST http://<KONG_HOST>:8000/GridBalancingRecommendation/metrics \
-  -H "Content-Type: application/json" \
-  -d '{"gridCell":{"gridCellId":"PORTO-IN","maxCapacity":75},"telemetryData":[]}'
-```
-
-**Build a forecasting prompt and send it to Ollama**
-
-```bash
-curl -X POST http://<KONG_HOST>:8000/FlexibilityForecasting/build-prompt \
-  -H "Content-Type: application/json" \
-  -d '{"eventId":1,"assetId":1001,"eventType":"ARBITRAGE_SELL","recommendedAction":"DISCHARGE","socAtEventTime":95.2,"sohAtEventTime":92.5,"marketPriceLevel":"HIGH","gridCellId":"LISBON-DT","currentSoc":90.9,"currentOutputKw":5.5,"currentStatus":"ONLINE"}'
-# Returns a ready-to-send prompt string for Ollama's /api/generate endpoint
-```
+Integration tests run against a real local MySQL instance (not mocked). Each service's `src/test/README.md` documents which tests exist and what SQL they verify.
 
 ---
 
-## Cloud Deployment (AWS)
+## Cloud Deployment
 
 ### Prerequisites
 
-- AWS CLI configured
 - Terraform installed
-- An active AWS account with sufficient EC2 and RDS quotas
+- Two active AWS accounts with credentials set in `code/access.sh`
+- `key.pem` (Account 1 key pair) placed in `code/Kafka/`
+- `mskey.pem` (Account 2 key pair) placed in `code/`
 
-### Automated deployment
-
-Its needed to set access.sh using your credentials 
-
-From account 1, you need to download the pem key and name it key.pem, and place it on the /kafka directory
-
-From account 2, you need to download the pem key and name it mskey.pem, and place it on the /code directory
-
+### Full deployment
 
 From `code/`:
 
 ```bash
-# macOS
 ./DeploymentAutomation-macOS.sh
 ```
 
-### Redeploying a single service
+The script provisions all infrastructure across both accounts in order, patches and uploads BPMN files, builds and pushes Docker images, provisions Kong routes, and runs smoke tests.
+
+### Redeploy a single service without Terraform
 
 ```bash
 ./HotRedeploy.sh <ServiceName>
 ```
 
-### Tearing down everything
-
-```bash
-./UndeploymentAutomation-all.sh
-```
-
-### Before redeploying, make sure to run 
+### Restore BPMN placeholders before redeploying
 
 ```bash
 ./RestoreBPMN.sh
+```
+
+Run this before any `DeploymentAutomation` invocation that follows a previous deployment. The script regexes EC2 DNS names back to `KONG_SERVER_PLACEHOLDER` and `KAFKA_SERVER_PLACEHOLDER`, restoring the files to a deployable state.
+
+### Tear down
+
+```bash
+./UndeploymentAutomation-all.sh
 ```
 
 ---
 
 ## Kafka Topics
 
-| Topic | Producer service |
+| Topic | Producer |
 |---|---|
 | `Flexibility-Offers` | FlexibilityEvent |
 | `GridBalancingRecommendation` | GridBalancingRecommendation |
@@ -283,11 +172,3 @@ From `code/`:
 | `Average-SoC` | EnergyAnalytics |
 
 All topics are created with 3 partitions and replication factor 3 by `code/Kafka/topics.sh`.
-
----
-
-## What I Learned / Challenges
-
-The hardest coordination problem was making BPMN processes work against a fully dynamic cloud deployment. BPMN files embed the Kong and Kafka hostnames directly in service task URLs, but those addresses are only known after Terraform provisions the EC2 instances, so the deployment script had to extract addresses from `terraform state show`, patch the BPMN XML in-place with `sed`, and then upload the modified files to Camunda's deployment API, all in a single ordered sequence across two AWS accounts. Getting that sequencing right and keeping the BPMN files restorable (via `RestoreBPMN.sh`) for subsequent deploys took significant iteration.
-
-The second challenge was dynamic Kafka topic subscription in Quarkus. Quarkus's SmallRye Reactive Messaging reads topic names from configuration at startup and cannot add new topics at runtime, which is incompatible with a platform where asset owners register their own Kafka topics after the system is already running. The solution was to bypass the framework entirely: a REST endpoint accepts a topic name and spawns a raw `KafkaConsumer` thread that subscribes to that topic and writes records directly to MySQL using the reactive `MySQLPool`. This gave full runtime flexibility at the cost of managing thread lifecycle manually.

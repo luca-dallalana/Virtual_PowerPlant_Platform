@@ -1,0 +1,3 @@
+*.bpmn linguist-language=XML linguist-detectable=false
+*.dmn linguist-language=XML linguist-detectable=false
+UML/** linguist-detectable=false
